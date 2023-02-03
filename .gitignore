@@ -33,3 +33,4 @@
 
 #intellij related files
 .idea*
+REST_API/target/
