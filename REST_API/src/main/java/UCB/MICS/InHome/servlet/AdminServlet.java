@@ -33,4 +33,11 @@ public class AdminServlet extends HttpServlet {
     {
         logger.log(Level.INFO, "post was called");
     }
+
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException
+    {
+        logger.log(Level.INFO, "get was called");
+    }
 }

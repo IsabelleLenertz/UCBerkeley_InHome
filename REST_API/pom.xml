@@ -15,11 +15,113 @@
     </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>com.google.inject</groupId>
-            <artifactId>guice</artifactId>
-            <version>5.1.0</version>
-        </dependency>
 
+        <!-- I have to eventually cleanup that dependency mess to just pull in the version I need of the jetty servet/server dependencies-->
+         <dependency>
+                <groupId>com.proofpoint.platform</groupId>
+                <artifactId>node</artifactId>
+                <version>2.78</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.proofpoint.platform</groupId>
+                <artifactId>json</artifactId>
+                <version>2.78</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.inject</groupId>
+                <artifactId>guice</artifactId>
+                <version>4.1.0</version>
+            </dependency>
+            <dependency>
+                <groupId>com.proofpoint.platform</groupId>
+                <artifactId>configuration</artifactId>
+                <version>2.78</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.proofpoint.platform</groupId>
+                <artifactId>bootstrap</artifactId>
+                <version>2.78</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.proofpoint.platform</groupId>
+                <artifactId>discovery</artifactId>
+                <version>2.78</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.proofpoint.platform</groupId>
+                <artifactId>log</artifactId>
+                <version>2.78</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.proofpoint.platform</groupId>
+                <artifactId>audit</artifactId>
+                <version>2.78</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.proofpoint.platform</groupId>
+                <artifactId>http-server</artifactId>
+                <version>2.78</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.proofpoint.platform</groupId>
+                <artifactId>jaxrs</artifactId>
+                <version>2.78</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.proofpoint.platform</groupId>
+                <artifactId>jmx</artifactId>
+                <version>2.78</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.proofpoint.platform</groupId>
+                <artifactId>reporting</artifactId>
+                <version>2.78</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.proofpoint.platform</groupId>
+                <artifactId>reporting-client</artifactId>
+                <version>2.78</version>
+            </dependency>
+
+
+            <dependency>
+                <groupId>com.proofpoint.platform</groupId>
+                <artifactId>jmx-http</artifactId>
+                <version>2.78</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.proofpoint.platform</groupId>
+                <artifactId>http-client</artifactId>
+                <version>2.78</version>
+            </dependency>
+
+            <!-- for packaging -->
+            <dependency>
+                <groupId>com.proofpoint.platform</groupId>
+                <artifactId>launcher</artifactId>
+                <version>2.78</version>
+                <classifier>bin</classifier>
+                <type>tar.gz</type>
+            </dependency>
+
+
+            <!-- for testing -->
+            <dependency>
+                <groupId>com.proofpoint.platform</groupId>
+                <artifactId>testing</artifactId>
+                <version>2.78</version>
+                <scope>test</scope>
+            </dependency>
     </dependencies>
 </project>
