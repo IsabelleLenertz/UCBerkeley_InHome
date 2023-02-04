@@ -1,6 +1,9 @@
 #ifndef INC_ARPMESSAGE_HPP_
 #define INC_ARPMESSAGE_HPP_
 
+#include <cstdint>
+#include <cstring>
+
 typedef enum
 {
     ARP_HW_TYPE_ETHERNET    = 1,  // Ethernet

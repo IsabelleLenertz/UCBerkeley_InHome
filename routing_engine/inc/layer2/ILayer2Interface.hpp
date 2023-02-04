@@ -8,10 +8,9 @@
 /// A Layer2ReceiveCallback is a callable object which defines a handler for
 /// incoming packets on a Layer 2 Interface.
 /// </summary>
-/// <param>Pointer to "this" object on which callback is executed.</param>
 /// <param>Pointer to incoming layer 3 data</param>
 /// <param>Length of incoming layer 3 data, in bytes</param>
-typedef std::function<void(void*, const uint8_t *data, const uint8_t len)> Layer2ReceiveCallback;
+typedef std::function<void(const uint8_t *data, const uint8_t len)> Layer2ReceiveCallback;
 
 /// <summary>
 /// Defines the base interface for all Layer 2 Interfaces.
@@ -25,13 +24,12 @@ public:
     /// <summary>
     /// Opens the layer 2 interface
     /// </summary>
-    /// <param name="if_name">Name of interface. ex. "wlan0"</param>
     /// <returns>
     /// Error Code:
     ///   0: No error, interface opened successfully
     ///   1: Error, interface not opened
     /// </returns>
-    virtual int Open(const char* if_name) = 0;
+    virtual int Open() = 0;
     
     /// <summary>
     /// Closes the layer 2 interface.
@@ -62,7 +60,7 @@ public:
     ///   Layer2ReceiveCallback _callback = std::bind(&MyReceiveCallback, std::placeholders::_1, std::placeholders::_2);
     ///   myLayer2Interface.SetReceiveCallback(_callback);
     /// </remarks>
-    virtual int Listen(const Layer2ReceiveCallback& callback, bool async) = 0;
+    virtual int Listen(Layer2ReceiveCallback& callback, bool async) = 0;
     
     /// <summary>
     /// Stops the listening thread

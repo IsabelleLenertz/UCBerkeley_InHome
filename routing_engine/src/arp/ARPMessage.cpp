@@ -40,7 +40,7 @@ int ARPMessage::Deserialize(const uint8_t *data, size_t len)
         return 1; // Overflow Error
     }
     
-    uint8_t *ptr = data;
+    const uint8_t *ptr = data;
     
     // Get hardware type
     _hw_type = (arp_hw_type_t) *(uint16_t*)ptr;

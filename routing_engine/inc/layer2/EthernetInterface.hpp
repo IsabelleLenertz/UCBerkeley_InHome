@@ -2,18 +2,19 @@
 #define INC_ETHERNETINTERFACE_HPP_
 
 #include "layer2/ILayer2Interface.hpp"
-#include "arp/IARPTable.hpp">
+#include "arp/IARPTable.hpp"
 
 #include <pcap/pcap.h>
 #include <thread>
+#include <string>
 
 class EthernetInterface : public ILayer2Interface
 {
 public:
-    EthernetInterface(IARPTable *arp_table);
+    EthernetInterface(const char *if_name, IARPTable *arp_table);
     ~EthernetInterface();
     
-    int Open(const char *if_name);
+    int Open();
     int Close();
     
     int Listen(Layer2ReceiveCallback& callback, bool async);
@@ -22,6 +23,8 @@ public:
     int SendPacket(const in_addr_t &l3_src_addr, const in_addr_t &l3_dest_addr, const uint8_t *data, size_t len);
 
 private:
+    char error_buffer[PCAP_ERRBUF_SIZE];
+    std::string _if_name;
     Layer2ReceiveCallback _callback;
     pcap_t *_handle;
     std::thread _thread;

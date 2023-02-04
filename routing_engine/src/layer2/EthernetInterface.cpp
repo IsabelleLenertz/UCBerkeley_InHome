@@ -2,11 +2,12 @@
 
 #include <net/ethernet.h>
 
-EthernetInterface::EthernetInterface(IARPTable *arp_table)
+EthernetInterface::EthernetInterface(const char *if_name, IARPTable *arp_table)
     : _handle(nullptr),
       _thread(),
       _arp_table(arp_table)
 {
+    _if_name = std::string(if_name);
 }
 
 EthernetInterface::~EthernetInterface()
@@ -14,14 +15,14 @@ EthernetInterface::~EthernetInterface()
     this->Close();
 }
 
-int EthernetInterface::Open(const char *if_name)
+int EthernetInterface::Open()
 {
     _handle = pcap_open_live(
-        if_name,        // Interface to open
-        BUFSIZ,         // Maximum number of bytes per packet
-        0,              // Not in promiscuous mode
-        TIMEOUT_MS,     // Packet buffer timeout
-        error_buffer);  // Error output buffer
+        _if_name.c_str(), // Interface to open
+        BUFSIZ,           // Maximum number of bytes per packet
+        0,                // Not in promiscuous mode
+        TIMEOUT_MS,       // Packet buffer timeout
+        error_buffer);    // Error output buffer
     
     if (_handle == nullptr)
     {
@@ -69,13 +70,24 @@ int EthernetInterface::Listen(Layer2ReceiveCallback& callback, bool async)
     return 0;
 }
 
+int EthernetInterface::StopListen()
+{
+    // TODO
+    return 0;
+}
+    
+int EthernetInterface::SendPacket(const in_addr_t &l3_src_addr, const in_addr_t &l3_dest_addr, const uint8_t *data, size_t len)
+{
+    return 0;
+}
+
 void EthernetInterface::captureLoop()
 {
     pcap_loop(
         _handle,                        // Handle to interface
         0,                              // Max packets to capture
         &EthernetInterface::_receive,   // Callback
-        this);                          // This object
+        (u_char*)this);                 // This object
 }
 
 ///////////////////////////////////
@@ -92,12 +104,12 @@ void EthernetInterface::_receive(u_char *user, const struct pcap_pkthdr *h, cons
     {
         case ETHERTYPE_ARP:
         {
-            _this->_handle_arp(user, h, bytes);
+            _this->_handle_arp(h, bytes);
             break;
         }
         case ETHERTYPE_IP:
         {
-            _this->_handle_ip(user, h, bytes);
+            _this->_handle_ip(h, bytes);
             break;
         }
         default:
@@ -111,7 +123,7 @@ void EthernetInterface::_receive(u_char *user, const struct pcap_pkthdr *h, cons
 void EthernetInterface::_handle_ip(const struct pcap_pkthdr *h, const u_char *bytes)
 {
     // Extract Layer 3 packet
-    uint8_t *l3_pkt;
+    const uint8_t *l3_pkt;
     size_t l3_pkt_len;
     
     // Offset by size of ethernet header
@@ -126,7 +138,7 @@ void EthernetInterface::_handle_ip(const struct pcap_pkthdr *h, const u_char *by
     this->_callback(l3_pkt, l3_pkt_len);
 }
 
-void EthernetInterface::_handle_arp(u_char *user, const struct pcap_pkthdr *h, const u_char *bytes)
+void EthernetInterface::_handle_arp(const struct pcap_pkthdr *h, const u_char *bytes)
 {
     // TODO
 }
