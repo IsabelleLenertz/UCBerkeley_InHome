@@ -1,21 +1,16 @@
 package UCB.MICS.InHome;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.inject.Injector;
-import com.proofpoint.audit.AuditLogModule;
-import com.proofpoint.discovery.client.DiscoveryModule;
-import com.proofpoint.discovery.client.announce.Announcer;
-import com.proofpoint.http.server.HttpServerModule;
-import com.proofpoint.jaxrs.JaxrsModule;
-import com.proofpoint.jmx.JmxHttpModule;
-import com.proofpoint.jmx.JmxModule;
-import com.proofpoint.json.JsonModule;
-import com.proofpoint.log.LogJmxModule;
+import UCB.MICS.InHome.module.AdminServletModule;
+import com.google.inject.Guice;
+import com.google.inject.servlet.GuiceFilter;
 import com.proofpoint.log.Logger;
-import com.proofpoint.node.NodeModule;
-import com.proofpoint.reporting.ReportingClientModule;
-import com.proofpoint.reporting.ReportingModule;
-import org.weakref.jmx.guice.MBeanModule;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.LifeCycle;
+
+import javax.servlet.DispatcherType;
+import java.util.EnumSet;
 
 import static com.proofpoint.bootstrap.Bootstrap.bootstrapApplication;
 
@@ -27,39 +22,27 @@ public final class Main
     {
     }
 
-    public static void main(String[] args)
-    {
-        try {
-            Injector injector = bootstrapApplication("skeleton")
-                    .withModules(
-                            new NodeModule(),
-                            new DiscoveryModule(),
-                            new HttpServerModule(),
-                            new JsonModule(),
-                            new JaxrsModule(),
-                            new MBeanModule(),
-                            new JmxModule(),
-                            new JmxHttpModule(),
-                            new LogJmxModule(),
-                            new AuditLogModule(),
-                            new ReportingModule(),
-                            new ReportingClientModule(),
-                            new MainModule()
+    public static void main(String[] args) throws Exception {
+        Server svr = new Server(8443);
 
-                    )
-                    .withApplicationDefaults(ImmutableMap.<String, String>builder()
-                            .put("http-server.http.enabled", "false")
-                            .put("http-server.https.enabled", "true")
-                            .put("http-server.https.port", "8443")
-                            .build()
-                    )
-                    .initialize();
+        // Guice-powered servlet
+        ServletContextHandler handler = new ServletContextHandler();
+        handler.setResourceBase(".");
 
-            injector.getInstance(Announcer.class).start();
-        }
-        catch (Throwable e) {
-            log.error(e);
-            System.exit(1);
-        }
+        // Register Guice Filter
+        handler.addFilter(GuiceFilter.class, "/*", EnumSet.allOf(DispatcherType.class));
+        svr.setHandler(handler);
+
+        // add a lifecycle listener to bootstrap injector on startup
+        svr.addLifeCycleListener(new AbstractLifeCycle.AbstractLifeCycleListener() {
+            @Override
+            public void lifeCycleStarted(LifeCycle event) {
+                System.out.println("Bootstrapping Guice injector ...");
+                Guice.createInjector(new AdminServletModule());
+            }
+        });
+
+        svr.start();
+        svr.join();
     }
 }

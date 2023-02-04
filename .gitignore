@@ -34,3 +34,4 @@
 #intellij related files
 .idea*
 REST_API/target/
+REST_API/var/
