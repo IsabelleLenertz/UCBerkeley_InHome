@@ -10,7 +10,7 @@
 /// </summary>
 /// <param>Pointer to incoming layer 3 data</param>
 /// <param>Length of incoming layer 3 data, in bytes</param>
-typedef std::function<void(const uint8_t *data, const uint8_t len)> Layer2ReceiveCallback;
+typedef std::function<void(const uint8_t *data, size_t len)> Layer2ReceiveCallback;
 
 /// <summary>
 /// Defines the base interface for all Layer 2 Interfaces.

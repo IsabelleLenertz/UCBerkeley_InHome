@@ -34,15 +34,8 @@ int EthernetInterface::Open()
 
 int EthernetInterface::Close()
 {
-    // Check if the thread is running
-    if (_thread.joinable())
-    {
-        // Force thread termination
-        pcap_breakloop(_handle);
-        
-        // Wait for thread to complete
-        _thread.join();
-    }
+    // If still listening, stop
+    this->StopListen();
     
     // Close the handle
     pcap_close(_handle);
@@ -72,10 +65,17 @@ int EthernetInterface::Listen(Layer2ReceiveCallback& callback, bool async)
 
 int EthernetInterface::StopListen()
 {
-    // TODO
-    return 0;
+    // Check if the thread is running
+    if (_thread.joinable())
+    {
+        // Force thread termination
+        pcap_breakloop(_handle);
+        
+        // Wait for thread to complete
+        _thread.join();
+    }
 }
-    
+
 int EthernetInterface::SendPacket(const in_addr_t &l3_src_addr, const in_addr_t &l3_dest_addr, const uint8_t *data, size_t len)
 {
     return 0;

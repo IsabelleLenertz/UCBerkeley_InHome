@@ -5,6 +5,10 @@
 #include "arp/IARPTable.hpp"
 #include <string>
 
+/// <summary>
+/// Concrete implementation of ILayer2Interface
+/// for WiFi interfaces
+/// </summary>
 class WiFiInterface : public ILayer2Interface
 {
 public:

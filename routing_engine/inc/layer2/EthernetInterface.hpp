@@ -8,6 +8,10 @@
 #include <thread>
 #include <string>
 
+/// <summary>
+/// Concrete implementation of ILayer2Interface
+/// for Ethernet interfaces
+/// </summary>
 class EthernetInterface : public ILayer2Interface
 {
 public:
@@ -59,7 +63,7 @@ private:
     /// <summary>
     /// Executes the capture loop.
     /// </summary>
-    void captureLoop();
+    void _captureLoop();
 };
 
 #endif
