@@ -1,6 +1,5 @@
 package UCB.MICS.InHome;
 
-import UCB.MICS.InHome.module.AdminServletModule;
 import com.google.inject.servlet.GuiceFilter;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;

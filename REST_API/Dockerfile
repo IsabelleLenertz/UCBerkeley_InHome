@@ -13,5 +13,6 @@ ENV MAVEN_HOME /usr/share/maven
 WORKDIR /opt
 COPY src/ .
 COPY pom.xml .
-RUN mvn install
+RUN mvn install > log.txt
+RUN cat log.txt
 
