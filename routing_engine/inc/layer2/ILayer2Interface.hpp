@@ -60,7 +60,7 @@ public:
     ///   Layer2ReceiveCallback _callback = std::bind(&MyReceiveCallback, std::placeholders::_1, std::placeholders::_2);
     ///   myLayer2Interface.SetReceiveCallback(_callback);
     /// </remarks>
-    virtual int Listen(Layer2ReceiveCallback& callback, bool async) = 0;
+    virtual int Listen(Layer2ReceiveCallback callback, bool async) = 0;
     
     /// <summary>
     /// Stops the listening thread
@@ -69,7 +69,7 @@ public:
     /// Error Code:
     ///   0: No error, listening stopped successfully
     /// </returns>
-    virtual int StopListen();
+    virtual int StopListen() = 0;
 
     /// <summary>
     /// Encapsulates a layer 3 packet in a layer 2 frame
@@ -91,6 +91,12 @@ public:
     /// in the Layer 2 frame
     /// </remarks>
     virtual int SendPacket(const in_addr_t &l3_src_addr, const in_addr_t &l3_dest_addr, const uint8_t *data, size_t len) = 0;
+    
+    /// <summary>
+    /// Gets the name of this interface
+    /// </summary>
+    /// <returns>Name string, null-terminated</returns>
+    virtual const char *GetName() = 0;
 };
 
 #endif

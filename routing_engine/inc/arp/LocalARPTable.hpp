@@ -4,7 +4,11 @@
 #include "arp/IARPTable.hpp"
 #include <vector>
 
-typedef std::pair<in_addr_t, const struct ether_addr> ARPEntry_t;
+typedef struct
+{
+    in_addr_t l3_addr;
+    struct ether_addr l2_addr;
+} ARPEntry_t;
 
 /// <summary>
 /// Concrete implementation of IARPTable
@@ -29,6 +33,6 @@ public:
 
 private:
     std::vector<ARPEntry_t> _table;
-}:
+};
 
 #endif

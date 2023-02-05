@@ -34,3 +34,8 @@ int WiFiInterface::SendPacket(const in_addr_t &l3_src_addr, const in_addr_t &l3_
 {
     return 0;
 }
+
+const char *WiFiInterface::GetName()
+{
+    return _if_name.c_str();
+}

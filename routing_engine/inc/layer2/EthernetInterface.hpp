@@ -21,10 +21,12 @@ public:
     int Open();
     int Close();
     
-    int Listen(Layer2ReceiveCallback& callback, bool async);
+    int Listen(Layer2ReceiveCallback callback, bool async);
     int StopListen();
     
     int SendPacket(const in_addr_t &l3_src_addr, const in_addr_t &l3_dest_addr, const uint8_t *data, size_t len);
+    
+    const char *GetName();
 
 private:
     char error_buffer[PCAP_ERRBUF_SIZE];
@@ -64,6 +66,18 @@ private:
     /// Executes the capture loop.
     /// </summary>
     void _captureLoop();
+    
+    /// <summary>
+    /// Calculates the CRC of the provided
+    /// data, given length in bytes
+    /// </summary>
+    /// <param name="data">Source data</param>
+    /// <param name="len">Length of data, in bytes</param>
+    /// <param name="crc">CRC output</param>
+    /// <remarks>
+    /// CRC output is in network byte order
+    /// </remarks>
+    void _calcCRC(uint8_t *data, size_t len, uint8_t *crc);
 };
 
 #endif
