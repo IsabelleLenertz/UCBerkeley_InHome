@@ -11,31 +11,7 @@
 #define IPV4_PACKET_ERROR_OVERFLOW         1
 #define IPV4_PACKET_ERROR_INVALID_CHECKSUM 2
 #define IPV4_PACKET_ERROR_UNDEFINED_OPTION 3
-
-// Structures
-typedef struct
-{
-    uint8_t version : 4;
-    uint8_t header_len : 4;
-    uint8_t tos : 8;
-    uint16_t total_len : 16;
-} ipv4_word0_t;
-
-typedef struct
-{
-    uint16_t stream_id : 16;
-    bool reserved : 1;
-    bool dont_fragment : 1;
-    bool more_fragments : 1;
-    uint16_t fragment_offset : 13;
-} ipv4_word1_t;
-
-typedef struct
-{
-    uint8_t ttl : 8;
-    uint8_t protocol : 8;
-    uint16_t checksum : 16;
-} ipv4_word2_t;
+#define IPV4_PACKET_ERROR_INVALID_VERSION  4
 
 /// <summary>
 /// Encapsulates IPv4 Data. Provides methods
@@ -207,6 +183,34 @@ public:
     void SetFragmentOffset(uint16_t offset);
     
     /// <summary>
+    /// Gets the Time-to-Live (TTL)
+    /// </summary>
+    /// <returns>
+    /// TTL, in router hops
+    /// </returns>
+    uint8_t GetTTL();
+    
+    /// <summary>
+    /// Sets the Time-to-Live (TTL)
+    /// </summary>
+    /// <param name="ttl">TTL, in router hops</param>
+    void SetTTL(uint8_t ttl);
+    
+    /// <summary>
+    /// Gets the protocol number
+    /// </summary>
+    /// <returns>
+    /// Protocol number
+    /// </returns>
+    uint8_t GetProtocol();
+    
+    /// <summary>
+    /// Sets the protocol number
+    /// </summary>
+    /// <param name="proto">Protocol number</param>
+    void SetProtocol(uint8_t proto);
+    
+    /// <summary>
     /// Gets the source IP address
     /// </summary>
     /// <returns>Source IP</returns>
@@ -302,18 +306,29 @@ public:
     /// <param name="buff">Input data buffer</param>
     /// <param name="header_len">Header length, in bytes</param>
     /// <returns>16-bit checksum</returns>
-    static uint16_t CalcHeaderChecksum(uint8_t buff, size_t header_len);
+    static uint16_t CalcHeaderChecksum(uint8_t *buff, size_t header_len);
 
 private:
-    ipv4_word0_t word0;
-    ipv4_word1_t word1;
-    ipv4_word2_t word2;
+    // Split fields into individual variables
+    // Version (Always 4, constant)
+    // Header Length (Calculated, do not store)
+    uint8_t _tos;
+    // Total Length (Calculated, do not store)
     
-    in_addr_t source_addr;
-    in_addr_t dest_addr;
+    uint16_t _stream_id;
+    bool _dont_fragment;
+    bool _more_fragments;
+    uint16_t _fragment_offset;
     
-    std::vector<IPv4Option> options;
-    std::vector<uint8_t> data;
+    uint8_t _ttl;
+    uint8_t _protocol;
+    // Checksum (Calculated, do not store)
+    
+    in_addr_t _source_addr;
+    in_addr_t _dest_addr;
+    
+    std::vector<IPv4Option> _options;
+    std::vector<uint8_t> _data;
     
     const int MIN_HEADER_SIZE_BYTES = 20; // 5 words
     const int MAX_HEADER_SIZE_BYTES = 60; // 15 words

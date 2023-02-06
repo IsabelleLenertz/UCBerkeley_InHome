@@ -1,14 +1,25 @@
 #include "layer3/IPv4Packet.hpp"
-#include <arpa/inet>
+
+#include <arpa/inet.h>
+#include <cstring>
+
+// TEMP: Test Only
+#include <iostream>
+#include <iomanip>
+// End TEMP
 
 IPv4Packet::IPv4Packet()
-    : word0(),
-      word1(),
-      word2(),
-      source_addr(0),
-      dest_addr(0),
-      options(),
-      data()
+    : _tos(0),
+      _stream_id(0),
+      _dont_fragment(false),
+      _more_fragments(false),
+      _fragment_offset(0),
+      _ttl(0),
+      _protocol(0),
+      _source_addr(0),
+      _dest_addr(0),
+      _options(),
+      _data()
 {
 }
 
@@ -19,6 +30,7 @@ IPv4Packet::~IPv4Packet()
 int IPv4Packet::Deserialize(uint8_t *buff, uint16_t len)
 {
     uint8_t *ptr = buff;
+    uint32_t tmp;
     
     // If the first word can't be formed, return overflow error
     if (len < sizeof(uint32_t))
@@ -26,49 +38,84 @@ int IPv4Packet::Deserialize(uint8_t *buff, uint16_t len)
         return IPV4_PACKET_ERROR_OVERFLOW;
     }
     
-    // Extract word 0: Header Length, TOS, Total Length
-    word0 = *(uint32_t*)ptr;
+    // Converting to uint32_t makes bitwise manipulation easier
+    // Get first word
+    tmp = *(uint32_t*)ptr;
     ptr += sizeof(uint32_t);
     
-    // Convert header length from words to bytes
-    uint8_t header_len = word0.header_len * sizeof(uint32_t);
+    // Verify that the IP version is 4
+    uint8_t version = (uint8_t)((tmp >> 4) & 0xF);
+    if (version != 4)
+    {
+        return IPV4_PACKET_ERROR_INVALID_VERSION;
+    }
     
-    // Validate that the amount of data in the buffer is enough to
-    // hold the specified total packet length
-    if (len < word0.total_len)
+    // Get Header Length, convert to bytes
+    uint8_t header_len = (tmp & 0xF) * sizeof(uint32_t);
+    
+    // Get TOS
+    _tos = (uint8_t)((tmp >> 8) & 0xF);
+    
+    // Get Total Length
+    uint16_t total_len = (tmp >> 16);
+    total_len = ntohs(total_len);
+    
+    // Verify enough data is in the packet
+    // for specified total length
+    if (total_len < len)
     {
         return IPV4_PACKET_ERROR_OVERFLOW;
     }
     
-    // Extract word 1: Stream ID, Flags, Fragment Offset
-    word1 = ntohl(*(uint32_t*)ptr);
+    // Get second word
+    tmp = *(uint32_t*)ptr;
     ptr += sizeof(uint32_t);
     
-    // Extract word 2: TTL, Header Checksum
-    word2 = ntohl(*(uint32_t*)ptr);
+    // Get Stream ID
+    _stream_id = (uint16_t)(tmp & 0xFFFF);
+    _stream_id = ntohs(_stream_id);
+    
+    // Get Don't Fragment Flag
+    _dont_fragment = (bool)((tmp >> 22) & 0x1);
+    
+    // Get More Fragments Flag
+    _more_fragments = (bool)((tmp >> 21) & 0x1);
+    
+    // Get Fragment Offset
+    _fragment_offset = (uint16_t)(tmp >> 16);
+    _fragment_offset = ntohs(_fragment_offset);
+    _fragment_offset &= 0x1FFF; // Remove flag bits
+    
+    // Get third word
+    tmp = *(uint32_t*)ptr;
+    ptr += sizeof(uint32_t);
+    
+    // Get Time-to-Live (TTL)
+    _ttl = (uint8_t)(tmp & 0xFF);
+    
+    // Get Protocol
+    _protocol = (uint8_t)((tmp >> 8) & 0xFF);
     
     //////// Validate Checksum ////////
-    // Zero-Out checksum from buffer
-    *((uint32_t*)ptr) &= 0x0000FFFF;
     
     // Calculate checksum
     uint16_t checksum_calculated = CalcHeaderChecksum(buff, header_len);
-    if (checksum_calculated != word2.checksum)
+    
+    // Checksum of header (including checksum bytes)
+    // must be 0
+    if (checksum_calculated != 0)
     {
         return IPV4_PACKET_ERROR_INVALID_CHECKSUM;
     }
     
-    // Restore checksum
-    *((uint32_t*)ptr) = htonl(word2); // TODO Validate this
-    
-    ptr += sizeof(uint32_t);
-    
     // Extract Source Address
-    source_addr = *(in_addr_t*)ptr;
+    tmp = ntohl(*(uint32_t*)ptr);
+    _source_addr = *(in_addr_t*)&tmp;
     ptr += sizeof(in_addr_t);
     
     // Extract Destination Address
-    dest_addr = *(in_addr_t*)ptr;
+    tmp = ntohl(*(uint32_t*)ptr);
+    _dest_addr = *(in_addr_t*)&tmp;
     ptr += sizeof(in_addr_t);
     
     // Parse options to the end of the header
@@ -85,19 +132,20 @@ int IPv4Packet::Deserialize(uint8_t *buff, uint16_t len)
         }
         
         // Check for an undefined option type
-        if (!IPv4OptionInfoTable[option_type].defined)
+        if (!IPv4Option::OptionTable[option_type].defined)
         {
             return IPV4_PACKET_ERROR_UNDEFINED_OPTION;
         }
         
         // Check if this is a variable-length option
-        if (IPv4OptionInfoTable[option_type].varlen)
+        if (IPv4Option::OptionTable[option_type].varlen)
         {
             // Get length byte
             option_len = *ptr++;
+            option_len -= 2; // Don't include option type and length bytes
             
             // Add variable-length option
-            options.push_back(IPv4Option(option_type, option_len, ptr));
+            _options.push_back(IPv4Option(option_type, option_len, ptr));
             
             // Advance pointer
             ptr += option_len;
@@ -105,65 +153,63 @@ int IPv4Packet::Deserialize(uint8_t *buff, uint16_t len)
         else
         {
             // Add single-byte option
-            options.push_back(IPv4Option(option_type));
+            _options.push_back(IPv4Option(option_type));
         }
     }
     
     // Calculate payload length
-    uint16_t payload_len = word0.total_len - header_len;
+    uint16_t payload_len = total_len - header_len;
     
     // Copy data payload
-    data = std::vector<uint8_t>(ptr, ptr + payload_len);
+    _data = std::vector<uint8_t>(ptr, ptr + payload_len);
     
-    return IPV4_PACKET_ERROR_NO_ERROR;
+    return IPV4_PACKET_SUCCESS;
 }
 
 int IPv4Packet::Serialize(uint8_t* buff, uint16_t& len)
 {
     uint8_t *ptr = buff;
+    uint32_t tmp;
     
-    // Verify that the buffer length can store packet data
-    if (len < GetTotalLengthBytes())
-    {
-        return IPV4_PACKET_ERROR_OVERFLOW;
-    }
-    
-    // Verify that the header is not too big
-    if (GetHeaderLengthBytes() > MAX_HEADER_LEN_BYTES)
-    {
-        return IPV4_PACKET_ERROR_OVERFLOW;
-    }
+    // Construct word 0
+    std::cout << std::hex;
+    tmp = 0x40; // Version (always 4)
+    tmp |= (uint32_t)(GetHeaderLengthBytes() / sizeof(uint32_t));
+    tmp |= ((uint32_t)_tos) << 8;
+    tmp |= ((uint32_t)htons(GetTotalLengthBytes())) << 16;
     
     // Write word 0
-    word0.version = 4; // IPv4
-    word0.header_len = GetHeaderLengthBytes() / sizeof(uint32_t);
-    word0.total_len = GetTotalLengthBytes();
-    *((uint32_t*)ptr) = htonl(word0);
+    *(uint32_t*)ptr = tmp;
     ptr += sizeof(uint32_t);
+    
+    // Construct word 1
+    tmp = (uint32_t)htons(_stream_id);
+    tmp |= ((uint32_t)_more_fragments) << 21;
+    tmp |= ((uint32_t)_dont_fragment) << 22;
+    tmp |= ((uint32_t)htons(_fragment_offset)) << 16;
     
     // Write word 1
-    *((uint32_t*)ptr) = htonl(word1);
+    *(uint32_t*)ptr = tmp;
     ptr += sizeof(uint32_t);
     
-    // Write word 2
-    word2.checksum = 0;
-    *((uint32_t*)ptr) = htonl(word2);
+    // Write word 2 (except checksum)
+    tmp = (uint32_t)(_ttl);
+    tmp |= ((uint32_t)_protocol) << 8;
+    *(uint32_t*)ptr = tmp;
     ptr += sizeof(uint32_t);
     
     // Write Source Address
-    *((in_addr_t*)ptr) = source_addr;
+    tmp = *(uint32_t*)&_source_addr;
+    *(uint32_t*)ptr = htonl(tmp);
     ptr += sizeof(in_addr_t);
     
     // Write Destination Address
-    *((in_addr_t*)ptr) = dest_addr;
+    tmp = *(uint32_t*)&_dest_addr;
+    *(uint32_t*)ptr = htonl(tmp);
     ptr += sizeof(in_addr_t);
     
-    // Calculate and populate checksum
-    word2.checksum = CalcHeaderChecksum(buff, GetHeaderLengthBytes());
-    *((uint32_t*)(buff + 16)) = htonl(word2);
-    
     // Write options
-    for (auto opt = options.begin(); opt < options.end(); opt++)
+    for (auto opt = _options.begin(); opt < _options.end(); opt++)
     {
         IPv4Option& option = *opt;
         
@@ -171,15 +217,17 @@ int IPv4Packet::Serialize(uint8_t* buff, uint16_t& len)
         *ptr++ = option.GetOptionType();
         
         // Cannot serialize unknown option type
-        if (!IPv4OptionTable[option.GetOptionType].defined)
+        if (!IPv4Option::OptionTable[option.GetOptionType()].defined)
         {
             return IPV4_PACKET_ERROR_UNDEFINED_OPTION;
         }
         
         // If variable length, write length and data
-        if (IPv4OptionInfoTable[option.GetOptionType()].varlen)
+        if (IPv4Option::OptionTable[option.GetOptionType()].varlen)
         {
-            *ptr++ = option.GetLength();
+            // Write length byte (length is +2 because it
+            // includes option type and length byte
+            *ptr++ = option.GetLength() + 2;
             
             memcpy(ptr, option.GetData(), option.GetLength());
             ptr += option.GetLength();
@@ -193,12 +241,18 @@ int IPv4Packet::Serialize(uint8_t* buff, uint16_t& len)
         *ptr++ = 0;
     }
     
+    // Calculate Header Checksum
+    uint16_t checksum = CalcHeaderChecksum(buff, GetHeaderLengthBytes());
+    
+    // Write checksum to header
+    *(uint16_t*)(buff + 10) = checksum;
+    
     // Write data payload
-    memcpy(ptr, data.data(), data.size());
+    memcpy(ptr, _data.data(), _data.size());
     
-    len = word0.total_len;
+    len = GetTotalLengthBytes();
     
-    return IPV4_PACKET_ERROR_NO_ERROR;
+    return IPV4_PACKET_SUCCESS;
 }
 
 // Read-only
@@ -208,7 +262,7 @@ uint8_t IPv4Packet::GetHeaderLengthBytes()
     int num_bytes = MIN_HEADER_SIZE_BYTES;
     
     // Parse through options
-    for (auto opt = options.begin(); opt < options.end(); opt++)
+    for (auto opt = _options.begin(); opt < _options.end(); opt++)
     {
         IPv4Option& option = *opt;
         
@@ -216,7 +270,7 @@ uint8_t IPv4Packet::GetHeaderLengthBytes()
         num_bytes++;
         
         // If variable length
-        if (IPv4OptionInfoTable[option.GetOptionType()].varlen)
+        if (IPv4Option::OptionTable[option.GetOptionType()].varlen)
         {
             // Advance one byte for length byte
             num_bytes++;
@@ -227,89 +281,109 @@ uint8_t IPv4Packet::GetHeaderLengthBytes()
     }
     
     // Round up to nearest 32-bit boundary
-    return (((num_bytes - 1) / sizeof(uint32_t)) + 1;
+    return (((num_bytes - 1) / sizeof(uint32_t)) + 1) * sizeof(uint32_t);
 }
 
 uint16_t IPv4Packet::GetTotalLengthBytes()
 {
-    return GetHeaderLengthBytes() + data.size();
+    return GetHeaderLengthBytes() + _data.size();
 }
 
 // Read/write
 uint8_t IPv4Packet::GetTOS()
 {
-    return word0.tos;
+    return _tos;
 }
 
 void IPv4Packet::SetTOS(uint8_t tos)
 {
-    word0.tos = tos;
+    _tos = tos;
 }
 
 uint16_t IPv4Packet::GetStreamID()
 {
-    return word1.stream_id;
+    return _stream_id;
 }
 
 void IPv4Packet::SetStreamID(uint16_t sid)
 {
-    word1.stream_id = sid;
+    _stream_id = sid;
 }
 
 bool IPv4Packet::GetDontFragment()
 {
-    return word1.dont_fragment;
+    return _dont_fragment;
 }
 
 void IPv4Packet::SetDontFragment(bool df)
 {
-    word1.dont_fragment = df;
+    _dont_fragment = df;
 }
 
 bool IPv4Packet::GetMoreFragments()
 {
-    return word1.more_fragments;
+    return _more_fragments;
 }
 
 void IPv4Packet::SetMoreFragments(bool mf)
 {
-    word1.more_fragments = mf;
+    _more_fragments = mf;
 }
 
 uint16_t IPv4Packet::GetFragmentOffset()
 {
-    return word1.fragment_offset;
+    return _fragment_offset;
 }
 
 void IPv4Packet::SetFragmentOffset(uint16_t offset)
 {
-    word1.fragment_offset = offset;
+    _fragment_offset = offset & 0x1FFF;
+}
+
+uint8_t IPv4Packet::GetTTL()
+{
+    return _ttl;
+}
+
+void IPv4Packet::SetTTL(uint8_t ttl)
+{
+    _ttl = ttl;
+}
+
+uint8_t IPv4Packet::GetProtocol()
+{
+    return _protocol;
+}
+
+void IPv4Packet::SetProtocol(uint8_t proto)
+{
+    _protocol = proto;
 }
 
 in_addr_t IPv4Packet::GetSourceAddress()
 {
-    return source_addr;
+    return _source_addr;
 }
 
 void IPv4Packet::SetSourceAddress(in_addr_t addr)
 {
-    source_addr = addr;
+    _source_addr = addr;
 }
 
 in_addr_t IPv4Packet::GetDestinationAddress()
 {
-    return dest_addr;
+    return _dest_addr;
 }
 
 void IPv4Packet::SetDestinationAddress(in_addr_t addr)
 {
-    dest_addr = addr;
+    _dest_addr = addr;
 }
 
 // Options
 IPv4Option* IPv4Packet::GetOption(uint8_t option_type)
 {
-    for (auto opt = options.begin(); opt < options.end(); opt++)
+    for (auto opt = _options.begin(); opt < _options.end(); opt++)
     {
         if ((*opt).GetOptionType() == option_type)
         {
@@ -337,23 +411,23 @@ void IPv4Packet::SetOption(uint8_t option_type, uint8_t len, uint8_t* data_in)
         if (data_in != nullptr)
         {
             // If data was provided, add a new option with data
-            options.push_back(IPv4Option(option_type, len, data_in));
+            _options.push_back(IPv4Option(option_type, len, data_in));
         }
         else
         {
             // If data was not provided, new single-byte option
-            options.push_back(IPv4Option(option_type));
+            _options.push_back(IPv4Option(option_type));
         }
     }
 }
 
 void IPv4Packet::RemoveOption(uint8_t option_type)
 {
-    for (auto opt = options.begin(); opt < options.end(); opt++)
+    for (auto opt = _options.begin(); opt < _options.end(); opt++)
     {
         if ((*opt).GetOptionType() == option_type)
         {
-            options.erase(opt);
+            _options.erase(opt);
             break;
         }
     }
@@ -361,23 +435,22 @@ void IPv4Packet::RemoveOption(uint8_t option_type)
 
 void IPv4Packet::SetData(uint8_t *data_in, uint16_t len)
 {
-    data = std::vector<uint8_t>(data_in, data_in + len);
+    _data = std::vector<uint8_t>(data_in, data_in + len);
 }
 
 uint16_t IPv4Packet::GetData(uint8_t *data_out)
 {
-    data_out = data.data();
-    return data.size();
+    data_out = _data.data();
+    return _data.size();
 }
 
 uint16_t IPv4Packet::CalcHeaderChecksum(uint8_t *buff, size_t len)
 {
-    // Cannot calculate if buffer is not 16-bit aligned
     if (len % 2 != 0)
     {
         return 0;
     }
-    
+
     uint32_t result = 0;
     uint32_t offset = 0;
     
@@ -385,9 +458,9 @@ uint16_t IPv4Packet::CalcHeaderChecksum(uint8_t *buff, size_t len)
     {
         result += *(uint16_t*)(buff + offset);
     }
-    
+
     uint16_t carry = (uint16_t)(result >> 16);
     result += carry;
-    
-    return ~(uint16_t)ntohs(result);
+
+    return ~(uint16_t)result;
 }
