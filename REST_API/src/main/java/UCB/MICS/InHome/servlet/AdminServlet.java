@@ -1,7 +1,6 @@
 package UCB.MICS.InHome.servlet;
 
 import UCB.MICS.InHome.Utilities;
-import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 
 import javax.inject.Singleton;
 import javax.servlet.ServletException;
@@ -32,11 +31,11 @@ public class AdminServlet extends HttpServlet {
         String mac = json.get("mac");
         String name = json.get("name");
         String ip = json.get("ip");
-        if(isNullOrEmpty(mac)||isNullOrEmpty(name)||isNullOrEmpty(ip)){
+        if (isNullOrEmpty(mac)||isNullOrEmpty(name)||isNullOrEmpty(ip)) {
             resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "name, mac, or ip missing");
         }
         try {
-            byte[] ipB = Utilities.ipToByteArray(ip);
+            byte[] ipB = Utilities.ipV4ToByteArray(ip);
         }
         catch (NumberFormatException e) {
             resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "IP malformed");
@@ -53,7 +52,7 @@ public class AdminServlet extends HttpServlet {
         // now update database revision
 
 
-        logger.log(Level.INFO, "post was called");
+        logger.log(Level.INFO, String.format("new device was added mac=%s, ip=%s", mac, ip));
     }
 
     @Override

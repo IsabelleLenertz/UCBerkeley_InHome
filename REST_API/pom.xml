@@ -106,7 +106,15 @@
                 <version>2.78</version>
             </dependency>
 
-            <!-- for packaging -->
+        <!-- https://mvnrepository.com/artifact/commons-codec/commons-codec -->
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.15</version>
+        </dependency>
+
+
+        <!-- for packaging -->
             <dependency>
                 <groupId>com.proofpoint.platform</groupId>
                 <artifactId>launcher</artifactId>
@@ -123,6 +131,18 @@
                 <version>2.78</version>
                 <scope>test</scope>
             </dependency>
+            <dependency>
+                <groupId>org.testng</groupId>
+                <artifactId>testng</artifactId>
+                <version>7.7.1</version>
+                <scope>test</scope>
+            </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <version>3.22.0</version>
+        </dependency>
+
     </dependencies>
     <build>
         <plugins>
