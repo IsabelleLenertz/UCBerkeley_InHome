@@ -1,4 +1,6 @@
 #include "arp/LocalARPTable.hpp"
+#include <exception>
+#include <cstring>
 
 LocalARPTable::LocalARPTable()
     : _table()
@@ -9,35 +11,77 @@ LocalARPTable::~LocalARPTable()
 {
 }
 
-void LocalARPTable::SetARPEntry(const in_addr_t &l3_addr, const struct ether_addr &l2_addr)
+void LocalARPTable::SetARPEntry(const struct sockaddr &l3_addr, const struct ether_addr &l2_addr)
 {
-    // See if an entry exists for this L3 address
-    // If so, remove it
-    for (auto e = _table.begin(); e < _table.end(); e++)
+    switch (l3_addr.sa_family)
     {
-        if ((*e).l3_addr == l3_addr)
+        case AF_INET:
         {
-            _table.erase(e);
+            // Get a pointer to the address segment of the
+            // sockaddr structure. This is the IPv4 address
+            uint32_t *addr1 = (uint32_t*)l3_addr.sa_data;
+        
+            // See if an entry exists for this L3 address
+            // If so, remove it
+            for (auto e = _v4table.begin(); e < _v4table.end(); e++)
+            {
+                if (*addr1 == *(uint32_t*)(*e).l3_addr)
+                {
+                    _v4table.erase(e);
+                    break;
+                }
+            }
+            
+            // Add new entry
+            ARPv4Entry_t new_entry;
+            new_entry.l2_addr = l2_addr;
+            memcpy(new_entry.l3_addr, addr1, sizeof(uint32_t));
+            
+            _v4table.push_back(new_entry);
+            
+            break;
+        }
+        case AF_INET6:
+        {
+            throw std::exception("IPv6 ARP Table Support Not Implemented!");
+        }
+        default:
+        {
             break;
         }
     }
-    
-    // Add new entry
-    _table.push_back(ARPEntry_t {l3_addr, l2_addr});
 }
 
-bool LocalARPTable::GetL2Address(const in_addr_t &l3_addr, struct ether_addr& l2_addr)
+bool LocalARPTable::GetL2Address(const struct sockaddr &l3_addr, struct ether_addr& l2_addr)
 {
     bool found = false;
     
-    for (auto e = _table.begin(); e < _table.end(); e++)
+    switch (l3_addr.sa_family)
     {
-        // Check for matching layer 3 address
-        if ((*e).l3_addr == l3_addr)
+        case AF_INET:
         {
-            // Set output and break loop
-            l2_addr = (*e).l2_addr;
-            found = true;
+            // Get a pointer to the address segment of the
+            // sockaddr structure. This is the IPv4 address
+            uint32_t *addr1 = (uint32_t*)l3_addr.sa_data;
+            
+            for (auto e = _v4table.begin(); e < _v4table.end(); e++)
+            {
+                // Check for matching layer 3 address
+                if (*addr1 == *(uint32_t*)(*e).l3_addr)
+                {
+                    // Set output and break loop
+                    l2_addr = (*e).l2_addr;
+                    found = true;
+                    break;
+                }
+            }
+        
+            break;
+        }
+        case AF_INET6:
+        {
+            throw std::exception("IPv6 ARP Table Support Not Implemented!");
+            
             break;
         }
     }

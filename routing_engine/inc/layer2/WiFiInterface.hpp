@@ -21,7 +21,7 @@ public:
     int Listen(Layer2ReceiveCallback& callback, bool async);
     int StopListen();
     
-    int SendPacket(const in_addr_t &l3_src_addr, const in_addr_t &l3_dest_addr, const uint8_t *data, size_t len);
+    int SendPacket(const struct sockaddr &l3_src_addr, const struct sockaddr &l3_dest_addr, const uint8_t *data, size_t len);
     
     const char *GetName();
 

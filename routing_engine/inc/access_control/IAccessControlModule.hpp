@@ -4,7 +4,7 @@
 #include <netinet/in.h>
 
 #include "config/IConfiguration.hpp"
-#include "layer3/IPPacket.hpp"
+#include "layer3/IIPPacket.hpp"
 
 /// <summary>
 /// Generic interface for access control modules.
@@ -22,7 +22,7 @@ public:
     /// Given an IP packet, makes an authorization
     /// decision based on the module's configuration
     /// </summary>
-    /// <param name="packet">IP Packet</param>
+    /// <param name="packet">Pointer to IP Packet</param>
     /// <returns>True if packet is allowed<returns>
     /// <remarks>
     /// A return value of true does not guarantee
@@ -30,7 +30,7 @@ public:
     /// Only the central access control module may
     /// make the final authorization decision
     /// </remarks>
-    virtual bool IsAllowed(const IPPacket &packet) = 0;
+    virtual bool IsAllowed(const IIPPacket *packet) = 0;
     
     /// <summary>
     /// Sets a pointer to the configuration module.

@@ -12,7 +12,7 @@ public:
     NullAccessControl();
     ~NullAccessControl();
     
-    bool IsAllowed(const IPPacket &packet);
+    bool IsAllowed(const IIPPacket *packet);
     void SetConfiguration(IConfiguration* config);
 };
 

@@ -21,8 +21,8 @@ public:
     /// </summary>
     ~SystemARPTable();
     
-    void SetARPEntry(const in_addr_t &l3_addr, const struct ether_addr &l2_addr);
-    bool GetL2Address(const in_addr_t &l3_addr, struct ether_addr& l2_addr);
+    void SetARPEntry(const struct sockaddr &l3_addr, const struct ether_addr &l2_addr);
+    bool GetL2Address(const struct sockaddr &l3_addr, struct ether_addr& l2_addr);
 };
 
 #endif

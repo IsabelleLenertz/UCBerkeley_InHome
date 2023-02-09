@@ -1,7 +1,7 @@
 #ifndef INC_ICONFIGURATION_HPP_
 #define INC_ICONFIGURATION_HPP_
 
-#include <netinet/in.h>
+#include <sys/socket.h>
 #include <net/ethernet.h>
 
 /// <summary>
@@ -57,13 +57,24 @@ public:
     virtual bool GetDeviceKey(const struct ether_addr &mac_addr, DeviceKey_t &key) = 0;
     
     /// <summary>
+    /// Looks up the device key associated with
+    /// the specified IP addres
+    /// </summary>
+    /// <param name="ip_addr">Device IP address</param>
+    /// <param name="key">Reference to key output</param>
+    /// <remarks>
+    /// If return value is false, contents of key are undefined
+    /// </remarks>
+    virtual bool GetDeviceKey(const struct sockaddr &ip_addr, DeviceKey_t &key) = 0;
+    
+    /// <summary>
     /// Returns true if access control rules permit sending a
     /// packet between source and destination IP addresses.
     /// </summary>
     /// <param name="src">Source IP Address</param>
     /// <param name="dest">Destination IP Address</param>
     /// <returns>True if transaction is permitted</returns>
-    virtual bool IsPermitted(const in_addr_t &src, const in_addr_t &dest) = 0;
+    virtual bool IsPermitted(const struct sockaddr &src, const struct sockaddr &dest) = 0;
 };
 
 #endif

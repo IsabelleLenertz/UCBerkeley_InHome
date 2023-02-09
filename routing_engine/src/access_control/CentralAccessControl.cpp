@@ -10,7 +10,7 @@ CentralAccessControl::~CentralAccessControl()
 {
 }
 
-bool CentralAccessControl::IsAllowed(const IPPacket &packet)
+bool CentralAccessControl::IsAllowed(const IIPPacket *packet)
 {
     bool result = true;
     

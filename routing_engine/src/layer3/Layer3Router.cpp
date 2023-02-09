@@ -99,6 +99,7 @@ void Layer3Router::_receive_packet(const uint8_t *data, size_t len)
 
 void Layer3Router::_process_packet(const uint8_t *data, size_t len)
 {
+    
     IPPacket packet;
     
     int status = packet.Deserialize(data, len);

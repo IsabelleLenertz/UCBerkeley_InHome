@@ -11,11 +11,11 @@ SystemARPTable::~SystemARPTable()
 {
 }
 
-void SystemARPTable::SetARPEntry(const in_addr_t &l3_addr, const struct ether_addr &l2_addr)
+void SystemARPTable::SetARPEntry(const struct sockaddr &l3_addr, const struct ether_addr &l2_addr)
 {
 }
 
-bool SystemARPTable::(const in_addr_t &l3_addr, struct ether_addr& l2_addr)
+bool SystemARPTable::GetL2Address(const struct sockaddr &l3_addr, struct ether_addr& l2_addr)
 {
     return false;
 }

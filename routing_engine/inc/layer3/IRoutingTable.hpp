@@ -26,7 +26,7 @@ public:
     /// subnet (which is not usually desirable), there is
     /// no guarantee which will be returned.
     /// </remarks>
-    virtual ILayer2Interface *GetInterface(const in_addr_t &ip_addr) = 0;
+    virtual ILayer2Interface *GetInterface(const struct sockaddr &ip_addr) = 0;
     
     /// <summary>
     /// Associates a Layer 2 interface with the specified
@@ -34,14 +34,8 @@ public:
     /// </summary>
     /// <param name="interface">Layer 2 interface</param>
     /// <param name="ip_addr">Any IP address on the subnet</param>
-    /// <param name="subnet_mask">Subnet mask</param>
-    /// <remarks>
-    /// Subnet mask is encoded the same way as a dotted-decimal
-    /// IP address. Example: 255.255.255.0 = 0xFFFFFF00
-    /// If the specified subnet association already exists, this
-    /// method MUST have no effect.
-    /// </remarks>
-    virtual void AddSubnetAssociation(ILayer2Interface *interface, const in_addr_t &ip_addr, const in_addr_t subnet_mask) = 0;
+    /// <param name="prefix_len">Prefix length, in bits</param>
+    virtual void AddSubnetAssociation(ILayer2Interface *interface, const struct sockaddr &ip_addr, uint8_t prefix_len) = 0;
     
     /// <summary>
     /// Locates and removes the subnet association for the specified
@@ -49,13 +43,13 @@ public:
     /// </summary>
     /// <param name="interface">Layer 2 interface</param>
     /// <param name="ip_addr">Any IP address on the subnet</param>
-    /// <param name="subnet_mask">Subnet mask</param>
+    /// <param name="prefix_len">Prefix length, in bits</param>
     /// <remarks>
     /// If the specified association does not exist, this function
     /// has no effect.
     /// The subnet must be an exact match.
     /// </remarks>
-    virtual void RemoveSubnetAssociation(ILayer2Interface *interface, const in_addr_t &ip_addr, const in_addr_t subnet_mask) = 0;
+    virtual void RemoveSubnetAssociation(ILayer2Interface *interface, const struct sockaddr &ip_addr, uint8_t prefix_len) = 0;
 };
 
 #endif

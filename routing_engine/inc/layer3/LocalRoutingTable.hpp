@@ -3,16 +3,19 @@
 
 #include "layer3/IRoutingTable.hpp"
 
-/// <summary>
-/// Represents a single entry in the
-/// routing table
-/// </summary>
 typedef struct
 {
-    in_addr_t subnet_id;
-    in_addr_t netmask;
     ILayer2Interface *interface;
-} RoutingTableEntry_t;
+    uint8_t prefix_len;
+    uint8_t subnet_id[4];
+} RoutingTablev4Entry_t;
+
+typedef struct
+{
+    ILayer2Interface *interface;
+    uint8_t prefix_len;
+    uint8_t subnet_id[16];
+} RoutingTablev6Entry_t;
 
 /// <summary>
 /// Concrete implementation of IRoutingTable
@@ -31,12 +34,15 @@ public:
     /// </summary>
     ~LocalRoutingTable();
     
-    ILayer2Interface *GetInterface(const in_addr_t &ip_addr);
-    void AddSubnetAssociation(ILayer2Interface *interface, const in_addr_t &ip_addr, const in_addr_t subnet_mask);
-    void RemoveSubnetAssociation(ILayer2Interface *interface, const in_addr_t &ip_addr, const in_addr_t subnet_mask);
+    ILayer2Interface *GetInterface(const struct sockaddr &ip_addr);
+    void AddSubnetAssociation(ILayer2Interface *interface, const struct sockaddr &ip_addr, uint8_t prefix_len);
+    void RemoveSubnetAssociation(ILayer2Interface *interface, const struct sockaddr &ip_addr, uint8_t prefix_len);
 
 private:
-    std::vector<RoutingTableEntry_t> _table;
+    uint32_t _getIPv4SubnetID(uint32_t ip_addr, uint8_t prefix_len);
+
+    std::vector<RoutingTablev4Entry_t> _v4table;
+    std::vector<RoutingTablev6Entry_t> _v6table;
 };
 
 #endif

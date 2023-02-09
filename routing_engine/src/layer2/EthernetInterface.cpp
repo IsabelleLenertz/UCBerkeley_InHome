@@ -85,7 +85,7 @@ int EthernetInterface::StopListen()
     return 0;
 }
 
-int EthernetInterface::SendPacket(const in_addr_t &l3_src_addr, const in_addr_t &l3_dest_addr, const uint8_t *data, size_t len)
+int EthernetInterface::SendPacket(const struct sockaddr &l3_src_addr, const struct sockaddr &l3_dest_addr, const uint8_t *data, size_t len)
 {
     int status = -1;
     int frame_len = len + ETHER_HDR_LEN + ETHER_CRC_LEN;

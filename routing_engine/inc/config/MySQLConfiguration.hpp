@@ -32,7 +32,9 @@ public:
     bool LocalIsOutdated();
     void UpdateLocal();
     bool GetDeviceKey(const struct ether_addr &mac_addr, DeviceKey_t &key);
-    bool IsPermitted(const in_addr_t &src, const in_addr_t &dest);
+    bool GetDeviceKey(const struct sockaddr &ip_addr, DeviceKey_t &key);
+    
+    bool IsPermitted(const struct sockaddr &src, const struct sockaddr &dest);
     
 private:
     uint16_t _port;

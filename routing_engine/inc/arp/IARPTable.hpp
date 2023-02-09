@@ -1,7 +1,7 @@
 #ifndef INC_IARPTABLE_HPP_
 #define INC_IARPTABLE_HPP_
 
-#include <netinet/in.h>
+#include <sys/socket.h>
 #include <net/ethernet.h>
 
 /// <summary>
@@ -21,7 +21,7 @@ public:
     /// That is, one L2 address may map to many L3 addresses, but
     /// an L3 address may only map to one L2 address.
     /// </remarks>
-    virtual void SetARPEntry(const in_addr_t &l3_addr, const struct ether_addr &l2_addr) = 0;
+    virtual void SetARPEntry(const struct sockaddr &l3_addr, const struct ether_addr &l2_addr) = 0;
     
     /// <summary>
     /// Given an L3 address, returns the corresponding L2 address.
@@ -32,7 +32,7 @@ public:
     /// <remarks>
     /// If the return value is false, the contents of l2_addr are undefined.
     /// </remarks>
-    virtual bool GetL2Address(const in_addr_t &l3_addr, struct ether_addr& l2_addr) = 0;
+    virtual bool GetL2Address(const struct sockaddr &l3_addr, struct ether_addr& l2_addr) = 0;
 };
 
 #endif

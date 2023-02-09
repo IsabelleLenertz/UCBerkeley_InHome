@@ -17,71 +17,71 @@
 class InterfaceManager
 {
 public:
-	InterfaceManager();
-	~InterfaceManager();
-	
-	/// <summary>
-	/// Discovers available interfaces and
-	/// populates the interface list with all
-	/// interfaces matches the specified flags
-	/// </summary>
-	/// <param name="flags">
-	/// Bitwise or of one or more:
-	///   IM_IF_ETHERNET: Include ethernet interfaces
-	///   IM_IF_LOOPBACK: Include loopback interfaces
-	///   IM_IF_WIRELESS: Include wireless interfaces
-	///   IM_IF_INC_DOWN: Include interfaces which are down
-	/// </param>
-	/// <returns>
-	/// Error Code:
-	///   0: No error
-	/// </returns>
-	int InitializeInterfaces(int flags);
-	
-	/// <summary>
-	/// Opens all known interfaces
-	/// Calls ILayer2Interface:Open()
-	/// </summary>
-	/// <returns>
-	/// Error Code:
-	///   0: No error
-	/// </returns>
-	int OpenAll();
-	
-	/// <summary>
-	/// Closes all known interfaces
-	/// Calls ILayer2Interface:Close()
-	/// </summary>
-	/// <returns>
-	/// Error Code:
-	///   0: No error
-	/// </returns>
-	int CloseAll();
-	
-	/// <summary>
-	/// Listens on all known interfaces
-	/// </summary>
-	/// <param name="callback">Receive Callback</param>
-	/// <returns>
-	/// Error Code:
-	///   0: No error
-	/// </returns>
-	int ListenAll(Layer2ReceiveCallback& callback);
-	
-	/// <summary>
-	/// Stops listening on all known interfaces
-	/// </summary>
-	/// <returns>
-	/// Error Code:
-	///   0: No error
-	/// </returns>
-	int StopListenAll();
+    InterfaceManager();
+    ~InterfaceManager();
+    
+    /// <summary>
+    /// Discovers available interfaces and
+    /// populates the interface list with all
+    /// interfaces matches the specified flags
+    /// </summary>
+    /// <param name="flags">
+    /// Bitwise or of one or more:
+    ///   IM_IF_ETHERNET: Include ethernet interfaces
+    ///   IM_IF_LOOPBACK: Include loopback interfaces
+    ///   IM_IF_WIRELESS: Include wireless interfaces
+    ///   IM_IF_INC_DOWN: Include interfaces which are down
+    /// </param>
+    /// <returns>
+    /// Error Code:
+    ///   0: No error
+    /// </returns>
+    int InitializeInterfaces(int flags);
+    
+    /// <summary>
+    /// Opens all known interfaces
+    /// Calls ILayer2Interface:Open()
+    /// </summary>
+    /// <returns>
+    /// Error Code:
+    ///   0: No error
+    /// </returns>
+    int OpenAll();
+    
+    /// <summary>
+    /// Closes all known interfaces
+    /// Calls ILayer2Interface:Close()
+    /// </summary>
+    /// <returns>
+    /// Error Code:
+    ///   0: No error
+    /// </returns>
+    int CloseAll();
+    
+    /// <summary>
+    /// Listens on all known interfaces
+    /// </summary>
+    /// <param name="callback">Receive Callback</param>
+    /// <returns>
+    /// Error Code:
+    ///   0: No error
+    /// </returns>
+    int ListenAll(Layer2ReceiveCallback& callback);
+    
+    /// <summary>
+    /// Stops listening on all known interfaces
+    /// </summary>
+    /// <returns>
+    /// Error Code:
+    ///   0: No error
+    /// </returns>
+    int StopListenAll();
     
     /// <summary>
     /// Send layer3 data
     /// </summary>
     int SendPacket(const uint8_t *data, size_t len);
-	
+    
 private:
     std::vector<ILayer2Interface*> _interfaces;
     IARPTable *_arp_table;

@@ -30,7 +30,7 @@ int WiFiInterface::StopListen()
     return 0;
 }
 
-int WiFiInterface::SendPacket(const in_addr_t &l3_src_addr, const in_addr_t &l3_dest_addr, const uint8_t *data, size_t len)
+int WiFiInterface::SendPacket(const struct sockaddr &l3_src_addr, const struct sockaddr &l3_dest_addr, const uint8_t *data, size_t len)
 {
     return 0;
 }

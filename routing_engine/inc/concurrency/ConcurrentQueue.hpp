@@ -8,7 +8,7 @@
 /// Templated implementation of a concurrent queue
 /// </summary>
 template<class T>
-class ConcurrentQueue<T>
+class ConcurrentQueue
 {
 public:
     /// <summary>

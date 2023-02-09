@@ -8,7 +8,7 @@ NullAccessControl::~NullAccessControl()
 {
 }
 
-bool NullAccessControl::IsAllowed(const IPPacket &packet)
+bool NullAccessControl::IsAllowed(const IIPPacket *packet)
 {
     return true;
 }

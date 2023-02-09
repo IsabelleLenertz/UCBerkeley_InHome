@@ -2,7 +2,7 @@
 #define INC_ILAYER2INTERFACE_HPP_
 
 #include <functional>
-#include <netinet/in.h>
+#include <sys/socket.h>
 
 /// <summary>
 /// A Layer2ReceiveCallback is a callable object which defines a handler for
@@ -90,7 +90,7 @@ public:
     /// the Layer 2 source/destination addresses to be populated
     /// in the Layer 2 frame
     /// </remarks>
-    virtual int SendPacket(const in_addr_t &l3_src_addr, const in_addr_t &l3_dest_addr, const uint8_t *data, size_t len) = 0;
+    virtual int SendPacket(const struct sockaddr &l3_src_addr, const struct sockaddr &l3_dest_addr, const uint8_t *data, size_t len) = 0;
     
     /// <summary>
     /// Gets the name of this interface

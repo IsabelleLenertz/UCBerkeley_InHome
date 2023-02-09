@@ -18,7 +18,7 @@
 /// to serialize, deserialize, and manipulate
 /// encapsulated data.
 /// </summary>
-class IPv4Packet
+class IPv4Packet : 
 {
 public:
     /// <summary>
@@ -30,6 +30,8 @@ public:
     /// Destructor
     /// </summary>
     ~IPv4Packet();
+    
+    int GetIPVersion();
     
     /// <summary>
     /// Constructs an IPv4 Packet object from raw

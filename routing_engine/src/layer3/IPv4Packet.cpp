@@ -27,6 +27,11 @@ IPv4Packet::~IPv4Packet()
 {
 }
 
+int IPv4Packet::GetIPVersion()
+{
+    return 4;
+}
+
 int IPv4Packet::Deserialize(uint8_t *buff, uint16_t len)
 {
     uint8_t *ptr = buff;
