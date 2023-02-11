@@ -1,6 +1,6 @@
 package UCB.MICS.InHome;
 
-import UCB.MICS.InHome.module.AdminServletModule;
+import UCB.MICS.InHome.module.ServletsModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.servlet.GuiceServletContextListener;
@@ -14,6 +14,6 @@ public class EventListener extends GuiceServletContextListener {
     @Override
     protected Injector getInjector() {
         logger.log(Level.INFO, "listener started");
-        return Guice.createInjector(new AdminServletModule());
+        return Guice.createInjector(new ServletsModule());
     }
 }

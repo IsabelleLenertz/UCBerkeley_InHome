@@ -15,7 +15,7 @@ import java.util.logging.Logger;
 import static com.google.common.base.Strings.isNullOrEmpty;
 
 @Singleton
-public class AdminServlet extends HttpServlet {
+public class DeviceServlet extends HttpServlet {
 
     Logger logger = Logger.getLogger("AdminServlet");
     @Override
