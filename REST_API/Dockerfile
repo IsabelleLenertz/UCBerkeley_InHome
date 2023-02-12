@@ -1,4 +1,4 @@
-FROM azul/zulu-openjdk-debian:19-latest
+FROM azul/zulu-openjdk-debian:11.0.18
 
 ENV MAVEN_VERSION 3.3.9
 
@@ -11,8 +11,8 @@ RUN mkdir -p /usr/share/maven \
 
 ENV MAVEN_HOME /usr/share/maven
 WORKDIR /opt
-COPY src/ .
+RUN mkdir src
+COPY src src/
 COPY pom.xml .
 RUN mvn install > log.txt
-RUN cat log.txt
-
+#RUN java -jar target/REST_API-1.0-SNAPSHOT-jar-with-dependencies.jar

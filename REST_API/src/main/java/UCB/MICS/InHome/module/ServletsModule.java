@@ -11,10 +11,11 @@ public class ServletsModule extends ServletModule {
     @Override
     protected void configureServlets() {
         bind(DeviceServlet.class).in(Scopes.SINGLETON);
-        serve("/v1/device-management").with(DeviceServlet.class);
+        serve("/v1/device-management" ).with(DeviceServlet.class);
 
         bind(PolicyServlet.class).in(Scopes.SINGLETON);
-        serve("/v1/policy-management").with(PolicyServlet.class);
+        serveRegex("/v1/policy-management/?", "/v1/policy-management/get/?[0-9]{0,5}",
+                "/v1/policy-management/delete/?[0-9]{0,5}").with(PolicyServlet.class);
 
         bind(LoginServlet.class).in(Scopes.SINGLETON);
         serve("/v1/login").with(LoginServlet.class);
