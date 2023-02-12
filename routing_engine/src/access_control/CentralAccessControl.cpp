@@ -1,4 +1,4 @@
-#include "access_control/CentralAccessModule.hpp"
+#include "access_control/CentralAccessControl.hpp"
 
 CentralAccessControl::CentralAccessControl()
     : _modules(),
@@ -28,12 +28,12 @@ bool CentralAccessControl::IsAllowed(const IIPPacket *packet)
     return result;
 }
 
-CentralAccessControl::SetConfiguration(IConfiguration* config)
+void CentralAccessControl::SetConfiguration(IConfiguration* config)
 {
     _config = config;
 }
 
-CentralAccessControl::AddModule(IAccessControlModule *module)
+void CentralAccessControl::AddModule(IAccessControlModule *module)
 {
     _modules.push_back(module);
 }

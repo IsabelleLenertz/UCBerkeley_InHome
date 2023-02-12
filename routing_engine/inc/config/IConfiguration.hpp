@@ -4,6 +4,9 @@
 #include <sys/socket.h>
 #include <net/ethernet.h>
 
+// Subject to change
+#define DEVICE_KEY_LEN 64
+
 /// <summary>
 /// Synchronous cryptographic
 /// device key

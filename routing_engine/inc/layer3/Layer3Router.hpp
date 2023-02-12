@@ -2,11 +2,12 @@
 #define INC_LAYER3ROUTER_HPP_
 
 #include "access_control/CentralAccessControl.hpp"
+#include "access_control/NullAccessControl.hpp"
 #include "concurrency/ConcurrentQueue.hpp"
-#include "config/IConfiguration.hpp"
+#include "config/MySQLConfiguration.hpp"
 #include "interfaces/InterfaceManager.hpp"
 #include "layer2/ILayer2Interface.hpp"
-#include "layer3/IPPacket.hpp"
+#include "layer3/IIPPacket.hpp"
 
 /// <summary>
 /// The Layer 3 Router is the top-level module
@@ -15,6 +16,8 @@
 class Layer3Router
 {
 public:
+    static const int SEND_BUFFER_SIZE = 4096;
+
     /// <summary>
     /// Default constructor
     /// </summary>
@@ -47,7 +50,7 @@ private:
     InterfaceManager _if_manager;
     
     // Configuration Module
-    Configuration _config;
+    MySQLConfiguration _config;
     
     // ACE Modules
     CentralAccessControl _access_control;
@@ -62,7 +65,7 @@ private:
     /// is responsible for freeing that memory.
     /// Failure to do so will result in a memory leak.
     /// </remarks>
-    ConcurrentQueue<std::pair<uint8_t*,size_t>> _rcv_queue;
+    // ConcurrentQueue<std::pair<uint8_t*,size_t>> _rcv_queue;
     
     /// <summary>
     /// Places incoming layer 3 packet data into
@@ -70,7 +73,7 @@ private:
     /// </summary>
     /// <param name="data">Layer 3 Packet Data</param>
     /// <param name="len">Length of packet, in bytes</param>
-    void _receive_packet(const uint8_t *data, size_t len
+    void _receive_packet(const uint8_t *data, size_t len);
     
     /// <summary>
     /// Processing an incoming layer 3 packet
@@ -83,6 +86,8 @@ private:
     /// returning.
     /// </remarks>
     void _process_packet(const uint8_t *data, size_t len);
-}:
+    
+    uint8_t _send_buff[SEND_BUFFER_SIZE];
+};
 
 #endif

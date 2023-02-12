@@ -1,7 +1,10 @@
 #include "layer3/LocalRoutingTable.hpp"
+#include <arpa/inet.h>
+#include <cstring>
 
 LocalRoutingTable::LocalRoutingTable()
-    : _table()
+    : _v4table(),
+      _v6table()
 {
 }
 
@@ -14,13 +17,13 @@ ILayer2Interface* LocalRoutingTable::GetInterface(const struct sockaddr &ip_addr
     switch (ip_addr.sa_family)
     {
         case AF_INET:
-        
-            for (auto e = _v4table.begin(); e < _4table.end(); e++)
+        {
+            for (auto e = _v4table.begin(); e < _v4table.end(); e++)
             {
                 uint32_t subnet_id = _getIPv4SubnetID(*(uint32_t*)ip_addr.sa_data, (*e).prefix_len);
                 
                 // If the subnet ID matches, this entry is a match
-                if ((*e).subnet_id == subnet_id)
+                if (*(uint32_t*)(*e).subnet_id == subnet_id)
                 {
                     return (*e).interface;
                 }
@@ -30,7 +33,6 @@ ILayer2Interface* LocalRoutingTable::GetInterface(const struct sockaddr &ip_addr
         }
         case AF_INET6:
         {
-            throw std::exception("IPv6 routing support not implemented!");
             break;
         }
         default:
@@ -48,33 +50,32 @@ void LocalRoutingTable::AddSubnetAssociation(ILayer2Interface *interface, const 
     {
         case AF_INET:
         {
+            uint32_t subnet_id = _getIPv4SubnetID(*(uint32_t*)ip_addr.sa_data, prefix_len);
+            
             for (auto e = _v4table.begin(); e < _v4table.end(); e++)
             {
-                uint32_t subnet_id = _getIPv4SubnetID(*(uint32_t*)ip_addr.sa_data, (*e).prefix_len);
-                
                 // Entry is a match only if subnet ID and netmask
                 // are the same
-                if ((*e).subnet_id == subnet_id &&
+                if (*(uint32_t*)(*e).subnet_id == subnet_id &&
                     (*e).prefix_len == prefix_len)
                 {
                     // If found, remove entry
                     _v4table.erase(e);
                     break;
                 }
-                
-                RoutingTablev4Entry_t new_entry;
-                new_entry.interface = interface;
-                new_entry.prefix_len = prefix_len;
-                new_entry.subnet_id = subnet_id;
-                
-                _v4table.push_back(new_entry);
             }
+            
+            RoutingTablev4Entry_t new_entry;
+            new_entry.interface = interface;
+            new_entry.prefix_len = prefix_len;
+            memcpy(new_entry.subnet_id, &subnet_id, 4);
+              
+            _v4table.push_back(new_entry);
             
             break;
         }
         case AF_INET6:
         {
-            throw std::exception("IPv6 routing support not implemented!");\
             break;
         }
         default:
@@ -84,20 +85,19 @@ void LocalRoutingTable::AddSubnetAssociation(ILayer2Interface *interface, const 
     }
 }
 
-void LocalRoutingTable::RemoveSubnetAssociation(ILayer2Interface *interface, const in_addr_t &ip_addr, const in_addr_t subnet_mask)
+void LocalRoutingTable::RemoveSubnetAssociation(ILayer2Interface *interface, const struct sockaddr &ip_addr, uint8_t prefix_len)
 {
     switch (ip_addr.sa_family)
     {
         case AF_INET:
         {
-            
             for (auto e = _v4table.begin(); e < _v4table.end(); e++)
             {
                 uint32_t subnet_id = _getIPv4SubnetID(*(uint32_t*)ip_addr.sa_data, (*e).prefix_len);
                 
                 // Entry is a match only if subnet ID, netmask,
                 // and interface are the same
-                if ((*e).subnet_id == subnet_id &&
+                if (*(uint32_t*)(*e).subnet_id == subnet_id &&
                     (*e).prefix_len == prefix_len &&
                     (*e).interface == interface)
                 {
@@ -117,4 +117,17 @@ void LocalRoutingTable::RemoveSubnetAssociation(ILayer2Interface *interface, con
             break;
         }
     }
+}
+
+uint32_t LocalRoutingTable::_getIPv4SubnetID(uint32_t ip_addr, uint8_t prefix_len)
+{
+    // Space-efficient implementation
+    uint32_t mask = 0;
+    for (int i = 0; i < prefix_len; i++)
+    {
+        mask >>= 1;
+        mask |= 0x80000000;
+    }
+    
+    return ip_addr & ntohl(mask);
 }

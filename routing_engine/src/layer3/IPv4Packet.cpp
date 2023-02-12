@@ -3,11 +3,6 @@
 #include <arpa/inet.h>
 #include <cstring>
 
-// TEMP: Test Only
-#include <iostream>
-#include <iomanip>
-// End TEMP
-
 IPv4Packet::IPv4Packet()
     : _tos(0),
       _stream_id(0),
@@ -32,9 +27,9 @@ int IPv4Packet::GetIPVersion()
     return 4;
 }
 
-int IPv4Packet::Deserialize(uint8_t *buff, uint16_t len)
+int IPv4Packet::Deserialize(const uint8_t *buff, uint16_t len)
 {
-    uint8_t *ptr = buff;
+    const uint8_t *ptr = buff;
     uint32_t tmp;
     
     // If the first word can't be formed, return overflow error
@@ -67,7 +62,7 @@ int IPv4Packet::Deserialize(uint8_t *buff, uint16_t len)
     
     // Verify enough data is in the packet
     // for specified total length
-    if (total_len < len)
+    if (len < total_len)
     {
         return IPV4_PACKET_ERROR_OVERFLOW;
     }
@@ -177,7 +172,6 @@ int IPv4Packet::Serialize(uint8_t* buff, uint16_t& len)
     uint32_t tmp;
     
     // Construct word 0
-    std::cout << std::hex;
     tmp = 0x40; // Version (always 4)
     tmp |= (uint32_t)(GetHeaderLengthBytes() / sizeof(uint32_t));
     tmp |= ((uint32_t)_tos) << 8;
@@ -443,13 +437,13 @@ void IPv4Packet::SetData(uint8_t *data_in, uint16_t len)
     _data = std::vector<uint8_t>(data_in, data_in + len);
 }
 
-uint16_t IPv4Packet::GetData(uint8_t *data_out)
+uint16_t IPv4Packet::GetData(const uint8_t* &data_out)
 {
     data_out = _data.data();
     return _data.size();
 }
 
-uint16_t IPv4Packet::CalcHeaderChecksum(uint8_t *buff, size_t len)
+uint16_t IPv4Packet::CalcHeaderChecksum(const uint8_t *buff, size_t len)
 {
     if (len % 2 != 0)
     {

@@ -14,19 +14,33 @@ public:
     /// <summary>
     /// Default constructor
     /// </summary>
-    ConcurrentQueue();
+    ConcurrentQueue()
+        : _queue(),
+          _mutex()
+    {
+    }
     
     /// <summary>
     /// Destructor
     /// </summary>
-    ~ConcurrentQueue();
+    ~ConcurrentQueue()
+    {
+    }
     
     /// <summary>
     /// Adds value to the end of the queue.
     /// </summary>
     /// <param name="val">Value to add</param>
     /// <returns>True if added successfully</returns>
-    bool Enqueue(const T &val);
+    bool Enqueue(const T &val)
+    {
+        bool result;
+        std::scoped_lock lock {_mutex};
+
+        _queue.push(val);
+
+        return true;
+    }
     
     /// <summary>
     /// Removes value from the beginning of the queue
@@ -37,19 +51,50 @@ public:
     /// <remarks>
     /// If return value is false, contents of val are undefined
     /// </remarks>
-    bool Dequeue(T &val);
+    bool Dequeue(T &val)
+    {
+        bool result;
+        std::scoped_lock lock {_mutex};
+
+        result = !_queue.empty();
+
+        // If list is not empty
+        if (result)
+        {
+            val = _queue.front(); // Get element
+            _queue.pop();         // Remove element
+        }
+
+        return result;
+    }
     
     /// <summary>
     /// Returns true if no items are in the queue.
     /// </summary>
     /// <returns>True if no items in queue</returns>
-    bool IsEmpty();
+    bool IsEmpty()
+    {
+        bool result;
+        std::scoped_lock lock {_mutex};
+
+        result = _queue.empty();
+
+        return result;
+    }
     
     /// <summary>
     /// Returns the number of elements in the queue.
     /// </summary>
     /// <returns>Number of elements in queue</returns>
-    size_t Size();
+    size_t Size()
+    {
+        size_t result;
+        std::scoped_lock lock {_mutex};
+
+        result = _queue.size();
+
+        return result;
+    }
 
 private:
     std::queue<T> _queue;

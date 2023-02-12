@@ -1,4 +1,5 @@
 #include "arp/ARPMessage.hpp"
+#include "arpa/inet.h"
 
 ARPMessage::ARPMessage()
     : _hw_type(ARP_HW_TYPE_ETHERNET),
@@ -43,11 +44,11 @@ int ARPMessage::Deserialize(const uint8_t *data, size_t len)
     const uint8_t *ptr = data;
     
     // Get hardware type
-    _hw_type = (arp_hw_type_t) *(uint16_t*)ptr;
+    _hw_type= (arp_hw_type_t)ntohs(*(uint16_t*)ptr);
     ptr += sizeof(uint16_t); // Advance 2 bytes
     
     // Get protocol type
-    _proto_type = (arp_proto_type_t) *(uint16_t*)ptr;
+    _proto_type = (arp_proto_type_t)ntohs(*(uint16_t*)ptr);
     ptr += sizeof(uint16_t); // Advance 2 bytes
     
     // Get HW address length byte
@@ -57,7 +58,7 @@ int ARPMessage::Deserialize(const uint8_t *data, size_t len)
     _proto_addr_len = *ptr++;
     
     // Get message type (OpCode)
-    _msg_type = (arp_msg_type_t) *(uint16_t*)ptr;
+    _msg_type = (arp_msg_type_t) ntohs(*(uint16_t*)ptr);
     ptr += sizeof(uint16_t);
     
     // Calculate expected number of bytes remaining
@@ -118,11 +119,11 @@ int ARPMessage::Serialize(uint8_t *buff, size_t &len)
     uint8_t *ptr = buff;
     
     // Set hardware type
-    *(uint16_t*)ptr = (uint16_t)_hw_type;
+    *(uint16_t*)ptr = htons((uint16_t)_hw_type);
     ptr += sizeof(uint16_t);
     
     // Set protocol type
-    *(uint16_t*)ptr = (uint16_t)_proto_type;
+    *(uint16_t*)ptr = htons((uint16_t)_proto_type);
     ptr += sizeof(uint16_t);
     
     // Set HW address length
@@ -132,7 +133,7 @@ int ARPMessage::Serialize(uint8_t *buff, size_t &len)
     *ptr++ = _proto_addr_len;
     
     // Set message type (OpCode)
-    *(uint16_t*)ptr = (uint16_t)_msg_type;
+    *(uint16_t*)ptr = htons((uint16_t)_msg_type);
     ptr += sizeof(uint16_t);
     
     // Set sender HW address
@@ -203,7 +204,7 @@ void ARPMessage::SetMessageType(arp_msg_type_t type)
     _msg_type = type;
 }
 
-uint8_t *ARPMessage::GetSenderHWAddr()
+uint8_t *ARPMessage::GetSenderHWAddress()
 {
     return _src_hw_addr;
 }
@@ -268,5 +269,5 @@ void ARPMessage::SetTargetProtoAddress(uint8_t *addr, uint8_t len)
     }
     
     _targ_proto_addr = new uint8_t[len];
-    memcpy(_targ_hw_addr, addr, len);
+    memcpy(_targ_proto_addr, addr, len);
 }

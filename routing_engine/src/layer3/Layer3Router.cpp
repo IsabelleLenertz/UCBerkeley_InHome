@@ -1,10 +1,17 @@
 #include "layer3/Layer3Router.hpp"
 
+#include <cstring>
+#include <functional>
+#include <iomanip>
+#include <iostream>
+
+#include "layer3/IPv4Packet.hpp"
+
 Layer3Router::Layer3Router()
     : _if_manager(),
-      _config(),
-      _access_control(),
-      _rcv_queue(),
+      _config((uint16_t)3306),
+      _access_control()//,
+      // _rcv_queue()
 {
 }
 
@@ -39,7 +46,7 @@ int Layer3Router::Initialize()
     }
     
     // Bind receive callback
-    Layer2ReceiveCallback callback = std::bind(&Layer3Router::_receive_packet, this);
+    Layer2ReceiveCallback callback = std::bind(&Layer3Router::_receive_packet, this, std::placeholders::_1, std::placeholders::_2);
     
     // Listen asynchronously on all interfaces
     status = _if_manager.ListenAll(callback);
@@ -75,10 +82,12 @@ void Layer3Router::MainLoop()
     }
     
     // Check for data in receive queue
-    if (!_rcv_queue::Empty())
+    // if (!_rcv_queue.IsEmpty())
+    if (true)
     {
         // Get data from queue
-        std::pair<uint8_t*,size_t> data = _rcv_queue::Dequeue();
+        std::pair<uint8_t*,size_t> data;
+        // _rcv_queue.Dequeue(data);
         
         // Pass to packet processing
         _process_packet(data.first, data.second);
@@ -94,30 +103,31 @@ void Layer3Router::_receive_packet(const uint8_t *data, size_t len)
     // Add to receive queue
     // Ownership of buff pointer transfers
     // to receive queue
-    _rcv_queue::Enqueue(std::pair<uint8_t*,size_t>(buff, len)));
+    //_rcv_queue.Enqueue(std::pair<uint8_t*,size_t>(buff, len));
 }
 
 void Layer3Router::_process_packet(const uint8_t *data, size_t len)
 {
+    // TODO Need to switch to abstract factory pattern
+    // Temporary: Assume IPv4 packet
+    IPv4Packet *packet = new IPv4Packet();
     
-    IPPacket packet;
-    
-    int status = packet.Deserialize(data, len);
+    int status = packet->Deserialize(data, len);
     
     if (status == 0)
     {
         // Consult Access Control Module
-        bool allowed = _access_control.IsAllowed(packet);
+        bool allowed = _access_control.IsAllowed(static_cast<IIPPacket*>(packet));
         
         if (allowed)
         {
-            // Packet is allowed. Serialize and send
-            size_t len = SEND_BUFFER_SIZE;
-            status = packet.Serialize(_send_buff, len);
+            // Packet is allowed, send
+            uint16_t _len = SEND_BUFFER_SIZE;
+            status = packet->Serialize(_send_buff, _len);
             
             if (status == 0)
             {
-                status = _if_manager.SendPacket(_send_buff, len);
+                status = _if_manager.SendPacket(_send_buff, _len);
                 
                 if (status != 0)
                 {
@@ -141,5 +151,6 @@ void Layer3Router::_process_packet(const uint8_t *data, size_t len)
     }
     
     // End of packet lifetime, free memory
+    delete packet;
     delete data;
 }

@@ -78,7 +78,7 @@ IPv4Option::IPv4Option(uint8_t option_type)
 {
 }
 
-IPv4Option::IPv4Option(uint8_t option_type, uint8_t len, uint8_t *data)
+IPv4Option::IPv4Option(uint8_t option_type, uint8_t len, const uint8_t *data)
     : option_type(option_type),
       data(data, data + len)
 {

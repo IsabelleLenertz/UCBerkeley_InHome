@@ -16,7 +16,6 @@ EthernetInterface::EthernetInterface(const char *if_name, IARPTable *arp_table)
 
 EthernetInterface::~EthernetInterface()
 {
-    this->Close();
 }
 
 int EthernetInterface::Open()
@@ -25,7 +24,7 @@ int EthernetInterface::Open()
         _if_name.c_str(), // Interface to open
         BUFSIZ,           // Maximum number of bytes per packet
         0,                // Not in promiscuous mode
-        TIMEOUT_MS,       // Packet buffer timeout
+        10,               // Packet buffer timeout
         error_buffer);    // Error output buffer
     
     if (_handle == nullptr)

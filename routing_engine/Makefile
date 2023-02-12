@@ -6,7 +6,7 @@ LDLIBS := -lpcap
 
 SRCS := $(shell find $(SRC_DIRS) -name '*.cpp' -or -name '*.c')
 
-OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
+OBJS := $(SRCS:%=$(BUILD_DIR)/%.o))
 
 DEPS := $(OBJS:.o=.d)
 

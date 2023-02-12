@@ -2,6 +2,10 @@ INC_DIRS := ../inc \
 	    ../deps/libpcap
 INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
+SRC_DIRS := ../src
+
+BUILD_DIR := ../build
+
 LDLIBS := -lpcap -lpthread
 
 GTEST_DIR = ../deps/googletest/googletest
@@ -14,10 +18,20 @@ CPPFLAGS += -isystem $(GTEST_DIR)/include \
 CXXFLAGS += -g -Wall -Wextra -pthread
 
 TEST_SRC = $(shell find $(USER_DIR) -name 'test_*.cpp')
+
 TESTS = $(basename $(TEST_SRC))
+TEST_OBJS := $(TEST_SRC:%.cpp=%.cpp.o)
 
 GTEST_HEADERS = $(GTEST_DIR)/include/gtest/*.h \
                 $(GTEST_DIR)/include/gtest/internal/*.h
+
+# Source Code
+SRCS := $(shell find $(SRC_DIRS) -name '*.cpp' -or -name '*.c')
+
+OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
+OBJS := $(filter-out $(BUILD_DIR)/../src/main.cpp.o,$(OBJS))
+
+DEPS := $(OBJS:.o=.d)
 
 all : $(TESTS)
 
@@ -41,8 +55,22 @@ gtest.a : gtest-all.o
 gtest_main.a : gtest-all.o gtest_main.o
 	$(AR) $(ARFLAGS) $@ $^
 
-$(TESTS).o: %.o : %.cpp $(GTEST_HEADERS)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDLIBS) -c $< -o $@
+$(BUILD_DIR)/%.c.o: %.c
+	mkdir -p $(dir $@)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
-$(TESTS) : % : %.o gtest_main.a
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDLIBS) $^ -o $@
+$(BUILD_DIR)/%.cpp.o: %.cpp
+	mkdir -p $(dir $@)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+
+$(TEST_OBJS): %.cpp.o : %.cpp $(GTEST_HEADERS)
+	@echo Building test object file
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) \
+	$(LDLIBS) -c $< -o $@
+
+$(TESTS) : % : %.cpp.o gtest_main.a $(OBJS)
+	@echo Building test executable
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) \
+	$^ -o $@ $(LDLIBS)
+
+-include $(DEPS)

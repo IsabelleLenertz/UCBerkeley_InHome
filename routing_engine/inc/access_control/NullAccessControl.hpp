@@ -1,6 +1,8 @@
 #ifndef INC_NULLACCESSCONTROL_HPP_
 #define INC_NULLACCESSCONTROL_HPP_
 
+#include "access_control/IAccessControlModule.hpp"
+
 /// <summary>
 /// The Null Access Control module is an access
 /// control module which always returns true.

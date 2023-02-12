@@ -11,7 +11,7 @@
 /// submodules and consults each of them to make
 /// a final access control decision.
 /// </summary>
-class CentralAccessControl public IAccessControlModule
+class CentralAccessControl: public IAccessControlModule
 {
 public:
     CentralAccessControl();

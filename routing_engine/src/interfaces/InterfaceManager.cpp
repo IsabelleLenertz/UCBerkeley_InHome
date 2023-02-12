@@ -1,4 +1,4 @@
-#include "InterfaceManager.hpp"
+#include "interfaces/InterfaceManager.hpp"
 #include <pcap/pcap.h>
 
 InterfaceManager::InterfaceManager()
@@ -11,9 +11,7 @@ InterfaceManager::~InterfaceManager()
     // Iterate through and detete all interfaces
     for (auto _if = _interfaces.begin(); _if < _interfaces.end(); _if++)
     {
-        ILayer2Interface* _interface = *_if;
-        
-        delete _interface;
+        delete *_if;
     }
 }
 
@@ -160,4 +158,10 @@ int InterfaceManager::StopListenAll()
     }
     
     return status;
+}
+
+
+int InterfaceManager::SendPacket(const uint8_t *data, size_t len)
+{
+    return 1;
 }

@@ -3,6 +3,7 @@
 
 #include "layer2/EthernetInterface.hpp"
 #include "layer2/WiFiInterface.hpp"
+#include "layer3/IRoutingTable.hpp"
 
 #define IM_IF_ETHERNET 0b0001
 #define IM_IF_LOOPBACK 0b0010
@@ -17,6 +18,8 @@
 class InterfaceManager
 {
 public:
+    static const int SEND_BUFFER_SIZE = 4096;
+
     InterfaceManager();
     ~InterfaceManager();
     

@@ -13,6 +13,6 @@ bool NullAccessControl::IsAllowed(const IIPPacket *packet)
     return true;
 }
 
-void SetConfiguration(IConfiguration* config)
+void NullAccessControl::SetConfiguration(IConfiguration* config)
 {
 }

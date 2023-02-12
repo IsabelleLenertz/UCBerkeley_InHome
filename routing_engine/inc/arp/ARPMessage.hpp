@@ -148,7 +148,7 @@ public:
     /// </summary>
     /// <returns>Pointer to first byte of HW address</returns>
     /// <remarks>Use GetHWAddrLen to get length of address</remarks>
-    uint8_t *GetSenderHWAddr();
+    uint8_t *GetSenderHWAddress();
     
     /// <summary>
     /// Sets the sender HW address.

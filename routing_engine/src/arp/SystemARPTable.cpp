@@ -4,7 +4,6 @@
 
 SystemARPTable::SystemARPTable()
 {
-    throw std::exception("SystemARPTable is not implemented!");
 }
 
 SystemARPTable::~SystemARPTable()

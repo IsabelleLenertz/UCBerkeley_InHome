@@ -33,7 +33,7 @@ public:
     /// Constructs an IPv4 option with
     /// a data segment
     /// </summary>
-    IPv4Option(uint8_t option_type, uint8_t len, uint8_t *data);
+    IPv4Option(uint8_t option_type, uint8_t len, const uint8_t *data);
     
     /// <summary>
     /// Copy constructor

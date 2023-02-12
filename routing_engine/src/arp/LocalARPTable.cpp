@@ -3,7 +3,7 @@
 #include <cstring>
 
 LocalARPTable::LocalARPTable()
-    : _table()
+    : _v4table()
 {
 }
 
@@ -43,7 +43,7 @@ void LocalARPTable::SetARPEntry(const struct sockaddr &l3_addr, const struct eth
         }
         case AF_INET6:
         {
-            throw std::exception("IPv6 ARP Table Support Not Implemented!");
+            break;
         }
         default:
         {
@@ -80,8 +80,6 @@ bool LocalARPTable::GetL2Address(const struct sockaddr &l3_addr, struct ether_ad
         }
         case AF_INET6:
         {
-            throw std::exception("IPv6 ARP Table Support Not Implemented!");
-            
             break;
         }
     }

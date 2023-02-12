@@ -14,15 +14,17 @@ public:
     /// Constructor
     /// </summary>
     /// <param name="port">Port of MySQL server</param>
-    /// <param name="username">MySQL username</param>
-    /// <param name="password">MySQL password</param>
     /// <remarks>
     /// The MySQL server must be on localhost.
     /// If the server is on another host, a vulnerability
     /// is introduced wherein a remote device may inject
     /// false configuration information.
+    /// 
+    /// Storing credentials in process memory is not ideal
+    /// It is probably better to retrieve credentials when
+    /// connecting to the server
     /// </remarks>
-    MySQLConfiguration(uint16_t port, const char *username, const char *password);
+    MySQLConfiguration(uint16_t port);
     
     /// <summary>
     /// Destructor
@@ -38,8 +40,8 @@ public:
     
 private:
     uint16_t _port;
-    std::string _username;
-    std::string _password;
+    //std::string _username; // Do not store credentials
+    //std::string _password;
 };
 
 #endif

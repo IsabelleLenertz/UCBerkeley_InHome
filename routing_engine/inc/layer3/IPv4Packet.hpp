@@ -1,6 +1,7 @@
 #ifndef IPV4_PACKET_H_
 #define IPV4_PACKET_H_
 
+#include "layer3/IIPPacket.hpp"
 #include "IPv4Option.hpp"
 
 #include <netinet/in.h>
@@ -18,7 +19,7 @@
 /// to serialize, deserialize, and manipulate
 /// encapsulated data.
 /// </summary>
-class IPv4Packet : 
+class IPv4Packet : public IIPPacket
 {
 public:
     /// <summary>
@@ -48,7 +49,7 @@ public:
     /// <remarks>
     /// Data must be in network byte order
     /// </remarks>
-    int Deserialize(uint8_t *buff, uint16_t len);
+    int Deserialize(const uint8_t *buff, uint16_t len);
     
     /// <summary>
     /// Constructs raw IPv4 Packet data from the
@@ -299,7 +300,7 @@ public:
     /// </summary>
     /// <param name="data_out">Pointer to data</param>
     /// <returns>Length of data, in bytes</returns>
-    uint16_t GetData(uint8_t *data_out);
+    uint16_t GetData(const uint8_t* &data_out);
     
     /// <summary>
     /// Calculates the header checksum for the specified
@@ -308,14 +309,10 @@ public:
     /// <param name="buff">Input data buffer</param>
     /// <param name="header_len">Header length, in bytes</param>
     /// <returns>16-bit checksum</returns>
-    static uint16_t CalcHeaderChecksum(uint8_t *buff, size_t header_len);
+    static uint16_t CalcHeaderChecksum(const uint8_t *buff, size_t header_len);
 
 private:
-    // Split fields into individual variables
-    // Version (Always 4, constant)
-    // Header Length (Calculated, do not store)
     uint8_t _tos;
-    // Total Length (Calculated, do not store)
     
     uint16_t _stream_id;
     bool _dont_fragment;
@@ -324,7 +321,6 @@ private:
     
     uint8_t _ttl;
     uint8_t _protocol;
-    // Checksum (Calculated, do not store)
     
     in_addr_t _source_addr;
     in_addr_t _dest_addr;

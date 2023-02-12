@@ -3,6 +3,7 @@
 
 #include <functional>
 #include <sys/socket.h>
+#include <cstdint>
 
 /// <summary>
 /// A Layer2ReceiveCallback is a callable object which defines a handler for
@@ -21,6 +22,11 @@ typedef std::function<void(const uint8_t *data, size_t len)> Layer2ReceiveCallba
 class ILayer2Interface
 {
 public:
+    /// <summary>
+    /// Pure virtual destructor
+    /// </summary>
+    virtual ~ILayer2Interface() = default;
+
     /// <summary>
     /// Opens the layer 2 interface
     /// </summary>
