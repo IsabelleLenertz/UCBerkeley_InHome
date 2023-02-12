@@ -60,17 +60,6 @@ public:
     virtual bool GetDeviceKey(const struct ether_addr &mac_addr, DeviceKey_t &key) = 0;
     
     /// <summary>
-    /// Looks up the device key associated with
-    /// the specified IP addres
-    /// </summary>
-    /// <param name="ip_addr">Device IP address</param>
-    /// <param name="key">Reference to key output</param>
-    /// <remarks>
-    /// If return value is false, contents of key are undefined
-    /// </remarks>
-    virtual bool GetDeviceKey(const struct sockaddr &ip_addr, DeviceKey_t &key) = 0;
-    
-    /// <summary>
     /// Returns true if access control rules permit sending a
     /// packet between source and destination IP addresses.
     /// </summary>

@@ -3,6 +3,7 @@
 
 #include <netinet/in.h>
 
+#include "arp/IARPTable.hpp"
 #include "config/IConfiguration.hpp"
 #include "layer3/IIPPacket.hpp"
 
@@ -39,6 +40,13 @@ public:
     /// </summary>
     /// <param name="config">Pointer to config module</param>
     virtual void SetConfiguration(IConfiguration* config) = 0;
+    
+    /// <summary>
+    /// Sets a pointer to the ARP table.
+    /// Access control modules use this information to
+    /// resolve layer3 addresses to layer 2 addresses
+    /// </summary>
+    virtual void SetARPTable(IARPTable *arp_table) = 0;
 };
 
 #endif

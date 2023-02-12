@@ -19,6 +19,7 @@ public:
     
     bool IsAllowed(const IIPPacket *packet);
     void SetConfiguration(IConfiguration* config);
+    void SetARPTable(IARPTable *arp_table);
     
     /// <summary>
     /// Adds an access control module to the list
@@ -31,6 +32,7 @@ public:
 private:
     std::vector<IAccessControlModule*> _modules;
     IConfiguration *_config;
+    IARPTable *_arp_table;
 };
 
 #endif

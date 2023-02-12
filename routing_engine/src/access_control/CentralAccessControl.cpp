@@ -28,9 +28,14 @@ bool CentralAccessControl::IsAllowed(const IIPPacket *packet)
     return result;
 }
 
-void CentralAccessControl::SetConfiguration(IConfiguration* config)
+void CentralAccessControl::SetConfiguration(IConfiguration *config)
 {
     _config = config;
+}
+
+void CentralAccessControl::SetARPTable(IARPTable *arp_table)
+{
+    _arp_table = arp_table;
 }
 
 void CentralAccessControl::AddModule(IAccessControlModule *module)

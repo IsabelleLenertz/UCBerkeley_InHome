@@ -1,8 +1,10 @@
 #include "interfaces/InterfaceManager.hpp"
 #include <pcap/pcap.h>
 
-InterfaceManager::InterfaceManager()
-    : _interfaces()
+InterfaceManager::InterfaceManager(IARPTable *arp_table, IRoutingTable *ip_rte_table)
+    : _interfaces(),
+      _arp_table(arp_table),
+      _ip_rte_table(ip_rte_table)
 {
 }
 

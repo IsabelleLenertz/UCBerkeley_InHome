@@ -16,3 +16,7 @@ bool NullAccessControl::IsAllowed(const IIPPacket *packet)
 void NullAccessControl::SetConfiguration(IConfiguration* config)
 {
 }
+
+void NullAccessControl::SetARPTable(IARPTable* arp_table)
+{
+}

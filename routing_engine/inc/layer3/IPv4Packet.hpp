@@ -38,8 +38,8 @@ public:
     /// Constructs an IPv4 Packet object from raw
     /// IPv4 Packet data
     /// </summary>
-    /// <param name="buff">
-    /// <param name="len">
+    /// <param name="buff">Raw data buffer</param>
+    /// <param name="len">Length of data, in bytes</param>
     /// <returns>
     /// Error Code:
     ///   IPV4_PACKET_SUCCESS

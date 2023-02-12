@@ -20,7 +20,7 @@ class InterfaceManager
 public:
     static const int SEND_BUFFER_SIZE = 4096;
 
-    InterfaceManager();
+    InterfaceManager(IARPTable *arp_table, IRoutingTable *ip_rte_table);
     ~InterfaceManager();
     
     /// <summary>
