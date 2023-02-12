@@ -12,7 +12,7 @@ import java.util.EnumSet;
 
 public final class Main
 {
-    private Main()
+    public Main()
     {
     }
 

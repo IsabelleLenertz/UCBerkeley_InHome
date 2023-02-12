@@ -40,16 +40,18 @@ public class DeviceServlet extends HttpServlet {
         catch (NumberFormatException e) {
             resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "IP malformed");
         }
+        byte[] macB = null;
         try {
-            byte[] macB = Utilities.macToByteArray(mac);
+            macB = Utilities.macToByteArray(mac);
         }
         catch(NumberFormatException e){
             resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "MAC address malformed");
         }
 
-        // now save info to database
+        // Dot the following as a single transaction
+        // Save info to database
 
-        // now update database revision
+        // Update database revision
 
 
         logger.log(Level.INFO, String.format("new device was added mac=%s, ip=%s", mac, ip));
@@ -59,6 +61,32 @@ public class DeviceServlet extends HttpServlet {
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException
     {
+        Map<String, String> json = null;
+        try {
+            json = Utilities.getFromRequest(req);
+        }
+        catch (Exception e) {
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "malformed json");
+        }
+        String mac = json.get("MAC");
+        if (isNullOrEmpty(mac)) {
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "name, mac, or ip missing");
+        }
+        byte[] macB = null;
+        try {
+            macB = Utilities.macToByteArray(mac);
+        }
+        catch (Exception e) {
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "MAC address malformed");
+        }
+
+        // Do the following as a single transaction
+        // Delete MAC from DB
+
+        // Delete related policies
+
+        // Update DB revisions table
+
         logger.log(Level.INFO, "delete was called");
     }
 
@@ -66,6 +94,19 @@ public class DeviceServlet extends HttpServlet {
     protected void doPut(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException
     {
+        Map<String, String> json = null;
+        try {
+            json = Utilities.getFromRequest(req);
+        }
+        catch (Exception e) {
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "malformed json");
+        }
+        String oldName = json.get("old");
+        String newName = json.get("new");
+        if(isNullOrEmpty(oldName) || isNullOrEmpty(newName)) {
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "old or new name is missing");
+        }
+
         logger.log(Level.INFO, "put was called");
     }
 
@@ -73,6 +114,10 @@ public class DeviceServlet extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException
     {
+        // Query DB to get all the devices
+
+        // Return a json array with MAC, IpV4, device name
+
         logger.log(Level.INFO, "get was called");
     }
 }

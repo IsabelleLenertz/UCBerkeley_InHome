@@ -12,24 +12,28 @@ public class PolicyServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
     {
-        logger.log(Level.INFO, "device management post was called");
+        logger.log(Level.INFO, "policy management post was called");
     }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
     {
-        logger.log(Level.INFO, "device management get was called");
+        System.out.println("context path: " + req.getContextPath());
+        System.out.println("servlet path: " + req.getServletPath());
+        System.out.println("path info: " + req.getPathInfo());
+        System.out.println("path param: " + req.getQueryString().split("&")[0].split("=")[1]);
+        logger.log(Level.INFO, "policy management get was called");
     }
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp)
     {
-        logger.log(Level.INFO, "device management put was called");
+        logger.log(Level.INFO, "policy management put was called");
     }
 
     @Override
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp)
     {
-        logger.log(Level.INFO, "device management delete was called");
+        logger.log(Level.INFO, "policy management delete was called");
     }
 }
