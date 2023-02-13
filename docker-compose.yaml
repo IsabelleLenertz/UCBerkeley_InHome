@@ -12,9 +12,6 @@ services:
   RDB:
     container_name: mysql
     image: mysql
-    expose:
-      - "3306"
-      - "33060"
     ports:
       - "33060:33060"
       - "3306:3306"
