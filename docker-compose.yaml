@@ -1,0 +1,28 @@
+version: '3.8'
+services:
+  
+  java_app:
+    container_name: rest
+    build: ./REST_API
+    environment:
+      - DB_URL=jdbc:mysql://RDB:3306/InHome
+      - DB_PASS=pdw
+    depends_on:
+      - RDB
+  RDB:
+    container_name: mysql
+    image: mysql
+    expose:
+      - "3306"
+      - "33060"
+    ports:
+      - "33060:33060"
+      - "3306:3306"
+    volumes:
+      - InHome:/tmp/data
+    environment:
+      - MYSQL_ROOT_PASSWORD=pwd
+      - MYSQL_DATABASE=InHome
+      
+volumes:
+  InHome:
