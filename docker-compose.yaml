@@ -5,7 +5,8 @@ services:
     container_name: rest
     build: ./REST_API
     environment:
-      - DB_URL=TODO
+      - DB_URL=jdbc:mysql://RDB:3306/InHome
+      - DB_PASS=pdw
     depends_on:
       - RDB
   RDB:
@@ -20,6 +21,8 @@ services:
     volumes:
       - InHome:/tmp/data
     environment:
-      - MYSQL_ROOT_PASSWORD=true
+      - MYSQL_ROOT_PASSWORD=pwd
+      - MYSQL_DATABASE=InHome
+      
 volumes:
   InHome:
