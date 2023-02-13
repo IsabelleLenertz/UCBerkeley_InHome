@@ -6,7 +6,8 @@ services:
     build: ./REST_API
     environment:
       - DB_URL=jdbc:mysql://RDB:3306/InHome
-      - DB_PASS=pdw
+      - DB_PWD=pdw
+      - DB_USER=api
     depends_on:
       - RDB
   RDB:
