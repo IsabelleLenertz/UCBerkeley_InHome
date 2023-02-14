@@ -31,7 +31,10 @@
 *.out
 *.app
 
-#intellij related files
+# Intellij related files
 .idea*
 REST_API/target/
 REST_API/var/
+
+# DB generated files
+.db*
