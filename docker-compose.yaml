@@ -2,11 +2,11 @@ version: '3.8'
 services:
   
   java_app:
-    container_name: rest
+    container_name: java_app
     build: ./REST_API
     environment:
-      - DB_URL=jdbc:mysql://RDB:3306/InHome
-      - DB_PWD=pdw
+      - DB_URL=jdbc:mysql://db:3306/InHome
+      - DB_PWD=password
       - DB_USER=api
     expose:
       - "8443"
@@ -18,7 +18,7 @@ services:
     image: mysql:5.7
     restart: always
     environment:
-      MYSQL_DATABASE: 'db'
+      MYSQL_DATABASE: 'InHome'
       # So you don't have to use root, but you can if you like
       MYSQL_USER: 'user'
       # You can use whatever password you like

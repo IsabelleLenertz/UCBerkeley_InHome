@@ -1,6 +1,6 @@
 -- create database
-USE db;
--- create database user
+CREATE DATABASE InHome;
+USE InHome;
 
 -- create device table
 CREATE TABLE IF NOT EXISTS devices (
@@ -22,3 +22,7 @@ CREATE TABLE IF NOT EXISTS policies (
                            deviceTo binary(6) NOT NULL,
                            deviceFrom binary(6) NOT NULL);
 
+-- create database user
+CREATE USER 'api'@'localhost' IDENTIFIED BY 'password';
+GRANT SELECT, INSERT, UPDATE, DELETE ON InHome.* TO api;
+FLUSH PRIVILEGES;

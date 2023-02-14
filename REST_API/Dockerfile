@@ -1,7 +1,7 @@
 FROM azul/zulu-openjdk-debian:11.0.18
 
 ENV MAVEN_VERSION 3.3.9
-
+EXPOSE 8443
 RUN apt-get update
 RUN apt-get -y install curl
 RUN mkdir -p /usr/share/maven \
@@ -10,9 +10,10 @@ RUN mkdir -p /usr/share/maven \
   && ln -s /usr/share/maven/bin/mvn /usr/bin/mvn
 
 ENV MAVEN_HOME /usr/share/maven
+ENV JAVA_HOME /usr/lib/jvm/zulu11-ca-amd64
 WORKDIR /opt
 RUN mkdir src
 COPY src src/
 COPY pom.xml .
 RUN mvn install > log.txt
-CMD ["java", " -jar target/REST_API-1.0-SNAPSHOT-jar-with-dependencies.jar"]
+CMD ["/usr/lib/jvm/zulu11/bin/java", "-jar", "target/REST_API-1.0-SNAPSHOT-jar-with-dependencies.jar"]
