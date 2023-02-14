@@ -192,8 +192,8 @@ void EthernetInterface::_handle_ip(const struct pcap_pkthdr *h, const u_char *by
     
     // Get size of L3 packet
     // Size of ethernet frame minus size of
-    // header and trailer
-    l3_pkt_len = h->len - (ETHER_HDR_LEN + ETHER_CRC_LEN);
+    // header. Trailer is not included.
+    l3_pkt_len = h->len - (ETHER_HDR_LEN);;
     
     // Execute callback
     this->_callback(l3_pkt, l3_pkt_len);

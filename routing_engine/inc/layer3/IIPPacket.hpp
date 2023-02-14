@@ -1,6 +1,8 @@
 #ifndef INC_IIPPACKET_HPP_
 #define INC_IIPPACKET_HPP_
 
+#include <cstdint>
+
 class IIPPacket
 {
 public:
@@ -13,7 +15,7 @@ public:
     ///   4: IPv4
     ///   6: IPv6
     /// </returns>
-    int GetIPVersion() = 0;
+    virtual int GetIPVersion() = 0;
     
     /// <summary>
     /// Constructs a Packet object from raw

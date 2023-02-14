@@ -34,22 +34,21 @@ public:
     /// </summary>
     /// <param name="interface">Layer 2 interface</param>
     /// <param name="ip_addr">Any IP address on the subnet</param>
-    /// <param name="prefix_len">Prefix length, in bits</param>
-    virtual void AddSubnetAssociation(ILayer2Interface *interface, const struct sockaddr &ip_addr, uint8_t prefix_len) = 0;
+    /// <param name="netmask">Subnet mask</param>
+    virtual void AddSubnetAssociation(ILayer2Interface *interface, const struct sockaddr &ip_addr, const struct sockaddr &netmask) = 0;
     
     /// <summary>
     /// Locates and removes the subnet association for the specified
-    /// interface and subnet
+    /// subnet
     /// </summary>
-    /// <param name="interface">Layer 2 interface</param>
     /// <param name="ip_addr">Any IP address on the subnet</param>
-    /// <param name="prefix_len">Prefix length, in bits</param>
+    /// <param name="netmask">Subnet mask</param>
     /// <remarks>
     /// If the specified association does not exist, this function
     /// has no effect.
     /// The subnet must be an exact match.
     /// </remarks>
-    virtual void RemoveSubnetAssociation(ILayer2Interface *interface, const struct sockaddr &ip_addr, uint8_t prefix_len) = 0;
+    virtual void RemoveSubnetAssociation(const struct sockaddr &ip_addr, const struct sockaddr &netmask) = 0;
 };
 
 #endif

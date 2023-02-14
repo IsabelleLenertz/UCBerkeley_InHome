@@ -85,11 +85,27 @@ public:
     /// </summary>
     int SendPacket(const uint8_t *data, size_t len);
     
+    /// <summary>
+    /// Given the name of a layer 2 interface, returns
+    /// a pointer to the interface object, or nullptr
+    /// if no such interface exists.
+    /// </summary>
+    /// <param name="name">Interface name</param>
+    ILayer2Interface* GetInterfaceFromName(const char *name);
+    
 private:
     std::vector<ILayer2Interface*> _interfaces;
     IARPTable *_arp_table;
     IRoutingTable *_ip_rte_table;
     uint8_t _send_buff[SEND_BUFFER_SIZE];
+    
+    /// <summary>
+    /// Associates an interface's addresses in the ARP
+    /// and routing tables.
+    /// </summary>
+    /// <param name="_if">Interface object</param>
+    /// <param name="pcap_if">PCAP interface</param>
+    void _registerAddresses(ILayer2Interface* _if, pcap_if_t *pcap_if);
 };
 
 #endif

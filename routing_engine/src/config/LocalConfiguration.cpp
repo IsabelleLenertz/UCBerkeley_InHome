@@ -1,8 +1,15 @@
 #include "config/LocalConfiguration.hpp"
 #include <cstring>
+#include <arpa/inet.h>
 
-LocalConfiguration();
-~LocalConfiguration();
+LocalConfiguration::LocalConfiguration()
+    : _key_table()
+{
+}
+
+LocalConfiguration::~LocalConfiguration()
+{
+}
 
 bool LocalConfiguration::LocalIsOutdated()
 {

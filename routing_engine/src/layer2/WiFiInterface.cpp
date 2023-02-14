@@ -20,7 +20,7 @@ int WiFiInterface::Close()
     return 0;
 }
 
-int WiFiInterface::Listen(Layer2ReceiveCallback& callback, bool async)
+int WiFiInterface::Listen(Layer2ReceiveCallback callback, bool async)
 {
     return 0;
 }

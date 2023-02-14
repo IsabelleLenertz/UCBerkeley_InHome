@@ -2,6 +2,7 @@
 #define INC_LOCALCONFIGURATION_HPP_
 
 #include "config/IConfiguration.hpp"
+#include <vector>
 
 typedef struct
 {
@@ -34,7 +35,7 @@ public:
     void SetAccessRule(const struct sockaddr &src, int src_prefix_len, const struct sockaddr &dest, int dest_prefix_len, bool allow);
 
 private:
-    std::vector<key_entry_y> _key_table;
+    std::vector<key_entry_t> _key_table;
     
     uint32_t _getIPv4SubnetID(uint32_t ip_addr, uint8_t prefix_len);
 };

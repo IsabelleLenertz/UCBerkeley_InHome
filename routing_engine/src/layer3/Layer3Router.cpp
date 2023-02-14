@@ -7,7 +7,7 @@
 #include <iostream>
 #include <thread>
 
-#include "layer3/IPv4Packet.hpp"
+#include "layer3/IPPacketFactory.hpp"
 
 Layer3Router::Layer3Router()
     : _if_manager(&_arp_table, &_ip_rte_table),
@@ -104,13 +104,15 @@ void Layer3Router::MainLoop()
             _rcv_queue.Dequeue(msg);
             
             // Pass to packet processing
-            _process_packet(data.first, data.second);
+            _process_packet(msg.data, msg.len);
         }
     }
 }
 
 void Layer3Router::_receive_packet(const uint8_t *data, size_t len)
 {
+    std::cout << "Copying " << len << " bytes into buffer" << std::endl;
+
     // Copy into storage buffer
     uint8_t *buff = new uint8_t[len];
     memcpy(buff, data, len);
@@ -123,9 +125,37 @@ void Layer3Router::_receive_packet(const uint8_t *data, size_t len)
 
 void Layer3Router::_process_packet(const uint8_t *data, size_t len)
 {
+    std::cout << std::dec;
+    std::cout << "----------------" << std::endl;
+    std::cout << len << " bytes received at Layer 3" << std::endl;
+    
+    std::cout << std::hex;
+    
+    int i;
+    for (i = 0; i < len; i++)
+    {
+        std::cout << std::setw(2) << std::setfill('0') << +data[i];
+        if ((i + 1) % 8 == 0)
+        {
+            std::cout << std::endl;
+        }
+        else
+        {
+            std::cout << " ";
+        }
+    }
+    
+    if ((i) % 8 != 0)
+    {
+        std:: cout << std::endl;
+    }
+
+    std::cout << "----------------" << std::endl;
+    std::cout << std::dec;
+    
     // TODO Need to switch to abstract factory pattern
     // Temporary: Assume IPv4 packet
-    IPv4Packet *packet = IPPacketFactory::BuildPacket(data, len);
+    IPv4Packet *packet = static_cast<IPv4Packet*>(IPPacketFactory::BuildPacket(data, len));
     
     if (packet != nullptr)
     {
@@ -152,17 +182,20 @@ void Layer3Router::_process_packet(const uint8_t *data, size_t len)
                         case 0:
                         {
                             // Success
+                            std::cout << "Message sent successfully" << std::endl;
                             break;
                         }
                         case 1:
                         {
                             // ARP cache miss
                             // Packet queued
+                            std::cout << "ARP Cache miss" << std::endl;
                             break;
                         }
                         default:
                         {
                             // Other error
+                            std::cout << "Unknown error" << std::endl;
                             break;
                         }
                     }
@@ -179,7 +212,7 @@ void Layer3Router::_process_packet(const uint8_t *data, size_t len)
         }
         else
         {
-            std::cout << "Failed to deserialize packet" << std::endl;
+            std::cout << "Failed to deserialize packet (" << status << ")" << std::endl;
         }
     }
     

@@ -6,6 +6,7 @@
 
 class IPPacketFactory
 {
+public:
     static IIPPacket* BuildPacket(const uint8_t *buff, uint16_t len);
 };
 

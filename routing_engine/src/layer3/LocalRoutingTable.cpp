@@ -2,9 +2,10 @@
 #include <arpa/inet.h>
 #include <cstring>
 
+#include "layer3/IPUtils.hpp"
+
 LocalRoutingTable::LocalRoutingTable()
-    : _v4table(),
-      _v6table()
+    : _table()
 {
 }
 
@@ -14,120 +15,80 @@ LocalRoutingTable::~LocalRoutingTable()
 
 ILayer2Interface* LocalRoutingTable::GetInterface(const struct sockaddr &ip_addr)
 {
-    switch (ip_addr.sa_family)
+    // Iterate through entries
+    for (auto e = _table.begin(); e < _table.end(); e++)
     {
-        case AF_INET:
+        RoutingTableEntry_t& entry = *e;
+        
+        // Only evaluate if address family is the same
+        if (entry.subnet_id.ss_family == ip_addr.sa_family)
         {
-            for (auto e = _v4table.begin(); e < _v4table.end(); e++)
-            {
-                uint32_t subnet_id = _getIPv4SubnetID(*(uint32_t*)ip_addr.sa_data, (*e).prefix_len);
-                
-                // If the subnet ID matches, this entry is a match
-                if (*(uint32_t*)(*e).subnet_id == subnet_id)
-                {
-                    return (*e).interface;
-                }
-            }
+            const struct sockaddr &if_subnet = reinterpret_cast<const struct sockaddr&>(entry.subnet_id);
+            const struct sockaddr &if_mask = reinterpret_cast<const struct sockaddr&>(entry.netmask);
+            struct sockaddr subnet;
             
-            break;
-        }
-        case AF_INET6:
-        {
-            break;
-        }
-        default:
-        {
-            break;
+            // Get subnet of input ip address using
+            // netmask associated with the entry
+            IPUtils::GetSubnetID(ip_addr, if_mask, subnet);
+            
+            // Compare Subnets. If they match,
+            // then ip_addr is on that subnet
+            if (IPUtils::AddressesAreEqual(subnet, if_subnet))
+            {
+                return entry.interface;
+            }
         }
     }
     
     return nullptr;
 }
 
-void LocalRoutingTable::AddSubnetAssociation(ILayer2Interface *interface, const struct sockaddr &ip_addr, uint8_t prefix_len)
+void LocalRoutingTable::AddSubnetAssociation(ILayer2Interface *interface, const struct sockaddr &ip_addr, const struct sockaddr &netmask)
 {
-    switch (ip_addr.sa_family)
-    {
-        case AF_INET:
-        {
-            uint32_t subnet_id = _getIPv4SubnetID(*(uint32_t*)ip_addr.sa_data, prefix_len);
-            
-            for (auto e = _v4table.begin(); e < _v4table.end(); e++)
-            {
-                // Entry is a match only if subnet ID and netmask
-                // are the same
-                if (*(uint32_t*)(*e).subnet_id == subnet_id &&
-                    (*e).prefix_len == prefix_len)
-                {
-                    // If found, remove entry
-                    _v4table.erase(e);
-                    break;
-                }
-            }
-            
-            RoutingTablev4Entry_t new_entry;
-            new_entry.interface = interface;
-            new_entry.prefix_len = prefix_len;
-            memcpy(new_entry.subnet_id, &subnet_id, 4);
-              
-            _v4table.push_back(new_entry);
-            
-            break;
-        }
-        case AF_INET6:
-        {
-            break;
-        }
-        default:
-        {
-            break;
-        }
-    }
-}
-
-void LocalRoutingTable::RemoveSubnetAssociation(ILayer2Interface *interface, const struct sockaddr &ip_addr, uint8_t prefix_len)
-{
-    switch (ip_addr.sa_family)
-    {
-        case AF_INET:
-        {
-            for (auto e = _v4table.begin(); e < _v4table.end(); e++)
-            {
-                uint32_t subnet_id = _getIPv4SubnetID(*(uint32_t*)ip_addr.sa_data, (*e).prefix_len);
-                
-                // Entry is a match only if subnet ID, netmask,
-                // and interface are the same
-                if (*(uint32_t*)(*e).subnet_id == subnet_id &&
-                    (*e).prefix_len == prefix_len &&
-                    (*e).interface == interface)
-                {
-                    _v4table.erase(e);
-                    break;
-                }
-            }
-            
-            break;
-        }
-        case AF_INET6:
-        {
-            break;
-        }
-        default:
-        {
-            break;
-        }
-    }
-}
-
-uint32_t LocalRoutingTable::_getIPv4SubnetID(uint32_t ip_addr, uint8_t prefix_len)
-{
-    // Space-efficient implementation
-    uint32_t mask = 0;
-    for (int i = 0; i < prefix_len; i++)
-    {
-        mask >>= 1;
-        mask |= 0x80000000;
-    }
+    // Remove existing entry, if one exists
+    RemoveSubnetAssociation(ip_addr, netmask);
     
-    return ip_addr & ntohl(mask);
+    // Get subnet from inputs
+    struct sockaddr subnet;
+    IPUtils::GetSubnetID(ip_addr, netmask, subnet);
+    
+    // Add an empty entry to the table
+    _table.push_back({0});
+    
+    // Get a reference to the newly created
+    // last entry in the table
+    RoutingTableEntry_t &new_entry = _table.back();
+    
+    // Populate entry
+    new_entry.interface = interface;
+    IPUtils::StoreSockaddr(subnet, new_entry.subnet_id);
+    IPUtils::StoreSockaddr(netmask, new_entry.netmask);
+}
+
+void LocalRoutingTable::RemoveSubnetAssociation(const struct sockaddr &ip_addr, const struct sockaddr &netmask)
+{
+    struct sockaddr subnet;
+
+    // Iterate through entries
+    for (auto e = _table.begin(); e < _table.end(); e++)
+    {
+        RoutingTableEntry_t& entry = *e;
+        
+        // Only evaluate if address family is the same
+        if (entry.subnet_id.ss_family == ip_addr.sa_family)
+        {
+            struct sockaddr& if_subnet = reinterpret_cast<struct sockaddr&>(entry.subnet_id);
+            struct sockaddr& if_mask = reinterpret_cast<struct sockaddr&>(entry.netmask);
+            
+            IPUtils::GetSubnetID(ip_addr, if_mask, subnet);
+            
+            // TODO Compare Subnets
+            bool match = false;
+            if (match)
+            {
+                _table.erase(e);
+                break;
+            }
+        }
+    }
 }
