@@ -6,6 +6,7 @@
 #include <iomanip>
 #include <iostream>
 #include <thread>
+#include <arpa/inet.h>
 
 #include "layer3/IPPacketFactory.hpp"
 
@@ -126,56 +127,39 @@ void Layer3Router::_receive_packet(const uint8_t *data, size_t len)
 void Layer3Router::_process_packet(const uint8_t *data, size_t len)
 {
     std::cout << std::dec;
-    std::cout << "----------------" << std::endl;
     std::cout << len << " bytes received at Layer 3" << std::endl;
-    
-    std::cout << std::hex;
-    
-    int i;
-    for (i = 0; i < len; i++)
-    {
-        std::cout << std::setw(2) << std::setfill('0') << +data[i];
-        if ((i + 1) % 8 == 0)
-        {
-            std::cout << std::endl;
-        }
-        else
-        {
-            std::cout << " ";
-        }
-    }
-    
-    if ((i) % 8 != 0)
-    {
-        std:: cout << std::endl;
-    }
-
-    std::cout << "----------------" << std::endl;
-    std::cout << std::dec;
     
     // TODO Need to switch to abstract factory pattern
     // Temporary: Assume IPv4 packet
-    IPv4Packet *packet = static_cast<IPv4Packet*>(IPPacketFactory::BuildPacket(data, len));
+    IIPPacket* packet = IPPacketFactory::BuildPacket(data, len);
     
     if (packet != nullptr)
     {
         // Deserialize packet from raw data
         int status = packet->Deserialize(data, len);
         
+        // Print src/dest
+        char addr_str[32];
+        if (packet->GetIPVersion() == 4)
+        {
+            const struct sockaddr_in &src = reinterpret_cast<const struct sockaddr_in&>(packet->GetSourceAddress());
+            inet_ntop(AF_INET, &src.sin_addr, addr_str, 32);
+            std::cout << "Source Address: " << addr_str << std::endl;
+            const struct sockaddr_in &dest = reinterpret_cast<const struct sockaddr_in&>(packet->GetDestinationAddress());
+            inet_ntop(AF_INET, &dest.sin_addr, addr_str, 32);
+            std::cout << "Destination Address: " << addr_str << std::endl;
+        }
+        
         if (status == 0)
         {
             // Consult Access Control Module
-            bool allowed = _access_control.IsAllowed(static_cast<IIPPacket*>(packet));
+            bool allowed = _access_control.IsAllowed(reinterpret_cast<IIPPacket*>(packet));
             
             if (allowed)
             {
-                // Packet is allowed, send
-                uint16_t _len = SEND_BUFFER_SIZE;
-                status = packet->Serialize(_send_buff, _len);
-                
                 if (status == 0)
                 {
-                    status = _if_manager.SendPacket(_send_buff, _len);
+                    status = _if_manager.SendPacket(reinterpret_cast<IIPPacket*>(packet));
                     
                     switch (status)
                     {
@@ -192,10 +176,15 @@ void Layer3Router::_process_packet(const uint8_t *data, size_t len)
                             std::cout << "ARP Cache miss" << std::endl;
                             break;
                         }
+                        case 2:
+                        {
+                            std::cout << "Could not find outgoing interface" << std::endl;
+                            break;
+                        }
                         default:
                         {
                             // Other error
-                            std::cout << "Unknown error" << std::endl;
+                            std::cout << "Unknown error (" << status << ")" << std::endl;
                             break;
                         }
                     }

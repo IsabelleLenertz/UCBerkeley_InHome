@@ -4,6 +4,7 @@
 #include "layer2/EthernetInterface.hpp"
 #include "layer2/WiFiInterface.hpp"
 #include "layer3/IRoutingTable.hpp"
+#include "layer3/IIPPacket.hpp"
 
 #define IM_IF_ETHERNET 0b0001
 #define IM_IF_LOOPBACK 0b0010
@@ -83,7 +84,8 @@ public:
     /// <summary>
     /// Send layer3 data
     /// </summary>
-    int SendPacket(const uint8_t *data, size_t len);
+    /// <param name="packet">IP Packet to send</param>
+    int SendPacket(IIPPacket *packet);
     
     /// <summary>
     /// Given the name of a layer 2 interface, returns

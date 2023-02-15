@@ -52,6 +52,32 @@ public:
     /// contents of the output buffer are undefined
     /// </returns>
     virtual int Serialize(uint8_t* buff, uint16_t& len) = 0;
+    
+    /// <summary>
+    /// Returns a reference to a sockaddr object which
+    /// stores the source address of this packet
+    /// </summary>
+    /// <returns>Source Address</returns>
+    virtual const struct sockaddr& GetSourceAddress() = 0;
+    
+    /// <summary>
+    /// Returns a reference to a sockaddr object which
+    /// stores the destination address of this packet
+    /// </summary>
+    /// <returns>Destination Address</returns>
+    virtual const struct sockaddr& GetDestinationAddress() = 0;
+    
+    /// <summary>
+    /// Sets the source address for this packet
+    /// </summary>
+    /// <param name="addr">Source address</param>
+    virtual void SetSourceAddress(const struct sockaddr& addr) = 0;
+    
+    /// <summary>
+    /// Sets the destination address for this packet
+    /// </summary>
+    /// <param name="addr">Destination address</param>
+    virtual void SetDestinationAddress(const struct sockaddr& addr) = 0;
 };
 
 #endif

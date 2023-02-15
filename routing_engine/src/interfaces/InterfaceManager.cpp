@@ -218,9 +218,32 @@ int InterfaceManager::StopListenAll()
 }
 
 
-int InterfaceManager::SendPacket(const uint8_t *data, size_t len)
+int InterfaceManager::SendPacket(IIPPacket *packet)
 {
-    return 1;
+    const struct sockaddr &src_addr = packet->GetSourceAddress();
+    const struct sockaddr &dst_addr = packet->GetDestinationAddress();
+    int status = 0;
+    
+    // Locate the outgoing interface based on destination address
+    ILayer2Interface *_if = _ip_rte_table->GetInterface(dst_addr);
+    
+    if (_if == nullptr)
+    {
+        // Interface not found
+        return 2;
+    }
+    
+    uint16_t len = SEND_BUFFER_SIZE;
+    status = packet->Serialize(_send_buff, len);
+    
+    if (status != 0)
+    {
+        return 3;
+    }
+    
+    status = _if->SendPacket(src_addr, dst_addr, _send_buff, (size_t)len);
+    
+    return status;
 }
 
 void InterfaceManager::_registerAddresses(ILayer2Interface* _if, pcap_if_t *pcap_if)

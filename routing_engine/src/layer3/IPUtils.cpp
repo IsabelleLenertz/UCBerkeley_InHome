@@ -1,6 +1,7 @@
 #include "layer3/IPUtils.hpp"
 #include <cstdint>
 #include <cstring>
+#include <arpa/inet.h>
 
 void IPUtils::GetSubnetID(const struct sockaddr &addr, const struct sockaddr &netmask, struct sockaddr &subnet_id)
 {

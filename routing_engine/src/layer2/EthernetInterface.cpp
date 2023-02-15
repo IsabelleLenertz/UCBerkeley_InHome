@@ -1,4 +1,5 @@
 #include "layer2/EthernetInterface.hpp"
+#include "arp/ARPMessage.hpp"
 
 #include <net/ethernet.h>
 #include <cstring>
@@ -201,7 +202,28 @@ void EthernetInterface::_handle_ip(const struct pcap_pkthdr *h, const u_char *by
 
 void EthernetInterface::_handle_arp(const struct pcap_pkthdr *h, const u_char *bytes)
 {
-    // TODO
+    size_t l3_pkt_len = h->len - ETHER_HDR_LEN;
+    
+    ARPMessage arp_msg;
+    int status = arp_msg.Deserialize(bytes + ETHER_HDR_LEN, l3_pkt_len);
+    
+    if (status != 0)
+    {
+        // Error deserializing packet
+        return;
+    }
+    
+    switch (arp_msg.GetMessageType())
+    {
+        case ARP_MSG_TYPE_REPLY:
+        {
+            break;
+        }
+        default:
+        {
+            break;
+        }
+    }
 }
 
 const char *EthernetInterface::GetName()

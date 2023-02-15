@@ -1,6 +1,9 @@
 #include "gtest/gtest.h"
 #include "layer3/IPv4Packet.hpp"
 #include <cstring>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include "layer3/IPUtils.hpp"
 
 /// <summary>
 /// Given known IP packet data, deserializes
@@ -17,9 +20,18 @@ TEST(test_IPv4Packet, test_deserialize)
     static const int TTL = 55;
     static const int PROTOCOL = 6; // TCP
     
+    struct sockaddr src_addr, dest_addr;
+    struct sockaddr_in &_src_addr = reinterpret_cast<struct sockaddr_in&>(src_addr);
+    struct sockaddr_in &_dest_addr = reinterpret_cast<struct sockaddr_in&>(dest_addr);
+    _src_addr.sin_family = AF_INET;
+    _dest_addr.sin_family = AF_INET;
+    
+    inet_pton(AF_INET, "49.190.125.185", &_src_addr.sin_addr);
+    inet_pton(AF_INET, "47.224.16.172", &_dest_addr.sin_addr);
+    
     // Addresses (in host byte order)
-    static const uint8_t SRC_ADDR[4] = {0x31, 0xbe, 0x7d, 0xb9};
-    static const uint8_t DEST_ADDR[4] = {0x2f, 0xe0, 0x10, 0xac};
+    //static const uint8_t SRC_ADDR[4] = {0x31, 0xbe, 0x7d, 0xb9};
+    //static const uint8_t DEST_ADDR[4] = {0x2f, 0xe0, 0x10, 0xac};
     
     // Packet captured in Wireshark
     static const uint8_t pkt_data[TOTAL_LEN] =
@@ -65,12 +77,16 @@ TEST(test_IPv4Packet, test_deserialize)
     ASSERT_EQ(PROTOCOL, pkt.GetProtocol());
     
     // Verify Source Address
-    in_addr_t src_addr = pkt.GetSourceAddress();
-    ASSERT_EQ(0, memcmp(SRC_ADDR, &src_addr, 4));
+    const struct sockaddr &src_addr_ = pkt.GetSourceAddress();
+    const struct sockaddr_in &_src_addr_ = reinterpret_cast<const struct sockaddr_in&>(src_addr_);
+    
+    ASSERT_EQ(true, IPUtils::AddressesAreEqual(src_addr, src_addr_));
     
     // Verify Destination Address
-    in_addr_t dest_addr = pkt.GetDestinationAddress();
-    ASSERT_EQ(0, memcmp(DEST_ADDR, &dest_addr, 4));
+    const struct sockaddr &dest_addr_ = pkt.GetDestinationAddress();
+    const struct sockaddr_in &_dest_addr_ = reinterpret_cast<const struct sockaddr_in&>(dest_addr_);
+    
+    ASSERT_EQ(true, IPUtils::AddressesAreEqual(dest_addr, dest_addr_));
     
     // Verify Data
     const uint8_t *data;
@@ -95,8 +111,17 @@ TEST(test_IPv4Packet, test_serialize)
     static const int TTL = 55;
     static const int PROTOCOL = 6; // TCP
     
-    static const uint8_t SRC_ADDR[4] = {0x31, 0xbe, 0x7d, 0xb9};
-    static const uint8_t DEST_ADDR[4] = {0x2f, 0xe0, 0x10, 0xac};
+    struct sockaddr src_addr, dest_addr;
+    struct sockaddr_in &_src_addr = reinterpret_cast<struct sockaddr_in&>(src_addr);
+    struct sockaddr_in &_dest_addr = reinterpret_cast<struct sockaddr_in&>(dest_addr);
+    _src_addr.sin_family = AF_INET;
+    _dest_addr.sin_family = AF_INET;
+    
+    inet_pton(AF_INET, "49.190.125.185", &_src_addr.sin_addr);
+    inet_pton(AF_INET, "47.224.16.172", &_dest_addr.sin_addr);
+    
+    //static const uint8_t SRC_ADDR[4] = {0x31, 0xbe, 0x7d, 0xb9};
+    //static const uint8_t DEST_ADDR[4] = {0x2f, 0xe0, 0x10, 0xac};
     
     static uint8_t DATA[TOTAL_LEN - HDR_LEN] = {0};
     
@@ -108,11 +133,9 @@ TEST(test_IPv4Packet, test_serialize)
     pkt.SetProtocol(PROTOCOL);
     pkt.SetData(DATA, TOTAL_LEN - HDR_LEN);
     
-    const in_addr_t *src_addrp = (in_addr_t*)SRC_ADDR;
-    pkt.SetSourceAddress(*src_addrp);
+    pkt.SetSourceAddress(src_addr);
     
-    const in_addr_t *dest_addrp = (in_addr_t*)DEST_ADDR;
-    pkt.SetDestinationAddress(*dest_addrp);
+    pkt.SetDestinationAddress(dest_addr);
     
     // Serialize
     uint8_t pkt_data[TOTAL_LEN];
@@ -160,11 +183,17 @@ TEST(test_IPv4Packet, test_serialize)
     // Verify Protocol number
     ASSERT_EQ(PROTOCOL, pkt2.GetProtocol());
     
+    char addr_str[256];
+    
     // Verify Source Address
-    in_addr_t src_addr = pkt2.GetSourceAddress();
-    ASSERT_EQ(0, memcmp(SRC_ADDR, &src_addr, 4));
+    const struct sockaddr &src_addr_ = pkt2.GetSourceAddress();
+    const struct sockaddr_in &_src_addr_ = reinterpret_cast<const struct sockaddr_in&>(src_addr);
+    
+    ASSERT_EQ(true, IPUtils::AddressesAreEqual(src_addr, src_addr_));
     
     // Verify Destination Address
-    in_addr_t dest_addr = pkt2.GetDestinationAddress();
-    ASSERT_EQ(0, memcmp(DEST_ADDR, &dest_addr, 4));
+    const struct sockaddr &dest_addr_ = pkt2.GetDestinationAddress();
+    const struct sockaddr_in &_dest_addr_ = reinterpret_cast<const struct sockaddr_in&>(dest_addr);
+    
+    ASSERT_EQ(true, IPUtils::AddressesAreEqual(dest_addr, dest_addr_));
 }

@@ -11,11 +11,13 @@ IPv4Packet::IPv4Packet()
       _fragment_offset(0),
       _ttl(0),
       _protocol(0),
-      _source_addr(0),
-      _dest_addr(0),
+      _src_addr({0}),
+      _dest_addr({0}),
       _options(),
       _data()
 {
+    _src_addr.sin_family = AF_INET;
+    _dest_addr.sin_family = AF_INET;
 }
 
 IPv4Packet::~IPv4Packet()
@@ -110,13 +112,15 @@ int IPv4Packet::Deserialize(const uint8_t *buff, uint16_t len)
     
     // Extract Source Address
     tmp = ntohl(*(uint32_t*)ptr);
-    _source_addr = *(in_addr_t*)&tmp;
-    ptr += sizeof(in_addr_t);
+    _src_addr.sin_family = AF_INET;
+    memcpy(&_src_addr.sin_addr, &tmp, 4);
+    ptr += 4;
     
     // Extract Destination Address
     tmp = ntohl(*(uint32_t*)ptr);
-    _dest_addr = *(in_addr_t*)&tmp;
-    ptr += sizeof(in_addr_t);
+    _dest_addr.sin_family = AF_INET;
+    memcpy(&_dest_addr.sin_addr, &tmp, 4);
+    ptr += 4;
     
     // Parse options to the end of the header
     uint8_t option_type, option_len;
@@ -198,14 +202,14 @@ int IPv4Packet::Serialize(uint8_t* buff, uint16_t& len)
     ptr += sizeof(uint32_t);
     
     // Write Source Address
-    tmp = *(uint32_t*)&_source_addr;
+    memcpy(&tmp, &_src_addr.sin_addr, 4);
     *(uint32_t*)ptr = htonl(tmp);
-    ptr += sizeof(in_addr_t);
+    ptr += 4;
     
     // Write Destination Address
-    tmp = *(uint32_t*)&_dest_addr;
+    memcpy(&tmp, &_dest_addr.sin_addr, 4);
     *(uint32_t*)ptr = htonl(tmp);
-    ptr += sizeof(in_addr_t);
+    ptr += 4;
     
     // Write options
     for (auto opt = _options.begin(); opt < _options.end(); opt++)
@@ -359,24 +363,36 @@ void IPv4Packet::SetProtocol(uint8_t proto)
     _protocol = proto;
 }
 
-in_addr_t IPv4Packet::GetSourceAddress()
+const struct sockaddr& IPv4Packet::GetSourceAddress()
 {
-    return _source_addr;
+    return reinterpret_cast<const struct sockaddr&>(_src_addr);
 }
 
-void IPv4Packet::SetSourceAddress(in_addr_t addr)
+void IPv4Packet::SetSourceAddress(const struct sockaddr& addr)
 {
-    _source_addr = addr;
+    if (addr.sa_family != AF_INET)
+    {
+        return;
+    }
+    
+    const struct sockaddr_in& _addr = reinterpret_cast<const struct sockaddr_in&>(addr);
+    memcpy(&_src_addr.sin_addr, &_addr.sin_addr, 4);
 }
 
-in_addr_t IPv4Packet::GetDestinationAddress()
+const struct sockaddr& IPv4Packet::GetDestinationAddress()
 {
-    return _dest_addr;
+    return reinterpret_cast<const struct sockaddr&>(_dest_addr);
 }
 
-void IPv4Packet::SetDestinationAddress(in_addr_t addr)
+void IPv4Packet::SetDestinationAddress(const struct sockaddr& addr)
 {
-    _dest_addr = addr;
+    if (addr.sa_family != AF_INET)
+    {
+        return;
+    }
+    
+    const struct sockaddr_in& _addr = reinterpret_cast<const struct sockaddr_in&>(addr);
+    memcpy(&_dest_addr.sin_addr, &_addr.sin_addr, 4);
 }
 
 // Options

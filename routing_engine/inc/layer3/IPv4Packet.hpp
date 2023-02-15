@@ -5,6 +5,7 @@
 #include "IPv4Option.hpp"
 
 #include <netinet/in.h>
+#include <sys/socket.h>
 #include <vector>
 
 // Error Definitions
@@ -214,22 +215,17 @@ public:
     void SetProtocol(uint8_t proto);
     
     /// <summary>
-    /// Gets the source IP address
+    /// Returns a reference to a sockaddr object which
+    /// stores the source address of this packet
     /// </summary>
-    /// <returns>Source IP</returns>
-    /// <remarks>
-    /// Result is in network byte order
-    /// </remarks>
-    in_addr_t GetSourceAddress();
+    /// <returns>Source Address</returns>
+    const struct sockaddr& GetSourceAddress();
     
     /// <summary>
-    /// Sets the source IP address
+    /// Sets the source address for this packet
     /// </summary>
-    /// <param name="addr">Source IP</param>
-    /// <remarks>
-    /// Value must be in network byte order
-    /// </remarks>
-    void SetSourceAddress(in_addr_t addr);
+    /// <param name="sockaddr">Sets the source address</param>
+    void SetSourceAddress(const struct sockaddr& addr);
     
     /// <summary>
     /// Gets the destination IP address
@@ -238,16 +234,13 @@ public:
     /// <remarks>
     /// Result is in network byte order
     /// </remarks>
-    in_addr_t GetDestinationAddress();
+    const struct sockaddr& GetDestinationAddress();
     
     /// <summary>
-    /// Sets the destination IP address
+    /// Sets the destination address for this packet
     /// </summary>
-    /// <param name="addr">Destination IP</param>
-    /// <remarks>
-    /// Value must be in network byte order
-    /// </remarks>
-    void SetDestinationAddress(in_addr_t addr);
+    /// <param name="addr">Destination address</param>
+    void SetDestinationAddress(const struct sockaddr& addr);
     
     // Options
     
@@ -322,8 +315,8 @@ private:
     uint8_t _ttl;
     uint8_t _protocol;
     
-    in_addr_t _source_addr;
-    in_addr_t _dest_addr;
+    struct sockaddr_in _src_addr;
+    struct sockaddr_in _dest_addr;
     
     std::vector<IPv4Option> _options;
     std::vector<uint8_t> _data;
