@@ -3,14 +3,15 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h2>Login</h2>
+<h2 style="text-align:center;font-family:verdana;font-size:150%;">Login</h2>
 
-<form method="post">
+<form style="text-align:center;font-family:verdana;font-size:150%;"  method="post">
     {% csrf_token %}
     {{ form.as_p }}
     <input type="submit" value="Login">
 </form>
 
 <a href="{% url 'dashboard' %}">Back to dashboard</a>
+<p> </p>
 <a href="{% url 'password_reset' %}">Reset password</a>
 {% endblock %}
