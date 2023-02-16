@@ -8,16 +8,16 @@
 <style>
 .center {
   margin: 0 auto;	
-  width: 10%; 
+  width: 20%; 
 }
 </style>
 
 
 <div class="center">
-<form style="text-align:center;font-family:verdana;font-size:125%;" method="post">
+<form style="font-family:verdana;font-size:75%;" method="post">
     {% csrf_token %}
     {{ form.as_p }}
-    <input style="font-family:verdana;font-size:125%;"  type="submit" value="Login">
+    <input type="submit" value="Login">
 </form>
 </div>
 
