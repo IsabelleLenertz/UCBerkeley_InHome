@@ -1,0 +1,59 @@
+Metadata-Version: 1.1
+Name: django-force-reset-password
+Version: 0.1
+Summary: A simple Django app to force reset passwords.
+Home-page: https://github.com/abdullatheef/django_force_reset_password
+Author: Abdul Latheef
+Author-email: latheefvkpadi@gmail.com
+License: MIT License
+Description: =====
+        Django force reset password
+        =====
+        
+        This is an application to make every users to reset their password(only admin users)
+        
+        Quick start
+        -----------
+        
+        1. Add "django_force_reset_password" to your INSTALLED_APPS setting like this::
+        
+            INSTALLED_APPS = [
+                ...
+                'django_force_reset_password',
+            ]
+        
+        2. Include the django_force_reset_password URLconf in your project urls.py like this::
+        
+        
+            from django_force_reset_password.views import pfr_password_change, pfr_login
+        
+        
+            urlpatterns = [
+                ......
+                url(r'^admin/login/$', pfr_login),
+                url(r'^admin/password_change/$', pfr_password_change),
+                url(r'^admin/', admin.site.urls),
+                ....
+            ]
+        
+        
+        4. add 'django_force_reset_password.middleware.FPRCheck' in MIDDLEWARE_CLASSES settings like this
+        
+            MIDDLEWARE_CLASSES = [
+                ....
+        
+                'django_force_reset_password.middleware.FPRCheck'
+                ]
+        
+        
+Platform: UNKNOWN
+Classifier: Environment :: Web Environment
+Classifier: Framework :: Django
+Classifier: Framework :: Django :: 1.8
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Topic :: Internet :: WWW/HTTP
+Classifier: Topic :: Internet :: WWW/HTTP :: Dynamic Content

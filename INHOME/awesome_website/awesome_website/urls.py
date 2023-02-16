@@ -24,6 +24,8 @@ Including another URLconf
 
 from django.urls import include, re_path
 from django.contrib import admin
+from django_force_reset_password.views import pfr_password_change, pfr_login
+
 #
 urlpatterns = [
     re_path(r"^", include("users.urls")),
