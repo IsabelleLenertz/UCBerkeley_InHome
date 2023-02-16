@@ -209,7 +209,7 @@ uint8_t *ARPMessage::GetSenderHWAddress()
     return _src_hw_addr;
 }
 
-void ARPMessage::SetSenderHWAddress(uint8_t *addr, uint8_t len)
+void ARPMessage::SetSenderHWAddress(const uint8_t *addr, uint8_t len)
 {
     if (_src_hw_addr != nullptr)
     {
@@ -221,12 +221,12 @@ void ARPMessage::SetSenderHWAddress(uint8_t *addr, uint8_t len)
     memcpy(_src_hw_addr, addr, len);
 }
 
-uint8_t *ARPMessage::GetSenderProtoAddress()
+const uint8_t *ARPMessage::GetSenderProtoAddress()
 {
     return _src_proto_addr;
 }
 
-void ARPMessage::SetSenderProtoAddress(uint8_t *addr, uint8_t len)
+void ARPMessage::SetSenderProtoAddress(const uint8_t *addr, uint8_t len)
 {
     if (_src_proto_addr != nullptr)
     {
@@ -238,12 +238,12 @@ void ARPMessage::SetSenderProtoAddress(uint8_t *addr, uint8_t len)
     memcpy(_src_proto_addr, addr, len);
 }
 
-uint8_t *ARPMessage::GetTargetHWAddress()
+const uint8_t *ARPMessage::GetTargetHWAddress()
 {
     return _targ_hw_addr;
 }
 
-void ARPMessage::SetTargetHWAddress(uint8_t *addr, uint8_t len)
+void ARPMessage::SetTargetHWAddress(const uint8_t *addr, uint8_t len)
 {
     if (_targ_hw_addr != nullptr)
     {
@@ -255,12 +255,12 @@ void ARPMessage::SetTargetHWAddress(uint8_t *addr, uint8_t len)
     memcpy(_targ_hw_addr, addr, len);
 }
 
-uint8_t *ARPMessage::GetTargetProtoAddress()
+const uint8_t *ARPMessage::GetTargetProtoAddress()
 {
     return _targ_proto_addr;
 }
 
-void ARPMessage::SetTargetProtoAddress(uint8_t *addr, uint8_t len)
+void ARPMessage::SetTargetProtoAddress(const uint8_t *addr, uint8_t len)
 {
     if (_targ_proto_addr != nullptr)
     {

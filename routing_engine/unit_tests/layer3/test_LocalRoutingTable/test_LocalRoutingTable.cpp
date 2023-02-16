@@ -45,8 +45,12 @@ TEST(test_LocalRoutingTable, test_store_recall_v4)
     _table.AddSubnetAssociation(&eth0, l3_addr_1, netmask);
     
     // Attempt to get the interface for another IP on the subnet
-    ILayer2Interface *_if = _table.GetInterface(l3_addr_2);
+    const struct sockaddr *local_ip;
+    ILayer2Interface *_if = _table.GetInterface(l3_addr_2, &local_ip);
     
     // Verify that the correct interface was returned
     ASSERT_EQ((ILayer2Interface*)&eth0, _if);
+    
+    // Verify local address is correct
+    ASSERT_EQ(true, IPUtils::AddressesAreEqual(l3_addr_1, *local_ip));
 }

@@ -18,6 +18,10 @@ public:
     /// the subnet
     /// </summary>
     /// <param name="ip_addr">Destination IP address</param>
+    /// <param name="local_ip">
+    /// IP address of local interface on the same subnet as
+    /// the specified desination address. Output.
+    /// </param>
     /// <returns>Pointer to Layer 2 interface</returns>
     /// <remarks>
     /// Returns nullptr if no interface exists on the same
@@ -26,14 +30,14 @@ public:
     /// subnet (which is not usually desirable), there is
     /// no guarantee which will be returned.
     /// </remarks>
-    virtual ILayer2Interface *GetInterface(const struct sockaddr &ip_addr) = 0;
+    virtual ILayer2Interface *GetInterface(const struct sockaddr &ip_addr, const struct sockaddr **local_ip) = 0;
     
     /// <summary>
     /// Associates a Layer 2 interface with the specified
     /// subnet, as defined by an IP address and subnet mask
     /// </summary>
     /// <param name="interface">Layer 2 interface</param>
-    /// <param name="ip_addr">Any IP address on the subnet</param>
+    /// <param name="ip_addr">IP address of the local interface on the desired subnet</param>
     /// <param name="netmask">Subnet mask</param>
     virtual void AddSubnetAssociation(ILayer2Interface *interface, const struct sockaddr &ip_addr, const struct sockaddr &netmask) = 0;
     

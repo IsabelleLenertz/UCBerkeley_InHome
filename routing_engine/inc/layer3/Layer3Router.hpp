@@ -12,6 +12,17 @@
 #include "layer3/LocalRoutingTable.hpp"
 
 /// <summary>
+/// Structure to store a message
+/// which has been buffered due to
+/// an ARP cache miss
+/// </summary>
+typedef struct
+{
+    IIPPacket *pkt;
+    time_t expires_at;
+} outstanding_msg_t;
+
+/// <summary>
 /// Queued message structure includes
 /// size of the data and a pointer to
 /// the data itself
@@ -91,7 +102,19 @@ private:
     /// Failure to do so will result in a memory leak.
     /// </remarks>
     ConcurrentQueue<queued_message_t> _rcv_queue;
-
+    
+    /// <summary>
+    /// Stores packets which have been
+    /// buffered due to ARP cache misses
+    /// </summary>
+    std::vector<outstanding_msg_t> _outstanding_msgs;
+    
+    /// <summary>
+    /// Stores address information about
+    /// incoming ARP replies
+    /// </summary>
+    ConcurrentQueue<struct sockaddr*> _arp_replies;
+    
     /// <summary>
     /// Places incoming layer 3 packet data into
     /// the concurrent queue
@@ -111,8 +134,25 @@ private:
     /// returning.
     /// </remarks>
     void _process_packet(const uint8_t *data, size_t len);
-
-    uint8_t _send_buff[SEND_BUFFER_SIZE];
+    
+    /// <summary>
+    /// Callback for incoming ARP replies
+    /// Stores address information in
+    /// the ARP reply queue
+    /// </summary>
+    void _queue_arp_reply(const struct sockaddr &l3_addr, const struct ether_addr &l2_addr);
+    
+    /// <summary>
+    /// Sends any outstanding messages relating
+    /// to ARP replies in the ARP reply queue
+    /// </summary>
+    void _process_arp_replies();
+    
+    /// <summary>
+    /// Removes any messages in the outstanding
+    /// message buffer which have expired
+    /// </summary>
+    void _drop_stale_messages();
 };
 
 #endif

@@ -54,6 +54,7 @@ public:
     /// Incoming packets are passed to callback.
     /// </summary>
     /// <param name="callback">Callback function. Must conform to Layer2ReceiveCallback</param>
+    /// <param name="arp_listener">Callback for received ARP replies</param>
     /// <param name="async">If true, listens on a separate thread</param>
     /// <returns>
     /// Error Code:
@@ -66,7 +67,7 @@ public:
     ///   Layer2ReceiveCallback _callback = std::bind(&MyReceiveCallback, std::placeholders::_1, std::placeholders::_2);
     ///   myLayer2Interface.SetReceiveCallback(_callback);
     /// </remarks>
-    virtual int Listen(Layer2ReceiveCallback callback, bool async) = 0;
+    virtual int Listen(Layer2ReceiveCallback callback, NewARPEntryListener arp_listener, bool async) = 0;
     
     /// <summary>
     /// Stops the listening thread
@@ -103,6 +104,13 @@ public:
     /// </summary>
     /// <returns>Name string, null-terminated</returns>
     virtual const char *GetName() = 0;
+    
+    /// <summary>
+    /// Sets the MAC address associated
+    /// with this interface
+    /// </summary>
+    /// <param name="mac_addr">MAC Address</param>
+    virtual void SetMACAddress(const struct ether_addr &mac_addr);
 };
 
 #endif

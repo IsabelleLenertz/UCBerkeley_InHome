@@ -21,20 +21,29 @@ public:
     int Open();
     int Close();
     
-    int Listen(Layer2ReceiveCallback callback, bool async);
+    int Listen(Layer2ReceiveCallback callback, NewARPEntryListener arp_listener, bool async);
     int StopListen();
     
-    int SendPacket(const struct sockaddr &l3_src_addr, const struct sockaddr &l3_dest_addr, const uint8_t *data, size_t len);
+    int SendPacket(const struct sockaddr &l3_local_addr, const struct sockaddr &l3_dest_addr, const uint8_t *data, size_t len);
     
     const char *GetName();
+    
+    void SetMACAddress(const struct ether_addr& mac_addr);
+    
+    static const struct ether_addr BROADCAST_MAC {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+    
+    static const size_t MAX_FRAME_LEN = 1500;
 
 private:
     char error_buffer[PCAP_ERRBUF_SIZE];
     std::string _if_name;
     Layer2ReceiveCallback _callback;
+    NewARPEntryListener _arp_listener;
     pcap_t *_handle;
     std::thread _thread;
     IARPTable *_arp_table;
+    struct ether_addr _mac_addr;
+    uint8_t _frame_buffer[MAX_FRAME_LEN];
     
     const int32_t TIMEOUT_MS = 10000;
     

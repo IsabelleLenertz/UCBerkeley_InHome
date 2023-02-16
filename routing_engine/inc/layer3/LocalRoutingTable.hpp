@@ -6,7 +6,7 @@
 typedef struct
 {
     ILayer2Interface *interface;
-    struct sockaddr_storage subnet_id;
+    struct sockaddr_storage local_ip;
     struct sockaddr_storage netmask;
 } RoutingTableEntry_t;
 
@@ -27,7 +27,7 @@ public:
     /// </summary>
     ~LocalRoutingTable();
     
-    ILayer2Interface *GetInterface(const struct sockaddr &ip_addr);
+    ILayer2Interface *GetInterface(const struct sockaddr &ip_addr, const struct sockaddr *local_ip);
     void AddSubnetAssociation(ILayer2Interface *interface, const struct sockaddr &ip_addr, const struct sockaddr &netmask);
     void RemoveSubnetAssociation(const struct sockaddr &ip_addr, const struct sockaddr &netmask);
 

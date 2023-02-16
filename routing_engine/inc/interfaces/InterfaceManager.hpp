@@ -66,11 +66,12 @@ public:
     /// Listens on all known interfaces
     /// </summary>
     /// <param name="callback">Receive Callback</param>
+    /// <param name="arp_listener">Callback for received ARP replies</param>
     /// <returns>
     /// Error Code:
     ///   0: No error
     /// </returns>
-    int ListenAll(Layer2ReceiveCallback& callback);
+    int ListenAll(Layer2ReceiveCallback callback, NewARPEntryListener arp_listener);
     
     /// <summary>
     /// Stops listening on all known interfaces

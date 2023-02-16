@@ -5,6 +5,13 @@
 #include <net/ethernet.h>
 
 /// <summary>
+/// Callback used to transfer address
+/// information for incoming ARP
+/// reply messages
+/// </summary>
+typedef std::function<void(const struct sockaddr&, const struct ether_addr&)> NewARPEntryListener;
+
+/// <summary>
 /// IARPTable provides a generic interface
 /// for polling and modifying the ARP Table,
 /// independent of the underlying implementation

@@ -5,47 +5,8 @@
 #include <pcap/pcap.h>
 
 #include <iomanip>
-#include <iostream>
 #include <cstring>
 #include <fstream>
-
-std::ostream& operator<<(std::ostream &lhs, const struct sockaddr *addr)
-{
-    switch (addr->sa_family)
-    {
-        case AF_INET:
-        {
-            // Note: first 2 bytes are port
-            for (int i = 2; i < 5; i++)
-            {
-                lhs << +(uint8_t)addr->sa_data[i] << ".";
-            }
-            lhs << +(uint8_t)addr->sa_data[5];
-            
-            break;
-        }
-        case AF_INET6:
-        {
-            lhs << std::hex;
-            
-            for (int i = 6; i < 20; i += 2)
-            {
-                lhs << std::setw(2) << std::setfill('0') << +(uint8_t)addr->sa_data[i] << std::setw(2) << std::setfill('0') << +(uint8_t)addr->sa_data[i + 1] << ":";
-            }
-            lhs << std::setw(2) << std::setfill('0') << +(uint8_t)addr->sa_data[20] << std::setw(2) << std::setfill('0') << +(uint8_t)addr->sa_data[21];
-            
-            lhs << std::dec;
-            break;
-        }
-        default:
-        {
-            std::cout << "Unknown Address Family: " << addr->sa_family;
-            break;
-        }
-    }
-    
-    return lhs;
-}
 
 InterfaceManager::InterfaceManager(IARPTable *arp_table, IRoutingTable *ip_rte_table)
     : _interfaces(),
@@ -181,14 +142,14 @@ int InterfaceManager::CloseAll()
     return status;
 }
 
-int InterfaceManager::ListenAll(Layer2ReceiveCallback& callback)
+int InterfaceManager::ListenAll(Layer2ReceiveCallback callback, NewARPEntryListener arp_listener)
 {
     int status = 0;
     
     for (auto _if = _interfaces.begin(); _if < _interfaces.end(); _if++)
     {
         ILayer2Interface *_interface = *_if;
-        int tmp = _interface->Listen(callback, true);
+        int tmp = _interface->Listen(callback, arp_listener, true);
         
         if (tmp != 0)
         {
@@ -225,7 +186,8 @@ int InterfaceManager::SendPacket(IIPPacket *packet)
     int status = 0;
     
     // Locate the outgoing interface based on destination address
-    ILayer2Interface *_if = _ip_rte_table->GetInterface(dst_addr);
+    const struct sockaddr *local_ip = nullptr;
+    ILayer2Interface *_if = _ip_rte_table->GetInterface(dst_addr, local_ip);
     
     if (_if == nullptr)
     {
@@ -241,7 +203,7 @@ int InterfaceManager::SendPacket(IIPPacket *packet)
         return 3;
     }
     
-    status = _if->SendPacket(src_addr, dst_addr, _send_buff, (size_t)len);
+    status = _if->SendPacket(*local_ip, dst_addr, _send_buff, (size_t)len);
     
     return status;
 }
@@ -272,6 +234,9 @@ void InterfaceManager::_registerAddresses(ILayer2Interface* _if, pcap_if_t *pcap
         // Error parsing MAC address. Cannot continue.
         return;
     }
+    
+    // Associate MAC address with the interface
+    _if->SetMACAddress(mac_addr);
     
     // Iterate through all addresses for this interface
     pcap_addr_t *node = pcap_if->addresses;

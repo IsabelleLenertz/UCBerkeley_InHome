@@ -215,3 +215,100 @@ void Layer3Router::_process_packet(const uint8_t *data, size_t len)
     // Always free data buffer
     delete data;
 }
+
+void Layer3Router::_queue_arp_reply(const struct sockaddr &l3_addr, const struct ether_addr &l2_addr)
+{
+    switch (l3_addr.sa_family)
+    {
+        case AF_INET:
+        {
+            const struct sockaddr_in &_l3_addr = reinterpret_cast<const struct sockaddr_in&>(l3_addr);
+            struct sockaddr_in *_addr = new struct sockaddr_in;
+            
+            _addr->sin_family = AF_INET;
+            _addr->sin_port = 0;
+            memcpy(&_addr->sin_addr, &_l3_addr.sin_addr, 4);
+            
+            _arp_replies.Enqueue(reinterpret_cast<struct sockaddr*>(_addr));
+            
+            break;
+        }
+        case AF_INET6:
+        {
+            const struct sockaddr_in6 &_l3_addr = reinterpret_cast<const struct sockaddr_in6&>(l3_addr);
+            struct sockaddr_in6 *_addr = new struct sockaddr_in6;
+            
+            _addr->sin6_family = AF_INET;
+            _addr->sin6_port = 0;
+            memcpy(&_addr->sin6_addr, &_l3_addr.sin6_addr, 16);
+            
+            _arp_replies.Enqueue(reinterpret_cast<struct sockaddr*>(_addr));
+            
+            break;
+        }
+    }
+}
+
+void Layer3Router::_process_arp_replies()
+{
+    while (!_arp_replies.IsEmpty())
+    {
+        const struct sockaddr *target_addr;
+        _arp_replies.Dequeue(target_addr);
+        
+        // Send all outstanding messages to this target address
+        for (auto m = _outstanding_msgs.begin(); m < _outstanding_msgs.end(); m++)
+        {
+            outstanding_msg_t &msg = *m;
+            
+            if (IPUtils::AddressesAreEqual(*target_addr, msg.pkt->GetDestinationAddress()))
+            {
+                // Destination address matches, send packet
+                _if_manager.SendPacket(msg.pkt);
+                
+                // Free packet memory and remove from outgoing messages
+                delete m.pkt;
+                _outstanding_msgs.erase(m);
+            }
+        }
+        
+        // Deallocate target address
+        switch (target_addr->sa_family)
+        {
+            case AF_INET:
+            {
+                struct sockaddr_in *_target_addr = reinterpret_cast<struct sockaddr_in*>(target_addr);
+                delete _target_addr;
+                break;
+            }
+            case AF_INET6:
+            {
+                struct sockaddr_in6 *_target_addr = reinterpret_cast<struct sockaddr_in6>(target_addr);
+                delete _target_addr;
+                break;
+            }
+            default:
+            {
+                break;
+            }
+        }
+    }
+}
+
+void Layer3Router::_drop_stale_messages()
+{
+    time_t current_time = time.time(NULL);
+    
+    for (auto m = _outstanding_msgs.begin(); m < _outstanding_msgs.end(); m++)
+    {
+        outstanding_msg_t &msg = *m;
+        
+        // Check if message is expired
+        if (current_time > msg.expires_at)
+        {
+            // Free packet memory and remove from outgoing messages
+            delete m.pkt;
+            _outstanding_msgs.erase(m);
+        }
+    }
+}

@@ -39,3 +39,7 @@ const char *WiFiInterface::GetName()
 {
     return _if_name.c_str();
 }
+
+void WiFiInterface::SetMACAddress(const struct ether_addr& mac_addr)
+{
+}

@@ -24,6 +24,7 @@ public:
     int SendPacket(const struct sockaddr &l3_src_addr, const struct sockaddr &l3_dest_addr, const uint8_t *data, size_t len);
     
     const char *GetName();
+    void SetMACAddress(const struct ether_addr &mac_addr);
 
 private:
     std::string _if_name;

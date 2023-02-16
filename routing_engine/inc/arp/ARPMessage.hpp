@@ -148,7 +148,7 @@ public:
     /// </summary>
     /// <returns>Pointer to first byte of HW address</returns>
     /// <remarks>Use GetHWAddrLen to get length of address</remarks>
-    uint8_t *GetSenderHWAddress();
+    const uint8_t *GetSenderHWAddress();
     
     /// <summary>
     /// Sets the sender HW address.
@@ -161,14 +161,14 @@ public:
     /// are the same. Otherwise, overflow may occur
     /// upon serialization
     /// </remarks>
-    void SetSenderHWAddress(uint8_t *addr, uint8_t len);
+    void SetSenderHWAddress(const uint8_t *addr, uint8_t len);
     
     /// <summary>
     /// Returns a pointer to the sender protocol address
     /// </summary>
     /// <returns>Pointer to first byte of protocol address</returns>
     /// <remarks>Use GetProtoAddrLen to get length of address</remarks>
-    uint8_t *GetSenderProtoAddress();
+    const uint8_t *GetSenderProtoAddress();
     
     /// <summary>
     /// Sets the sender protocol address.
@@ -181,14 +181,14 @@ public:
     /// are the same. Otherwise, overflow may occur
     /// upon serialization
     /// </remarks>
-    void SetSenderProtoAddress(uint8_t *addr, uint8_t len);
+    void SetSenderProtoAddress(const uint8_t *addr, uint8_t len);
     
     /// <summary>
     /// Returns a pointer to the target HW address
     /// </summary>
     /// <returns>Pointer to first byte of HW addres</returns>
     /// <remarks>Use GetHWAddrLen to get length of address</remarks>
-    uint8_t *GetTargetHWAddress();
+    const uint8_t *GetTargetHWAddress();
     
     /// <summary>
     /// Sets the target target HW address
@@ -201,14 +201,14 @@ public:
     /// are the same. Otherwise, overflow may occur
     /// upon serialization
     /// </remarks>
-    void SetTargetHWAddress(uint8_t *addr, uint8_t len);
+    void SetTargetHWAddress(const uint8_t *addr, uint8_t len);
     
     /// <summary>
     /// Returns a pointer to the target protocol address
     /// </summary>
     /// <returns>Pointer to first byte of protocol address</returns>
     /// <remarks>Use GetProtoAddrLen to get length of address</remarks>
-    uint8_t *GetTargetProtoAddress();
+    const uint8_t *GetTargetProtoAddress();
     
     /// <summary>
     /// Sets the target protocol address.
@@ -221,7 +221,7 @@ public:
     /// are the same. Otherwise, overflow may occur
     /// upon serialization
     /// </remarks>
-    void SetTargetProtoAddress(uint8_t *addr, uint8_t len);
+    void SetTargetProtoAddress(const uint8_t *addr, uint8_t len);
 
 private:
     arp_hw_type_t _hw_type;
