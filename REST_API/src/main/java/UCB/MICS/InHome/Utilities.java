@@ -8,11 +8,19 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Iterator;
 import java.util.Map;
 
 public class Utilities {
     public static Map<String, String> getFromRequest(HttpServletRequest req) throws IOException {
-        return new ObjectMapper().readValue(req.getInputStream().readAllBytes(), Map.class);
+
+        Iterator<String> it = req.getReader().lines().iterator();
+        StringBuilder stringBuilder = new StringBuilder();
+        while(it.hasNext()) {
+            stringBuilder.append(it.next());
+        }
+        return new ObjectMapper().readValue(stringBuilder.toString(), Map.class);
+        //return new ObjectMapper().readValue(req.getInputStream().readAllBytes(), Map.class);
     }
 
     public static byte[] ipV4ToByteArray(String ip) throws NumberFormatException

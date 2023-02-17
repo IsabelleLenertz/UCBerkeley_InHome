@@ -1,6 +1,7 @@
 package UCB.MICS.InHome.servlet;
 
 import UCB.MICS.InHome.Utilities;
+import UCB.MICS.InHome.jdbc.JdbcClient;
 
 import javax.inject.Singleton;
 import javax.servlet.ServletException;
@@ -8,6 +9,9 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -27,6 +31,7 @@ public class DeviceServlet extends HttpServlet {
             json = Utilities.getFromRequest(req);
         } catch (Exception e) {
             resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "malformed json");
+            return;
         }
         String mac = json.get("mac");
         String name = json.get("name");
@@ -34,11 +39,13 @@ public class DeviceServlet extends HttpServlet {
         if (isNullOrEmpty(mac)||isNullOrEmpty(name)||isNullOrEmpty(ip)) {
             resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "name, mac, or ip missing");
         }
+        byte[] ipB = null;
         try {
-            byte[] ipB = Utilities.ipV4ToByteArray(ip);
+            ipB = Utilities.ipV4ToByteArray(ip);
         }
         catch (NumberFormatException e) {
             resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "IP malformed");
+            return;
         }
         byte[] macB = null;
         try {
@@ -46,15 +53,19 @@ public class DeviceServlet extends HttpServlet {
         }
         catch(NumberFormatException e){
             resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "MAC address malformed");
+            return;
         }
 
-        // Dot the following as a single transaction
-        // Save info to database
-
-        // Update database revision
-
-
+        try {
+            JdbcClient client = new JdbcClient();
+            client.addDevice(name, macB, ipB);
+        } catch (SQLException | ClassNotFoundException e) {
+            logger.log(Level.SEVERE, String.format("could not add new device %s", e.getMessage()));
+            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            return;
+        }
         logger.log(Level.INFO, String.format("new device was added mac=%s, ip=%s", mac, ip));
+        resp.setStatus(HttpServletResponse.SC_OK);
     }
 
     @Override
@@ -68,9 +79,9 @@ public class DeviceServlet extends HttpServlet {
         catch (Exception e) {
             resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "malformed json");
         }
-        String mac = json.get("MAC");
+        String mac = json.get("mac");
         if (isNullOrEmpty(mac)) {
-            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "name, mac, or ip missing");
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "mac missing");
         }
         byte[] macB = null;
         try {
@@ -82,7 +93,15 @@ public class DeviceServlet extends HttpServlet {
 
         // Do the following as a single transaction
         // Delete MAC from DB
-
+        JdbcClient client = null;
+        try {
+            client = new JdbcClient();
+            client.removeDevice(macB);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
         // Delete related policies
 
         // Update DB revisions table
@@ -112,8 +131,18 @@ public class DeviceServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
-            throws ServletException, IOException
-    {
+            throws ServletException, IOException {
+        try {
+            JdbcClient client = new JdbcClient();
+            List<String> devices = client.getDeviceNames();
+            for(var element: devices) {
+                logger.log(Level.INFO, element);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
         // Query DB to get all the devices
 
         // Return a json array with MAC, IpV4, device name

@@ -42,17 +42,17 @@ public final class Main
         HttpConnectionFactory http11 = new HttpConnectionFactory(httpConfig);
 
         // Configure the sslContextFactory with keystore information
-        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        String path = Resources.getResource("keystore").getPath();
-        path = path.startsWith("/")? path.substring(1):path;
-        sslContextFactory.setKeyStorePath("src/main/resources/keystore");
-        sslContextFactory.setKeyStorePassword("123456");
+        //SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        //String path = Resources.getResource("keystore").getPath();
+        //path = path.startsWith("/")? path.substring(1):path;
+        //sslContextFactory.setKeyStorePath("src/main/resources/keystore");
+        //sslContextFactory.setKeyStorePassword("123456");
 
         // The connectionFactory for TLS
-        SslConnectionFactory tls = new SslConnectionFactory(sslContextFactory, http11.getProtocol());
+        //SslConnectionFactory tls = new SslConnectionFactory(sslContextFactory, http11.getProtocol());
 
         // The ServerConnector instance
-        ServerConnector connector = new ServerConnector(svr, tls, http11);
+        ServerConnector connector = new ServerConnector(svr, http11);
         connector.setPort(8443);
         svr.addConnector(connector);
 
