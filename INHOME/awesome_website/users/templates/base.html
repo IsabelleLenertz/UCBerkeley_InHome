@@ -10,10 +10,15 @@
 </style>
 
 
+{% load static %}
+
 <h1 style="text-align:center;font-family:verdana;font-size:150%">Welcome to INHOME</h1>
 <h2 style="text-align:center;font-family:verdana;font-size:75%;">Zero trust home network protection</h2>
-<p style="text-align:center;"><img src="https://i.pinimg.com/564x/17/37/f8/1737f84db835a33d817d530f12f416d0.jpg" alt="Athena" 
-style="width:250;height:300;"></p>
+<p style="text-align:center;">
+
+<img src="{% static 'Users/Symbols.jpg' %}" alt="Athena Owl">
+
+</p>
 
 {% block content %}
 {% endblock %}
