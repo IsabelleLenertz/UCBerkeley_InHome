@@ -12,6 +12,17 @@ import java.util.Iterator;
 import java.util.Map;
 
 public class Utilities {
+    // Same contants use in json requests/responses
+    public static String MAC = "mac";
+    public static String IPV4 = "ipv4";
+    public static String NAME = "name";
+    public static String OLD_NAME = "old";
+    public static String NEW_NAME = "new";
+    public static String DATE_ADDED = "date_added";
+    public static String IPV6 = "ipv6";
+    public static String IS_TRUSTED = "is_trusted";
+    public static String APPLICATION_JSON = "application/json";
+
     public static Map<String, String> getFromRequest(HttpServletRequest req) throws IOException {
 
         Iterator<String> it = req.getReader().lines().iterator();
@@ -51,5 +62,35 @@ public class Utilities {
             }
         }
         return macInBytes;
+    }
+
+    /**
+     * converts a byte array (network order) representation of a mac address and returns a legible string
+     * @param mac byte array representation (network order) of a mac address
+     * @return legible string of the form xx:xx:xx:xx:xx:xx
+     */
+    public static String byteArrayMacToString(byte[] mac)
+    {
+        return "";
+    }
+
+    /**
+     * converts a byte array (network order) representation of a ipv4 address and returns a legible string
+     * @param ipv4 byte array representation (network order) of an ipv4 address
+     * @return legible string of the form xxx.xxx.xxx.xxx
+     */
+    public static String byteArrayIpv4ToString(byte[] ipv4)
+    {
+        return "";
+    }
+
+    /**
+     * converts a byte array (network order) representation of a IPv6 address and returns a legible string
+     * @param ipv6 byte array representation (network order) of a IPv6 address
+     * @return legible string of the form xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx
+     */
+    public static String byteArrayIpv6ToString(byte[] ipv6)
+    {
+        return "";
     }
 }

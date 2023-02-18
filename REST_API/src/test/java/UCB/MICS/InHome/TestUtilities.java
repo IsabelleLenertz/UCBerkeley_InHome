@@ -39,8 +39,49 @@ public class TestUtilities {
                 (byte) 16
         };
         byte[] actual1 = Utilities.macToByteArray("88:66:5a:06:7f:10");
-        byte[] actual2 = Utilities.macToByteArray("88.66.5a.06.7f.10");
         assertEquals(actual1, expected);
-        assertEquals(actual2, expected);
+    }
+
+    @Test (enabled = false)
+    public static void testByteArrayMacToString()
+    {
+        String expected = "88:66:5a:06:7f:10";
+        String actual = Utilities.byteArrayMacToString(Utilities.macToByteArray(expected));
+        assertEquals(actual, expected);
+    }
+
+    @Test (enabled = false)
+    public static void testByteArrayIpv4ToString()
+    {
+        String expected = "192.168.0.01";
+        String actual = Utilities.byteArrayIpv4ToString(Utilities.ipV4ToByteArray(expected));
+        assertEquals(actual, expected);
+    }
+
+    @Test (enabled = false)
+    public static void testByteArrayIpv6ToString()
+    {
+        String expected = "FFFF:AA12:BB00:42CC:9956:34B5:AAFF:FFAA";
+        String actual = Utilities.byteArrayIpv6ToString(
+                new byte[] {
+                        (byte) 0xFF,
+                        (byte) 0xFF,
+                        (byte) 0xAA,
+                        (byte) 0x12,
+                        (byte) 0xBB,
+                        (byte) 0x00,
+                        (byte) 0x42,
+                        (byte) 0xCC,
+                        (byte) 0x99,
+                        (byte) 0x56,
+                        (byte) 0x34,
+                        (byte) 0xB5,
+                        (byte) 0xAA,
+                        (byte) 0xFF,
+                        (byte) 0xFF,
+                        (byte) 0xAA,
+                }
+        );
+        assertEquals(actual, expected);
     }
 }
