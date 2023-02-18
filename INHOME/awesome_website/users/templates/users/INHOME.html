@@ -16,7 +16,7 @@
 
 
 <div class="center" style="text-align:center;font-family:verdana;font-size:125%;">
-<form method="post">
+<form  method="get">
     {% csrf_token %}
     {{ form.as_p }}
     <label for="MAC">MAC address:</label><br>
@@ -24,7 +24,7 @@
     <label for="IPv4_addr">IPv4 Address:</label><br>
     <input type="text" id="IPv4_addr" name="IPv4_addr" value=" "><br>
     <label for="device_name">Device name:</label><br>
-    <input type="text" id="device_name" name="device_name" value=" "><br><br>
+    <input type="text" id="device_name" name="device_name" value=" "><br>
     <input type="submit" value="Submit">
 </form>
 </div>
