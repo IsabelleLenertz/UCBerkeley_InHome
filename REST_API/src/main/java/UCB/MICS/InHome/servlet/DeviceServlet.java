@@ -156,6 +156,20 @@ public class DeviceServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
+        String path = req.getServletPath();
+        String[] pathElements = path.split("/");
+        // if no path param is specified, get all the devices
+        if (pathElements.length == 3){
+            getAllDevices(resp);
+        }
+        else if (pathElements.length == 4) {
+            getOne(pathElements[3].replace('-', ':'), resp);
+        }
+        else {
+            resp.sendError(HttpServletResponse.SC_NOT_FOUND);
+        }
+    }
+    private void getAllDevices(HttpServletResponse resp) throws IOException {
         List<Map<String, String>> devices = null;
         try {
             devices = client.getAllDevices();
@@ -182,21 +196,8 @@ public class DeviceServlet extends HttpServlet {
         logger.log(Level.INFO, "all devices were returned");
     }
 
-    // this is somehow hanging on client side without receiving the data (but receives the http response)
-    @Override
-    protected void doHead(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    private void getOne(String mac, HttpServletResponse resp) throws IOException {
         Map<String, String> json = null;
-        try {
-            json = Utilities.getFromRequest(req);
-        } catch (Exception e) {
-            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "malformed json");
-            return;
-        }
-        String mac = json.get(MAC);
-        if (isNullOrEmpty(mac)) {
-            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Mac address is missing");
-            return;
-        }
         byte[] macB = null;
         try {
             macB = Utilities.macToByteArray(mac);
@@ -225,9 +226,8 @@ public class DeviceServlet extends HttpServlet {
                     .put(IS_TRUSTED, device.get(IS_TRUSTED));
         resp.setStatus(HttpServletResponse.SC_OK);
         resp.setContentType(APPLICATION_JSON);
-        resp.getWriter().write(json.toString());
+        resp.getWriter().write(jsonDevice.toString());
         resp.getWriter().flush();
         logger.log(Level.INFO, "one device was returned");
-        // this is somehow hanging on client side without receiving the data (but receives the http response)
     }
 }

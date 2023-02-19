@@ -5,10 +5,5 @@ curl -k -i -XDELETE https://localhost:8443/v1/device-management -H "Content-Type
 curl -k -i -XPUT https://localhost:8443/v1/device-management -H "Content-Type: application/json" -d '{\"old\":\"somename2\", \"new\":\"new name\"}'
 
 curl -k -i https://localhost:8443/v1/device-management
-curl -k -i https://localhost:8443/v1/device-management?name=somename
 
-
-curl -k -i -XHEAD --include https://localhost:8443/v1/device-management -H "Content-Type: application/json" -d '{\"mac\":\"12:13:5a:56:16:15\"}'
-
-
-curl -k https://localhost:8443/v1/policy-management/56
+curl -k -i https://localhost:8443/v1/device-management/12.13.5a.56.16.15
