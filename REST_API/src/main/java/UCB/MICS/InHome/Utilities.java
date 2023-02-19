@@ -72,6 +72,9 @@ public class Utilities {
      */
     public static String byteArrayMacToString(byte[] mac)
     {
+    	if(mac == null) {
+    		return "";
+    	}
     	StringBuilder strBuilder = new StringBuilder();
     	for (int i = 0; i < mac.length; i++) {
     	    strBuilder.append(String.format("%02X", mac[i]));
@@ -88,6 +91,9 @@ public class Utilities {
      */
     public static String byteArrayIpv4ToString(byte[] ipv4)
     {
+    	if(ipv4 == null) {
+    		return "";
+    	}
     	String addressStr = "";
     	for (int i = 0; i < 4; ++i)
     	{
@@ -104,6 +110,9 @@ public class Utilities {
      */
     public static String byteArrayIpv6ToString(byte[] ipv6)
     {
+    	if(ipv6 == null) {
+    		return "";
+    	}
     	StringBuilder strBuilder = new StringBuilder();
     	for (int i = 0; i < ipv6.length; i=i+2) {
     	    strBuilder.append(String.format("%02X", ipv6[i]));
