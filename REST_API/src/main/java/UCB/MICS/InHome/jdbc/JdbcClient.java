@@ -9,6 +9,7 @@ import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import static UCB.MICS.InHome.Utilities.*;
 import static UCB.MICS.InHome.jdbc.queries.*;
@@ -17,12 +18,13 @@ public class    JdbcClient {
     private final String dbUrl;
     private final String dbUser;
     private final String dbPwd;
-
+    private final static Logger logger = Logger.getLogger(JdbcClient.class.toString());
     private final Connection connection;
     public JdbcClient() throws SQLException, ClassNotFoundException {
         dbUrl = System.getenv("DB_URL");
         dbUser = System.getenv("DB_USER");
         dbPwd = System.getenv("DB_PWD");
+
         //Class.forName("com.mysql.jdbc.Driver");
         connection =  DriverManager.getConnection(String.format("%s?user=%s&password=%s", dbUrl, dbUser, dbPwd));
     }

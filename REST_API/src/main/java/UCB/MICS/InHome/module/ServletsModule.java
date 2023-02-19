@@ -13,11 +13,10 @@ public class ServletsModule extends ServletModule {
     protected void configureServlets() {
         bind(JdbcClient.class);
         bind(DeviceServlet.class).in(Scopes.SINGLETON);
-        serve("/v1/device-management", "/v1/device-management/" ).with(DeviceServlet.class);
+        serveRegex("/v1/device-management/?[0-9]{0,5}").with(DeviceServlet.class);
 
         bind(PolicyServlet.class).in(Scopes.SINGLETON);
-        serveRegex("/v1/policy-management/?", "/v1/policy-management/get/?[0-9]{0,5}",
-                "/v1/policy-management/delete/?[0-9]{0,5}").with(PolicyServlet.class);
+        serveRegex("/v1/policy-management/?[0-9]{0,5}").with(PolicyServlet.class);
 
         bind(LoginServlet.class).in(Scopes.SINGLETON);
         serve("/v1/login").with(LoginServlet.class);

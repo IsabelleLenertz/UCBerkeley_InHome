@@ -23,6 +23,6 @@ CREATE TABLE IF NOT EXISTS policies (
                            deviceFrom binary(6) NOT NULL);
 
 -- create database user
-CREATE USER 'api'@'localhost' IDENTIFIED BY 'password';
+CREATE USER 'api' IDENTIFIED BY 'password';
 GRANT SELECT, INSERT, UPDATE, DELETE ON InHome.* TO api;
 FLUSH PRIVILEGES;
