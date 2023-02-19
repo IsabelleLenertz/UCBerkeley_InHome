@@ -268,7 +268,7 @@ void EthernetInterface::_handle_ip(const struct pcap_pkthdr *h, const u_char *by
     l3_pkt_len = h->len - (ETHER_HDR_LEN);
     
     // Execute callback
-    _callback(l3_pkt, l3_pkt_len);
+    _callback((ILayer2Interface*)this, l3_pkt, l3_pkt_len);
 }
 
 void EthernetInterface::_handle_arp(const struct pcap_pkthdr *h, const u_char *bytes)

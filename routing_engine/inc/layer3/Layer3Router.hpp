@@ -23,21 +23,6 @@ typedef struct
 } outstanding_msg_t;
 
 /// <summary>
-/// Queued message structure includes
-/// size of the data and a pointer to
-/// the data itself
-/// </summary>
-/// <remarks>
-/// Not using standard containers here
-/// to avoid cost of copying
-/// </remarks>
-typedef struct
-{
-    size_t len;    // Length in bytes
-    uint8_t *data; // Data pointer
-} queued_message_t;
-
-/// <summary>
 /// The Layer 3 Router is the top-level module
 /// of the Routing Engine
 /// <summary>
@@ -101,7 +86,7 @@ private:
     /// is responsible for freeing that memory.
     /// Failure to do so will result in a memory leak.
     /// </remarks>
-    ConcurrentQueue<queued_message_t> _rcv_queue;
+    ConcurrentQueue<IIPPacket*> _rcv_queue;
     
     /// <summary>
     /// Stores packets which have been
@@ -119,21 +104,24 @@ private:
     /// Places incoming layer 3 packet data into
     /// the concurrent queue
     /// </summary>
-    /// <param name="data">Layer 3 Packet Data</param>
-    /// <param name="len">Length of packet, in bytes</param>
-    void _receive_packet(const uint8_t *data, size_t len);
+    /// <param name="packet">Pointer to IP Packet</param>
+    /// <remarks>
+    /// Packet data must be dynamicall allocated.
+    /// Layer3Router will free packet memory when
+    /// no longer needed.
+    /// </remarks>
+    void _receive_packet(IIPPacket *packet);
 
     /// <summary>
     /// Processing an incoming layer 3 packet
     /// </summary>
-    /// <param name="data">Pointer to packet data</param>
-    /// <param name="len">Length of packet, in bytes</param>
+    /// <param name="packet">Pointer to IP Packet</param>
     /// <remarks>
     /// The lifetime of the buffered packet data ends
     /// with this function. Memory must be freed before
     /// returning.
     /// </remarks>
-    void _process_packet(const uint8_t *data, size_t len);
+    void _process_packet(IIPPacket *packet);
     
     /// <summary>
     /// Callback for incoming ARP replies

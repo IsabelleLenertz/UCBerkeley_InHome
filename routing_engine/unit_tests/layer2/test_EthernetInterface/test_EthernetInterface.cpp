@@ -60,9 +60,10 @@ std::ostream& operator<<(std::ostream &lhs, const struct ether_addr &rhs)
 /// <summary>
 /// Receive callback for ethernet frames.
 /// </summary>
+/// <param name="_if">Pointer to interface on which data was received</param>
 /// <param name="data">Receive data</param>
 /// <param name="len">Length of data, in bytes</param>
-void receive_callback(const uint8_t *data, size_t len)
+void receive_callback(ILayer2Interface *_if, const uint8_t *data, size_t len)
 {
     IPv4Packet pkt;
     int status = pkt.Deserialize(data, len);
@@ -252,10 +253,10 @@ TEST(test_EthernetInterface, test_arp)
     eth1.Open();
     
     // Listen on ethernet interface
-    status = eth.Listen(std::bind(receive_callback, std::placeholders::_1, std::placeholders::_2), std::bind(arp_listener, std::placeholders::_1, std::placeholders::_2), true);
+    status = eth.Listen(std::bind(receive_callback, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), std::bind(arp_listener, std::placeholders::_1, std::placeholders::_2), true);
     ASSERT_EQ(0, status);
     
-    status = eth1.Listen(std::bind(receive_callback, std::placeholders::_1, std::placeholders::_2), std::bind(arp_listener, std::placeholders::_1, std::placeholders::_2), true);
+    status = eth1.Listen(std::bind(receive_callback, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), std::bind(arp_listener, std::placeholders::_1, std::placeholders::_2), true);
     ASSERT_EQ(0, status);
     
     // Define an ethernet frame

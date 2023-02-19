@@ -6,10 +6,18 @@
 #include "layer3/IRoutingTable.hpp"
 #include "layer3/IIPPacket.hpp"
 
+#include <functional>
+
 #define IM_IF_ETHERNET 0b0001
 #define IM_IF_LOOPBACK 0b0010
 #define IM_IF_WIRELESS 0b0100
 #define IM_IF_INC_DOWN 0b1000
+
+/// <summary>
+/// A layer 3 receive callback is used to pass an
+/// incoming IP packet up to layer 3
+/// </summary>
+typedef std::function<void(IIPPacket*)> Layer3ReceiveCallback;
 
 /// <summary>
 /// Aggregates available layer 2 interfaces
@@ -71,7 +79,7 @@ public:
     /// Error Code:
     ///   0: No error
     /// </returns>
-    int ListenAll(Layer2ReceiveCallback callback, NewARPEntryListener arp_listener);
+    int ListenAll(Layer3ReceiveCallback callback, NewARPEntryListener arp_listener);
     
     /// <summary>
     /// Stops listening on all known interfaces
@@ -96,11 +104,23 @@ public:
     /// <param name="name">Interface name</param>
     ILayer2Interface* GetInterfaceFromName(const char *name);
     
+    /// <summary>
+    /// Callback to receive data from layer 2.
+    /// </summary>
+    /// <param name="_if">Pointer to interface on which data was received</param>
+    /// <param name="data">Incoming data</param>
+    /// <param name="len">Length of data, in bytes</param>
+    /// <remarks>
+    /// Data received by this method must have an
+    /// EtherType field of IPv4 or IPv6.
+    /// </remarks>
+    void ReceiveLayer2Data(ILayer2Interface *_if, const uint8_t *data, size_t len);
+    
 private:
     std::vector<ILayer2Interface*> _interfaces;
     IARPTable *_arp_table;
     IRoutingTable *_ip_rte_table;
-    Layer2ReceiveCallback _callback;
+    Layer3ReceiveCallback _callback;
     uint8_t _send_buff[SEND_BUFFER_SIZE];
     
     /// <summary>

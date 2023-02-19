@@ -12,9 +12,10 @@ class ILayer2Interface;
 /// A Layer2ReceiveCallback is a callable object which defines a handler for
 /// incoming packets on a Layer 2 Interface.
 /// </summary>
+/// <param name="_if">Pointer to interface on which the data was received</param>
 /// <param name="data">Pointer to incoming layer 3 data</param>
 /// <param name="len">Length of incoming layer 3 data, in bytes</param>
-typedef std::function<void(const uint8_t *data, size_t len)> Layer2ReceiveCallback;
+typedef std::function<void(ILayer2Interface *_if, const uint8_t *data, size_t len)> Layer2ReceiveCallback;
 
 /// <summary>
 /// An IPOwnershipQuery is a method with which a layer2 interface will

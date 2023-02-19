@@ -151,10 +151,15 @@ int InterfaceManager::ListenAll(Layer2ReceiveCallback callback, NewARPEntryListe
 {
     int status = 0;
     
+    _callback = callback;
+    
     for (auto _if = _interfaces.begin(); _if < _interfaces.end(); _if++)
     {
         ILayer2Interface *_interface = *_if;
-        int tmp = _interface->Listen(callback, arp_listener, true);
+        
+        int tmp = _interface->Listen(
+            std::bind(&InterfaceManager::ReceiveLayer2Data, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+            callback, arp_listener, true);
         
         if (tmp != 0)
         {
@@ -271,3 +276,34 @@ ILayer2Interface* InterfaceManager::GetInterfaceFromName(const char *name)
     return nullptr;
 }
 
+void InterfaceManager::ReceiveLayer2Data(ILayer2Interface *_if, const uint8_t *data, size_t len)
+{
+    // Indicates whether the packet was transferred to layer 3
+    bool transferred = false;
+    
+    IIPPacket *packet = IPPacketFactory::BuildPacket(data, len);
+    
+    int status = packet->Deserialize(data, len);
+    
+    if (status == 0)
+    {
+        // Check if this packet is destined for an IP address owned by
+        // this interface. If so, do not pass it to the router
+        if (ip_rte_table->IsOwnedByInterface(_if, packet->GetDestinationAddress()))
+        {
+            // IP owned by this interface. Do not pass to routing engine.
+        }
+        else
+        {
+            // Pass to routing engine. Routing engine is now responsible for memory management.
+            _callback(packet);
+            transferred = true;
+        }
+    }
+    
+    if (!transferred)
+    {
+        // Packet was not transferred. Free memory.
+        delete packet;
+    }
+}

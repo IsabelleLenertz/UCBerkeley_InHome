@@ -115,104 +115,79 @@ void Layer3Router::MainLoop()
     }
 }
 
-void Layer3Router::_receive_packet(const uint8_t *data, size_t len)
+void Layer3Router::_receive_packet(IIPPacket *packet)
 {
-    std::stringstream sstream;
-    sstream << "Copying" << len << " bytes into buffer";
-    Logger::Log(LOG_DEBUG, sstream.str());
-
-    // Copy into storage buffer
-    uint8_t *buff = new uint8_t[len];
-    memcpy(buff, data, len);
     
     // Add to receive queue
     // Ownership of buff pointer transfers
     // to receive queue
-    _rcv_queue.Enqueue(queued_message_t {len, buff});
+    _rcv_queue.Enqueue(packet);
 }
 
-void Layer3Router::_process_packet(const uint8_t *data, size_t len)
+void Layer3Router::_process_packet(IIPPacket *packet)
 {
-    std::stringstream sstream;
-    sstream << len << " bytes received at Layer 3";
-    Logger::Log(LOG_DEBUG, sstream.str());
-    
-    // TODO Need to switch to abstract factory pattern
-    // Temporary: Assume IPv4 packet
-    IIPPacket* packet = IPPacketFactory::BuildPacket(data, len);
-    
-    if (packet != nullptr)
+    if (packet == nullptr)
     {
-        // Deserialize packet from raw data
-        int status = packet->Deserialize(data, len);
-        
+        return;
+    }
+    
+    // Consult Access Control Module
+    bool allowed = _access_control.IsAllowed(packet);
+    
+    if (allowed)
+    {
         if (status == 0)
         {
-            // Consult Access Control Module
-            bool allowed = _access_control.IsAllowed(reinterpret_cast<IIPPacket*>(packet));
+            status = _if_manager.SendPacket(packet);
             
-            if (allowed)
+            switch (status)
             {
-                if (status == 0)
+                case 0:
                 {
-                    status = _if_manager.SendPacket(reinterpret_cast<IIPPacket*>(packet));
+                    // Success
+                    Logger::Log(LOG_DEBUG, "Message sent successfully");
+                    break;
+                }
+                case 1:
+                {
+                    // ARP cache miss
+                    Logger::Log(LOG_DEBUG, "ARP Cache Miss");
                     
-                    switch (status)
-                    {
-                        case 0:
-                        {
-                            // Success
-                            Logger::Log(LOG_DEBUG, "Message sent successfully");
-                            break;
-                        }
-                        case 1:
-                        {
-                            // ARP cache miss
-                            Logger::Log(LOG_DEBUG, "ARP Cache Miss");
-                            
-                            outstanding_msg_t msg;
-                            msg.pkt = packet;
-                            msg.expires_at = time(NULL) + 5; // 5 seconds
-                            
-                            _outstanding_msgs.push_back(msg);
-                            
-                            // Prevent packet from being freed
-                            packet = nullptr;
-                            break;
-                        }
-                        case 2:
-                        {
-                            sstream.str("");
-                            sstream << "Could not find outgoing interface (" << Logger::IPToString(packet->GetDestinationAddress()) << ")";
-                            Logger::Log(LOG_DEBUG, sstream.str());
-                            break;
-                        }
-                        default:
-                        {
-                            sstream.str("");
-                            sstream << "Unknown error(" << status << ")";
-                            Logger::Log(LOG_WARNING, sstream.str());
-                            break;
-                        }
-                    }
+                    outstanding_msg_t msg;
+                    msg.pkt = packet;
+                    msg.expires_at = time(NULL) + 5; // 5 seconds
+                    
+                    _outstanding_msgs.push_back(msg);
+                    
+                    // Prevent packet from being freed
+                    packet = nullptr;
+                    break;
                 }
-                else
+                case 2:
                 {
-                    Logger::Log(LOG_ERROR, "Failed to serialize packet");
+                    sstream.str("");
+                    sstream << "Could not find outgoing interface (" << Logger::IPToString(packet->GetDestinationAddress()) << ")";
+                    Logger::Log(LOG_DEBUG, sstream.str());
+                    break;
                 }
-            }
-            else
-            {
-                // TODO Log more information about denied packet
-                Logger::Log(LOG_WARNING, "Packet denied");
+                default:
+                {
+                    sstream.str("");
+                    sstream << "Unknown error(" << status << ")";
+                    Logger::Log(LOG_WARNING, sstream.str());
+                    break;
+                }
             }
         }
         else
         {
-            sstream.str("");
-            sstream << "Failed to deserialize packet (" << status << ")";
-            Logger::Log(LOG_ERROR, sstream.str());
+            Logger::Log(LOG_ERROR, "Failed to serialize packet");
         }
+    }
+    else
+    {
+        // TODO Log more information about denied packet
+        Logger::Log(LOG_WARNING, "Packet denied");
     }
     
     // End of packet lifetime, free memory
@@ -221,9 +196,6 @@ void Layer3Router::_process_packet(const uint8_t *data, size_t len)
     {
         delete packet;
     }
-    
-    // Always free data buffer
-    delete data;
 }
 
 void Layer3Router::_queue_arp_reply(const struct sockaddr &l3_addr, const struct ether_addr &l2_addr)
