@@ -38,7 +38,7 @@ public class TestUtilities {
                 (byte) 127,
                 (byte) 16
         };
-        byte[] actual1 = Utilities.macToByteArray("88:66:5a:06:7f:10");
+        byte[] actual1 = Utilities.macToByteArray("88:66:5A:06:7F:10");
         assertEquals(actual1, expected);
     }
 
