@@ -138,8 +138,8 @@ public class    JdbcClient {
             PreparedStatement updateRevisions = connection.prepareStatement(UPDATE_REVISIONS)) {
 
             // Update device table
-            updateName.setString(1, newName);
-            updateName.setString(2, oldName);
+            updateName.setString(1, oldName);
+            updateName.setString(2, newName);
             int affected = updateName.executeUpdate();
 
             // Update revision table

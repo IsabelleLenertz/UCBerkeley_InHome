@@ -52,7 +52,7 @@ public final class Main
         SslConnectionFactory tls = new SslConnectionFactory(sslContextFactory, http11.getProtocol());
 
         // The ServerConnector instance
-        ServerConnector connector = new ServerConnector(svr, http11, tls);
+        ServerConnector connector = new ServerConnector(svr, tls, http11);
         connector.setPort(8443);
         svr.addConnector(connector);
 

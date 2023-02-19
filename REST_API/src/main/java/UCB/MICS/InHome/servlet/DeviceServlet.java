@@ -113,7 +113,7 @@ public class DeviceServlet extends HttpServlet {
         try {
             client.removeDevice(macB);
         } catch (SQLException e) {
-            logger.log(Level.SEVERE, String.format("could not change device name %s", e.getMessage()));
+            logger.log(Level.SEVERE, String.format("could not delete device mac %s", e.getMessage()));
             resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             return;
         }
@@ -182,6 +182,7 @@ public class DeviceServlet extends HttpServlet {
         logger.log(Level.INFO, "all devices were returned");
     }
 
+    // this is somehow hanging on client side without receiving the data (but receives the http response)
     @Override
     protected void doHead(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         Map<String, String> json = null;
@@ -224,9 +225,9 @@ public class DeviceServlet extends HttpServlet {
                     .put(IS_TRUSTED, device.get(IS_TRUSTED));
         resp.setStatus(HttpServletResponse.SC_OK);
         resp.setContentType(APPLICATION_JSON);
-        resp.getWriter().write(jsonDevice.toString());
+        resp.getWriter().write(json.toString());
         resp.getWriter().flush();
         logger.log(Level.INFO, "one device was returned");
-
+        // this is somehow hanging on client side without receiving the data (but receives the http response)
     }
 }
