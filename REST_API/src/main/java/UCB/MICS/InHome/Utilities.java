@@ -6,6 +6,7 @@ import org.apache.commons.codec.binary.Hex;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.net.Inet4Address;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Iterator;
@@ -71,7 +72,13 @@ public class Utilities {
      */
     public static String byteArrayMacToString(byte[] mac)
     {
-        return "";
+    	StringBuilder strBuilder = new StringBuilder();
+    	for (int i = 0; i < mac.length; i++) {
+    	    strBuilder.append(String.format("%02X", mac[i]));
+    	    if (i < mac.length - 1) 
+    	        strBuilder.append(":");
+    	}
+    	return strBuilder.toString();
     }
 
     /**
@@ -81,7 +88,13 @@ public class Utilities {
      */
     public static String byteArrayIpv4ToString(byte[] ipv4)
     {
-        return "";
+    	String addressStr = "";
+    	for (int i = 0; i < 4; ++i)
+    	{
+    	    int t = 0xFF & ipv4[i];
+    	    addressStr += "." + t;
+    	}
+    	return addressStr.substring(1);
     }
 
     /**
@@ -91,6 +104,13 @@ public class Utilities {
      */
     public static String byteArrayIpv6ToString(byte[] ipv6)
     {
-        return "";
+    	StringBuilder strBuilder = new StringBuilder();
+    	for (int i = 0; i < ipv6.length; i=i+2) {
+    	    strBuilder.append(String.format("%02X", ipv6[i]));
+    	    strBuilder.append(String.format("%02X", ipv6[i+1]));
+    	    if (i < ipv6.length - 2) 
+    	        strBuilder.append(":");
+    	}
+    	return strBuilder.toString();
     }
 }
