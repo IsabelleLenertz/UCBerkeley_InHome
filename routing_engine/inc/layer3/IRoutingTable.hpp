@@ -33,6 +33,14 @@ public:
     virtual ILayer2Interface *GetInterface(const struct sockaddr &ip_addr, const struct sockaddr **local_ip) = 0;
     
     /// <summary>
+    /// Returns true if the specified IP address is owned by the specified interface
+    /// </summary>
+    /// <param name="interface">Pointer to interface</param>
+    /// <param name="ip_addr">IP address</param>
+    /// <returns>True if the IP is owned by the interface</returns>
+    virtual bool IsOwnedByInterface(const ILayer2Interface *interface, const struct sockaddr &ip_addr) = 0;
+    
+    /// <summary>
     /// Associates a Layer 2 interface with the specified
     /// subnet, as defined by an IP address and subnet mask
     /// </summary>

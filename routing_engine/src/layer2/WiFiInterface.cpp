@@ -20,7 +20,7 @@ int WiFiInterface::Close()
     return 0;
 }
 
-int WiFiInterface::Listen(Layer2ReceiveCallback callback, bool async)
+int WiFiInterface::Listen(Layer2ReceiveCallback callback, NewARPEntryListener arp_listener, bool async)
 {
     return 0;
 }
@@ -41,5 +41,9 @@ const char *WiFiInterface::GetName()
 }
 
 void WiFiInterface::SetMACAddress(const struct ether_addr& mac_addr)
+{
+}
+
+void WiFiInterface::SetIPAddressQueryMethod(IPOwnershipQuery method)
 {
 }

@@ -2,6 +2,7 @@
 #define INC_LOCALROUTINGTABLE_HPP_
 
 #include "layer3/IRoutingTable.hpp"
+#include <mutex>
 
 typedef struct
 {
@@ -27,12 +28,14 @@ public:
     /// </summary>
     ~LocalRoutingTable();
     
-    ILayer2Interface *GetInterface(const struct sockaddr &ip_addr, const struct sockaddr *local_ip);
+    ILayer2Interface *GetInterface(const struct sockaddr &ip_addr, const struct sockaddr **local_ip);
+    bool IsOwnedByInterface(const ILayer2Interface *interface, const struct sockaddr &ip_addr);
     void AddSubnetAssociation(ILayer2Interface *interface, const struct sockaddr &ip_addr, const struct sockaddr &netmask);
     void RemoveSubnetAssociation(const struct sockaddr &ip_addr, const struct sockaddr &netmask);
 
 private:
     std::vector<RoutingTableEntry_t> _table;
+    std::mutex _mutex;
 };
 
 #endif

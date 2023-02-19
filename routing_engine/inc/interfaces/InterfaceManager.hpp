@@ -100,6 +100,7 @@ private:
     std::vector<ILayer2Interface*> _interfaces;
     IARPTable *_arp_table;
     IRoutingTable *_ip_rte_table;
+    Layer2ReceiveCallback _callback;
     uint8_t _send_buff[SEND_BUFFER_SIZE];
     
     /// <summary>

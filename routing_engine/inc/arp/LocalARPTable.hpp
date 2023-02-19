@@ -4,6 +4,7 @@
 #include "arp/IARPTable.hpp"
 #include <vector>
 #include <cstdint>
+#include <mutex>
 
 /// <summary>
 /// Stores a mapping between a layer 2
@@ -61,6 +62,8 @@ public:
 private:
     std::vector<ARPv4Entry_t> _v4table;
     std::vector<ARPv6Entry_t> _v6table;
+    
+    std::mutex _mutex;
 };
 
 #endif

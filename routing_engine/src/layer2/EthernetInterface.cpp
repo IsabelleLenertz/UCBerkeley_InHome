@@ -1,5 +1,4 @@
 #include "layer2/EthernetInterface.hpp"
-#include "arp/ARPMessage.hpp"
 
 #include <net/ethernet.h>
 #include <cstring>
@@ -10,8 +9,15 @@
 EthernetInterface::EthernetInterface(const char *if_name, IARPTable *arp_table)
     : _handle(nullptr),
       _thread(),
-      _arp_table(arp_table)
+      _arp_table(arp_table),
+      _callback(),
+      _arp_listener(),
+      _owns_address()
 {
+    memset(error_buffer, 0, sizeof(error_buffer));
+    memset(&_mac_addr, 0, sizeof(_mac_addr));
+    memset(_frame_buffer, 0, sizeof(_frame_buffer));
+    
     _if_name = std::string(if_name);
 }
 
@@ -39,7 +45,7 @@ int EthernetInterface::Open()
 int EthernetInterface::Close()
 {
     // If still listening, stop
-    this->StopListen();
+    StopListen();
     
     // Close the handle
     if (_handle != nullptr)
@@ -50,10 +56,11 @@ int EthernetInterface::Close()
     return 0;
 }
 
-int EthernetInterface::Listen(Layer2ReceiveCallback callback, bool async)
+int EthernetInterface::Listen(Layer2ReceiveCallback callback, NewARPEntryListener arp_listener, bool async)
 {
     // Register the callback
-    this->_callback = callback;
+    _callback = callback;
+    _arp_listener = arp_listener;
     
     if (async)
     {
@@ -64,7 +71,7 @@ int EthernetInterface::Listen(Layer2ReceiveCallback callback, bool async)
     else
     {
         // If not async, capture on current thread
-        this->_captureLoop();
+        _captureLoop();
     }
     
     return 0;
@@ -87,7 +94,9 @@ int EthernetInterface::StopListen()
 
 int EthernetInterface::SendPacket(const struct sockaddr &l3_local_addr, const struct sockaddr &l3_dest_addr, const uint8_t *data, size_t len)
 {
-    int status = -1;
+    std::scoped_lock { _mutex };
+
+    int status = 0;
     
     // Get destination address from ARP table
     bool hit;
@@ -105,8 +114,9 @@ int EthernetInterface::SendPacket(const struct sockaddr &l3_local_addr, const st
         
         // Set HW parameters
         request.SetHWType(ARP_HW_TYPE_ETHERNET);
-        request.SetSenderHWAddress(&_mac_addr, ETH_ALEN);
-        request.SetTargetHWAddress(&BROADCAST_MAC, ETH_ALEN);
+        request.SetHWAddrLen(6);
+        request.SetSenderHWAddress((uint8_t*)&_mac_addr, ETH_ALEN);
+        request.SetTargetHWAddress((uint8_t*)&BLANK_MAC, ETH_ALEN);
         
         // Set Protocol parameters (IPv4 or IPv6)
         switch (l3_local_addr.sa_family)
@@ -114,24 +124,30 @@ int EthernetInterface::SendPacket(const struct sockaddr &l3_local_addr, const st
             case AF_INET:
             {
                 request.SetProtocolType(ARP_PROTO_TYPE_IPV4);
+                request.SetProtoAddrLen(4);
                 
                 const struct sockaddr_in& _l3_local_addr = reinterpret_cast<const struct sockaddr_in&>(l3_local_addr);
                 const struct sockaddr_in& _l3_dest_addr = reinterpret_cast<const struct sockaddr_in&>(l3_dest_addr);
                 
-                request.SetSenderProtoAddress(&_l3_local_addr.sin_addr, 4);
-                request.SetTargetProtoAddress(&_l3_dest_addr.sin_addr, 4);
+                request.SetSenderProtoAddress((uint8_t*)&_l3_local_addr.sin_addr, 4);
+                request.SetTargetProtoAddress((uint8_t*)&_l3_dest_addr.sin_addr, 4);
                 
                 break;
             }
             case AF_INET6:
             {
-                request.SetProtocolType(ARP_PROTO_TYPE_IPv6);
+                request.SetProtocolType(ARP_PROTO_TYPE_IPV6);
+                request.SetProtoAddrLen(16);
                 
                 const struct sockaddr_in6& _l3_local_addr = reinterpret_cast<const struct sockaddr_in6&>(l3_local_addr);
                 const struct sockaddr_in6& _l3_dest_addr = reinterpret_cast<const struct sockaddr_in6&>(l3_dest_addr);
                 
-                request.SetSenderProtoAddress(&_l3_local_addr.sin_addr, 16);
-                request.SetTargetProtoAddress(&_l3_dest_addr.sin_addr, 16);
+                request.SetSenderProtoAddress((uint8_t*)&_l3_local_addr.sin6_addr, 16);
+                request.SetTargetProtoAddress((uint8_t*)&_l3_dest_addr.sin6_addr, 16);
+                break;
+            }
+            default:
+            {
                 break;
             }
         }
@@ -159,20 +175,30 @@ int EthernetInterface::SendPacket(const struct sockaddr &l3_local_addr, const st
     }
     
     // Only send if no error has occurred up to this point
-    if (status == 0)
+    if (status == 0 || status == 1)
     {
         // Populate header
         struct ether_header *eth_header = (struct ether_header*)_frame_buffer;
-        memcpy(eth_header->ether_dhost, &l2_dest_addr, sizeof(ether_addr));
-        memcpy(eth_header->ether_shost, &_mac_addr, sizeof(ether_addr));       // Source MAC is local interface MAC
-        eth_header->ether_type = htons(ETHERTYPE_IP);
+        memcpy(eth_header->ether_dhost, &l2_dest_addr, ETH_ALEN);
+        memcpy(eth_header->ether_shost, &_mac_addr, ETH_ALEN);
+        
+        // Status of 0 means IP packet goes through
+        // Statys of 1 means ARP packet
+        if (status == 0)
+        {
+            eth_header->ether_type = htons(ETHERTYPE_IP);
+        }
+        else
+        {
+            eth_header->ether_type = htons(ETHERTYPE_ARP);
+        }
         
         // Calculate and populate CRC
-        _calcCRC(frame_buff, (size_t)(ETHER_HDR_LEN + len), frame_buff + ETHER_HDR_LEN + len);
+        //_calcCRC(_frame_buffer, (size_t)(ETHER_HDR_LEN + len), _frame_buffer + ETHER_HDR_LEN + len);
         
         // If ARP hit, payload is IP packet
         // If ARP miss, payload is ARP request
-        int bytes_written = pcap_inject(_handle, frame_buff, frame_len);
+        int bytes_written = pcap_inject(_handle, _frame_buffer, ETHER_HDR_LEN + len);// + ETHER_CRC_LEN);
         
         if (bytes_written <= 0)
         {
@@ -216,8 +242,6 @@ void EthernetInterface::_receive(u_char *user, const struct pcap_pkthdr *h, cons
         }
         case ETHERTYPE_IP:
         {
-            std::cout << "IP Packet Received" << std::endl;
-        
             _this->_handle_ip(h, bytes);
             break;
         }
@@ -241,13 +265,13 @@ void EthernetInterface::_handle_ip(const struct pcap_pkthdr *h, const u_char *by
     // Get size of L3 packet
     // Size of ethernet frame minus size of
     // header. Trailer is not included.
-    l3_pkt_len = h->len - (ETHER_HDR_LEN);;
+    l3_pkt_len = h->len - (ETHER_HDR_LEN);
     
     // Execute callback
-    this->_callback(l3_pkt, l3_pkt_len);
+    _callback(l3_pkt, l3_pkt_len);
 }
 
-void EthernetInterface::_handle_arp(const struct pcap_pkthdr *ptr, const u_char *bytes)
+void EthernetInterface::_handle_arp(const struct pcap_pkthdr *h, const u_char *bytes)
 {
     size_t l3_pkt_len = h->len - ETHER_HDR_LEN;
     
@@ -264,48 +288,134 @@ void EthernetInterface::_handle_arp(const struct pcap_pkthdr *ptr, const u_char 
     {
         case ARP_MSG_TYPE_REPLY:
         {
-            // Only care about replies
-            // Get HW and ethernet addresses
-            struct ether_addr &l2_addr arp_msg.GetSourceHWAddress();
-            
-            switch (arp_msg.GetProtocolType())
-            {
-                case ARP_PROTO_TYPE_IPV4:
-                {
-                    struct sockaddr_in l3_addr;
-                    l3_addr.sin_family = AF_INET;
-                    l3_addr.sin_port = 0;
-                    memcpy(&l3_addr.sin_addr, arp_msg.GetSourceProtoAddress(), 4);
-                    
-                    struct sockaddr &_l3_addr = reinterpret_cast<struct sockaddr&>(l3_addr);
-                    
-                    _arp_table->SetARPEntry(l3_addr, l2_addr);
-                    _onNewARPEntry(l3_addr, l2_addr);
-                    
-                    break;
-                }
-                case ARP_PROTO_TYPE_IPV6:
-                {
-                    struct sockaddr_in6 l3_addr;
-                    l3_addr.sin6_family = AF_INET6;
-                    l3_addr.sin6_port = 0;
-                    l3_addr.sin6_flowinfo = 0;
-                    memcpy(&l3_addr.sin6_addr, arp_msg.GetSourceProtoAddress(), 16);
-                    
-                    struct sockaddr &_l3_addr = reinterpret_cast<struct sockaddr&>(l3_addr);
-                    
-                    _arp_table->SetARPEntry(l3_addr, l2_addr);
-                    _onNewARPEntry(l3_addr, l2_addr);
-                    
-                    break;
-                }
-            }
-            
+            _handle_arp_reply(arp_msg);
+            break;
+        }
+        case ARP_MSG_TYPE_REQUEST:
+        {
+            _handle_arp_request(arp_msg);
             break;
         }
         default:
         {
             break;
+        }
+    }
+}
+
+void EthernetInterface::_handle_arp_reply(ARPMessage &arp_msg)
+{
+    // Get ethernet address
+    struct ether_addr l2_addr;
+    memcpy(&l2_addr, arp_msg.GetSenderHWAddress(), ETH_ALEN);
+    
+    switch (arp_msg.GetProtocolType())
+    {
+        case ARP_PROTO_TYPE_IPV4:
+        {
+            struct sockaddr_in l3_addr;
+            l3_addr.sin_family = AF_INET;
+            l3_addr.sin_port = 0;
+            memcpy(&l3_addr.sin_addr, arp_msg.GetSenderProtoAddress(), 4);
+            
+            struct sockaddr &_l3_addr = reinterpret_cast<struct sockaddr&>(l3_addr);
+            
+            _arp_table->SetARPEntry(_l3_addr, l2_addr);
+            _arp_listener(_l3_addr, l2_addr);
+            
+            break;
+        }
+        case ARP_PROTO_TYPE_IPV6:
+        {
+            struct sockaddr_in6 l3_addr;
+            l3_addr.sin6_family = AF_INET6;
+            l3_addr.sin6_port = 0;
+            l3_addr.sin6_flowinfo = 0;
+            memcpy(&l3_addr.sin6_addr, arp_msg.GetSenderProtoAddress(), 16);
+            
+            struct sockaddr &_l3_addr = reinterpret_cast<struct sockaddr&>(l3_addr);
+            
+            _arp_table->SetARPEntry(_l3_addr, l2_addr);
+            _arp_listener(_l3_addr, l2_addr);
+            
+            break;
+        }
+    }
+}
+
+void EthernetInterface::_handle_arp_request(ARPMessage &arp_msg)
+{
+    bool owned = false;
+    
+    switch (arp_msg.GetProtocolType())
+    {
+        case ARP_PROTO_TYPE_IPV4:
+        {
+            if (arp_msg.GetProtoAddrLen() != 4)
+            {
+                // Address length incorrect for IPv4.
+                // Request is malformed.
+                break;
+            }
+            
+            struct sockaddr_in l3_addr;
+            l3_addr.sin_family = AF_INET;
+            l3_addr.sin_port = 0;
+            memcpy(&l3_addr.sin_addr, arp_msg.GetTargetProtoAddress(), 4);
+            
+            struct sockaddr &_l3_addr = reinterpret_cast<struct sockaddr&>(l3_addr);
+            
+            owned = _owns_address((ILayer2Interface*)this, _l3_addr);
+            
+            break;
+        }
+        case ARP_PROTO_TYPE_IPV6:
+        {
+            if (arp_msg.GetProtoAddrLen() != 16)
+            {
+                // Address length incorrect for IPv6.
+                // Request is malformed
+                break;
+            }
+        
+            struct sockaddr_in6 l3_addr;
+            l3_addr.sin6_family = AF_INET6;
+            l3_addr.sin6_port = 0;
+            l3_addr.sin6_flowinfo = 0;
+            memcpy(&l3_addr.sin6_addr, arp_msg.GetTargetProtoAddress(), 16);
+            
+            struct sockaddr &_l3_addr = reinterpret_cast<struct sockaddr&>(l3_addr);
+            
+            owned = _owns_address((ILayer2Interface*)this, _l3_addr);
+        
+            break;
+        }
+    }
+    
+    // If request was well-formed and address is
+    // owned by this interface, send reply
+    if (owned)
+    {
+        ARPMessage reply;
+        _build_arp_reply(arp_msg, reply);
+        
+        struct ether_addr l2_dest_addr;
+        memcpy(&l2_dest_addr, reply.GetTargetHWAddress(), ETH_ALEN);
+        
+        // Lock outgoing frame buffer
+        std::scoped_lock {_mutex};
+        
+        size_t len = MAX_FRAME_LEN;
+        int status = reply.Serialize(_frame_buffer + ETHER_HDR_LEN, len);
+        
+        if (status == 0)
+        {
+            struct ether_header *eth_header = (struct ether_header*)_frame_buffer;
+            memcpy(eth_header->ether_dhost, &l2_dest_addr, ETH_ALEN);
+            memcpy(eth_header->ether_shost, &_mac_addr, ETH_ALEN);
+            eth_header->ether_type = htons(ETHERTYPE_ARP);
+            
+            pcap_inject(_handle, _frame_buffer, ETHER_HDR_LEN + len);
         }
     }
 }
@@ -348,4 +458,33 @@ void EthernetInterface::_calcCRC(uint8_t *data, size_t len, uint8_t *crc)
 void EthernetInterface::SetMACAddress(const struct ether_addr &mac_addr)
 {
     memcpy(&_mac_addr, &mac_addr, ETH_ALEN);
+}
+
+void EthernetInterface::SetIPAddressQueryMethod(IPOwnershipQuery method)
+{
+    _owns_address = method;
+}
+
+void EthernetInterface::_build_arp_reply(ARPMessage &request, ARPMessage &reply)
+{
+    // Set message type to reply
+    reply.SetMessageType(ARP_MSG_TYPE_REPLY);
+    
+    // Get address lengths from request
+    uint8_t hw_addr_len = request.GetHWAddrLen();
+    uint8_t proto_addr_len = request.GetProtoAddrLen();
+    
+    // Fill out HW/Protocol information from request
+    reply.SetHWType(request.GetHWType());
+    reply.SetProtocolType(request.GetProtocolType());
+    reply.SetHWAddrLen(hw_addr_len);
+    reply.SetProtoAddrLen(proto_addr_len);
+    
+    // Swap sender/target addresses
+    reply.SetTargetHWAddress(request.GetSenderHWAddress(), hw_addr_len);
+    reply.SetTargetProtoAddress(request.GetSenderProtoAddress(), proto_addr_len);
+    reply.SetSenderProtoAddress(request.GetTargetProtoAddress(), proto_addr_len);
+    
+    // Fill in MAC address
+    reply.SetSenderHWAddress((uint8_t*)&_mac_addr, hw_addr_len);
 }

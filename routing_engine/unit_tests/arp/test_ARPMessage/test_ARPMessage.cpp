@@ -86,12 +86,12 @@ TEST(test_ARPMessage, test_Deserialize)
     
     // Verify Sender HW Address
     uint8_t hw_addr_expected[HW_ADDR_LEN] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xF1};
-    uint8_t *hw_addr = arp.GetSenderHWAddress();
+    const uint8_t *hw_addr = arp.GetSenderHWAddress();
     ASSERT_EQ(0, memcmp(hw_addr_expected, hw_addr, HW_ADDR_LEN));
     
     // Verify Sender Protocol Address
     uint8_t proto_addr_expected[PROTO_ADDR_LEN] = {0xC0, 0xA8, 0x00, 0x01};
-    uint8_t *proto_addr = arp.GetSenderProtoAddress();
+    const uint8_t *proto_addr = arp.GetSenderProtoAddress();
     ASSERT_EQ(0, memcmp(proto_addr_expected, proto_addr, PROTO_ADDR_LEN));
     
     // Verify Target HW Address
@@ -180,13 +180,13 @@ TEST(test_ARPMessage, test_Serialize)
     
     // Verify Sender HW Address
     hw_addr_expected[HW_ADDR_LEN - 1] = 0xF1;
-    uint8_t *hw_addr = arp2.GetSenderHWAddress();
+    const uint8_t *hw_addr = arp2.GetSenderHWAddress();
     
     ASSERT_EQ(0, memcmp(hw_addr_expected, hw_addr, HW_ADDR_LEN));
     
     // Verify Sender Protocol Address
     proto_addr_expected[PROTO_ADDR_LEN - 1] = 0x01;
-    uint8_t *proto_addr = arp2.GetSenderProtoAddress();
+    const uint8_t *proto_addr = arp2.GetSenderProtoAddress();
     ASSERT_EQ(0, memcmp(proto_addr_expected, proto_addr, PROTO_ADDR_LEN));
     
     // Verify Target HW Address

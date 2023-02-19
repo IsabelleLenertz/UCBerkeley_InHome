@@ -204,7 +204,7 @@ void ARPMessage::SetMessageType(arp_msg_type_t type)
     _msg_type = type;
 }
 
-uint8_t *ARPMessage::GetSenderHWAddress()
+const uint8_t *ARPMessage::GetSenderHWAddress()
 {
     return _src_hw_addr;
 }

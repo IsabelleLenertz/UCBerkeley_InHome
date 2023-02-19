@@ -1,0 +1,81 @@
+#ifndef INC_LOGGER_HPP_
+#define INC_LOGGER_HPP_
+
+#include <string>
+#include <mutex>
+#include <iostream>
+#include <fstream>
+#include <ctime>
+
+#define LOG_FATAL   0
+#define LOG_ERROR   1
+#define LOG_WARNING 2
+#define LOG_INFO    3
+#define LOG_DEBUG   4
+
+class Logger
+{
+public:
+    /// <summary>
+    /// Sets the current log level.
+    /// All messages equal of equal or lesser
+    /// log level are logged.
+    /// </summary>
+    /// <param name="level">Log level</param>
+    static void SetLogLevel(int level);
+    
+    /// <summary>
+    /// Sets whether the logger should log
+    /// to std::out
+    /// </summary>
+    /// <param name="flag">True to log to std::out</param>
+    static void SetLogStdOut(bool flag);
+    
+    /// <summary>
+    /// Opens the specified file for logging
+    /// </summary>
+    /// <param name="filepath">File to open</param>
+    static void OpenLogFile(const char *filepath);
+    
+    /// <summary>
+    /// Closes the currently open log file
+    /// </summary>
+    static void CloseLogFile();
+
+    /// <summary>
+    /// Logs the specified null-terminated message
+    /// </summary>
+    /// <param name="level">Message log level</param>
+    /// <param name="message">Message to log</param>
+    static void Log(int level, const char *message);
+    
+    /// <summary>
+    /// Logs the specified std::string message
+    /// </summary>
+    /// <param name="level">Message log level</param>
+    /// <param name="message">Message to log</param>
+    static void Log(int level, const std::string &message);
+    
+    /// <summary>
+    /// Logs the specified std::stringstream message
+    /// </summary>
+    /// <param name="level">Message log level</param>
+    /// <param name="message">Message to log</param>
+    static void Log(int level, const std::stringstream &message);
+    
+    /// <summary>
+    /// Returns a std::string object containing the
+    /// presentation format of the specified address
+    /// </summary>
+    static std::string IPToString(const struct sockaddr &addr);
+
+private:
+    static std::mutex _mutex;
+    static std::ofstream _file;
+    static int _log_level;
+    static bool _log_stdout;
+    
+    static constexpr char* level_strings[LOG_DEBUG + 1] = {"FATAL", "ERROR", "WARN ", "INFO ", "DEBUG"};
+};
+
+#endif

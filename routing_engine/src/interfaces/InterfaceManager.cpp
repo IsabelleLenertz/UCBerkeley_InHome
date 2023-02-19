@@ -4,9 +4,11 @@
 
 #include <pcap/pcap.h>
 
-#include <iomanip>
+#include <sstream>
 #include <cstring>
 #include <fstream>
+
+#include "logging/Logger.hpp"
 
 InterfaceManager::InterfaceManager(IARPTable *arp_table, IRoutingTable *ip_rte_table)
     : _interfaces(),
@@ -90,6 +92,9 @@ int InterfaceManager::InitializeInterfaces(int flags)
             {
                 _if = new EthernetInterface(node->name, _arp_table);
             }
+            
+            // Register
+            _if->SetIPAddressQueryMethod(std::bind(&IRoutingTable::IsOwnedByInterface, _ip_rte_table, std::placeholders::_1, std::placeholders::_2));
             
             // Add interface to list
             _interfaces.push_back(_if);
@@ -187,7 +192,7 @@ int InterfaceManager::SendPacket(IIPPacket *packet)
     
     // Locate the outgoing interface based on destination address
     const struct sockaddr *local_ip = nullptr;
-    ILayer2Interface *_if = _ip_rte_table->GetInterface(dst_addr, local_ip);
+    ILayer2Interface *_if = _ip_rte_table->GetInterface(dst_addr, &local_ip);
     
     if (_if == nullptr)
     {
@@ -210,24 +215,13 @@ int InterfaceManager::SendPacket(IIPPacket *packet)
 
 void InterfaceManager::_registerAddresses(ILayer2Interface* _if, pcap_if_t *pcap_if)
 {
-    // Convert null-terminated name string to std::string
-    std::string name(pcap_if->name);
-    
-    // Get MAC string from system files
-    std::fstream file;
-    file.open("sys/class/net/" + name + "/address", std::ios::in);
-    char mac_str[18];
-    
-    if (!file.is_open())
-    {
-        // Error opening file. Cannot continue
-        return;
-    }
-    file.getline(mac_str, 18);
-    
-    // Convert MAC string to ether_addr
+    std::stringstream sstream;
+    sstream << "Registering interface: " << _if->GetName();
+    Logger::Log(LOG_INFO, sstream.str());
+
     struct ether_addr mac_addr;
-    int status = EtherUtils::AddressFromString(mac_str, mac_addr);
+    
+    int status = EtherUtils::GetMACAddress(pcap_if->name, mac_addr);
     
     if (status != 0)
     {
@@ -276,3 +270,4 @@ ILayer2Interface* InterfaceManager::GetInterfaceFromName(const char *name)
     
     return nullptr;
 }
+

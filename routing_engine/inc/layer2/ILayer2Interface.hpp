@@ -4,14 +4,26 @@
 #include <functional>
 #include <sys/socket.h>
 #include <cstdint>
+#include "arp/IARPTable.hpp"
+
+class ILayer2Interface;
 
 /// <summary>
 /// A Layer2ReceiveCallback is a callable object which defines a handler for
 /// incoming packets on a Layer 2 Interface.
 /// </summary>
-/// <param>Pointer to incoming layer 3 data</param>
-/// <param>Length of incoming layer 3 data, in bytes</param>
+/// <param name="data">Pointer to incoming layer 3 data</param>
+/// <param name="len">Length of incoming layer 3 data, in bytes</param>
 typedef std::function<void(const uint8_t *data, size_t len)> Layer2ReceiveCallback;
+
+/// <summary>
+/// An IPOwnershipQuery is a method with which a layer2 interface will
+/// query whether or not it owns a particular interface
+/// </summary>
+/// <param name="_if">Pointer to interface object (this)</param>
+/// <param name="addr">IP address to query</param>
+/// <returns>True if the interface owns that IP address</returns>
+typedef std::function<bool(const ILayer2Interface* _if, const struct sockaddr& addr)> IPOwnershipQuery;
 
 /// <summary>
 /// Defines the base interface for all Layer 2 Interfaces.
@@ -110,7 +122,14 @@ public:
     /// with this interface
     /// </summary>
     /// <param name="mac_addr">MAC Address</param>
-    virtual void SetMACAddress(const struct ether_addr &mac_addr);
+    virtual void SetMACAddress(const struct ether_addr &mac_addr) = 0;
+    
+    /// <summary>
+    /// Sets the method used to query whether the interface owns
+    /// a particular IP address
+    /// </summary>
+    /// <param name="method">Query method</param>
+    virtual void SetIPAddressQueryMethod(IPOwnershipQuery method) = 0;
 };
 
 #endif

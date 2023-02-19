@@ -1,9 +1,13 @@
 #include "arp/LocalARPTable.hpp"
 #include <exception>
 #include <cstring>
+#include <iomanip>
+#include <iostream>
+#include <arpa/inet.h>
 
 LocalARPTable::LocalARPTable()
-    : _v4table()
+    : _v4table(),
+      _mutex()
 {
 }
 
@@ -13,6 +17,8 @@ LocalARPTable::~LocalARPTable()
 
 void LocalARPTable::SetARPEntry(const struct sockaddr &l3_addr, const struct ether_addr &l2_addr)
 {
+    std::scoped_lock {_mutex};
+
     switch (l3_addr.sa_family)
     {
         case AF_INET:
@@ -54,6 +60,8 @@ void LocalARPTable::SetARPEntry(const struct sockaddr &l3_addr, const struct eth
 
 bool LocalARPTable::GetL2Address(const struct sockaddr &l3_addr, struct ether_addr& l2_addr)
 {
+    std::scoped_lock {_mutex};
+
     bool found = false;
     
     switch (l3_addr.sa_family)

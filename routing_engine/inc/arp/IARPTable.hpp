@@ -3,6 +3,7 @@
 
 #include <sys/socket.h>
 #include <net/ethernet.h>
+#include <functional>
 
 /// <summary>
 /// Callback used to transfer address

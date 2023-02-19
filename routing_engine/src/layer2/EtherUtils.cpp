@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <cstdint>
 #include <iostream>
+#include <fstream>
 
 int EtherUtils::AddressFromString(const char *str, struct ether_addr &addr)
 {
@@ -52,4 +53,30 @@ int EtherUtils::AddressFromString(const char *str, struct ether_addr &addr)
     }
     
     return 0;
+}
+
+
+int EtherUtils::GetMACAddress(const char *if_name, struct ether_addr &addr)
+{
+    // Construct std::string to allow use of string concatenation
+    std::string name(if_name);
+
+    // Get MAC string from system files
+    std::fstream file;
+    std::string filename = "/sys/class/net/" + name + "/address";
+    file.open(filename, std::ios::in);
+    char mac_str[18];
+    
+    if (!file.is_open())
+    {
+        // Error opening file. Cannot continue
+        return 1;
+    }
+    file.getline(mac_str, 18);
+    
+    // Convert MAC string to ether_addr
+    struct ether_addr mac_addr;
+    int status = EtherUtils::AddressFromString(mac_str, addr);
+    
+    return status;
 }
