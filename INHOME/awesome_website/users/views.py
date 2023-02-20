@@ -7,3 +7,6 @@ def dashboard(request):
 def INHOME(request):
     return render(request, "users/INHOME.html")
 
+
+
+

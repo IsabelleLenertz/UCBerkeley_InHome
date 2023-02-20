@@ -1,7 +1,7 @@
 # users/urls.py
 
-from django.urls import include, re_path
-from users.views import dashboard, INHOME
+from django.urls import include, re_path, path
+from users.views import dashboard, INHOME 
 
 urlpatterns = [
     re_path(r"^accounts/", include("django.contrib.auth.urls")),
