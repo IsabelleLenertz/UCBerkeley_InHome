@@ -38,6 +38,7 @@ all : $(TESTS)
 clean :
 	rm -f $(TESTS) gtest.a gtest_main.a
 	find . -name '*.o' -delete
+	rm -f test.txt
 
 GTEST_SRCS_ = $(GTEST_DIR)/src/*.cc $(GTEST_DIR)/src/*.h $(GTEST_HEADERS)
 

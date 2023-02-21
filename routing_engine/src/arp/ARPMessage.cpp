@@ -38,7 +38,7 @@ int ARPMessage::Deserialize(const uint8_t *data, size_t len)
 {
     if (len < MIN_SIZE_BYTES)
     {
-        return 1; // Overflow Error
+        return ARP_ERROR_OVERFLOW; // Overflow Error
     }
     
     const uint8_t *ptr = data;
@@ -67,7 +67,7 @@ int ARPMessage::Deserialize(const uint8_t *data, size_t len)
     // Verify the amount of data remaining
     if (len - (ptr - data)  < bytes_remaining)
     {
-        return 1; // Overflow Error
+        return ARP_ERROR_OVERFLOW; // Overflow Error
     }
     
     // Get sender HW address
@@ -90,7 +90,7 @@ int ARPMessage::Deserialize(const uint8_t *data, size_t len)
     memcpy(_targ_proto_addr, ptr, _proto_addr_len);
     ptr += _proto_addr_len;
     
-    return 0;
+    return NO_ERROR;
 }
 
 int ARPMessage::Serialize(uint8_t *buff, size_t &len)
@@ -102,14 +102,14 @@ int ARPMessage::Serialize(uint8_t *buff, size_t &len)
     // Verify the buffer is big enough for the message
     if (len < msg_len)
     {
-        return 1; // Overflow Error
+        return ARP_ERROR_OVERFLOW; // Overflow Error
     }
     
     // Verify that all addresses are defined
     if (_src_hw_addr == nullptr || _src_proto_addr == nullptr ||
         _targ_hw_addr == nullptr || _targ_proto_addr == nullptr)
     {
-        return 2; // Undefined address
+        return ARP_ERROR_UNDEFINED_ADDRESS; // Undefined address
     }
     
     // Set output message length
@@ -151,7 +151,7 @@ int ARPMessage::Serialize(uint8_t *buff, size_t &len)
     // Set target protocol address
     memcpy(ptr, _targ_proto_addr, _proto_addr_len);
     
-    return 0;
+    return NO_ERROR;
 }
 
 arp_hw_type_t ARPMessage::GetHWType()

@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <cstring>
 
+#include "status/error_codes.hpp"
+
 typedef enum
 {
     ARP_HW_TYPE_ETHERNET    = 1,  // Ethernet

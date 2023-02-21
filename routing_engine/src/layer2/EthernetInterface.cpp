@@ -1,10 +1,12 @@
 #include "layer2/EthernetInterface.hpp"
+#include "logging/Logger.hpp"
 
 #include <net/ethernet.h>
 #include <cstring>
 #include <arpa/inet.h>
 
-#include <iostream>
+#include <iomanip>
+#include <sstream>
 
 EthernetInterface::EthernetInterface(const char *if_name, IARPTable *arp_table)
     : _handle(nullptr),
@@ -27,6 +29,7 @@ EthernetInterface::~EthernetInterface()
 
 int EthernetInterface::Open()
 {
+    std::stringstream sstream;
     _handle = pcap_open_live(
         _if_name.c_str(), // Interface to open
         BUFSIZ,           // Maximum number of bytes per packet
@@ -36,10 +39,16 @@ int EthernetInterface::Open()
     
     if (_handle == nullptr)
     {
-        return 1; // Could not open interface
+    	sstream << "Failed to Open Interface: " << GetName();
+    	Logger::Log(LOG_FATAL, sstream.str());
+    	Logger::Log(LOG_FATAL, (char*)error_buffer);
+        return INTERFACE_OPEN_FAILED; // Could not open interface
     }
     
-    return 0;
+    sstream << "Opened interface: " << this->GetName();
+    Logger::Log(LOG_DEBUG, sstream.str());
+
+    return NO_ERROR;
 }
 
 int EthernetInterface::Close()
@@ -53,15 +62,54 @@ int EthernetInterface::Close()
         pcap_close(_handle);
     }
     
-    return 0;
+    return NO_ERROR;
 }
 
 int EthernetInterface::Listen(Layer2ReceiveCallback callback, NewARPEntryListener arp_listener, bool async)
 {
+	int status = ERROR_UNSET;
+
     // Register the callback
     _callback = callback;
     _arp_listener = arp_listener;
-    
+
+
+    std::stringstream sstream;
+    sstream << "ether dst ";
+
+    sstream << std::hex;
+    for (int i = 0; i < ETH_ALEN; i++)
+    {
+    	sstream << std::setw(2) << std::setfill('0') << +_mac_addr.ether_addr_octet[i];
+    	if (i < ETH_ALEN - 1)
+    	{
+    		sstream << ":";
+    	}
+    }
+    sstream << " or ether broadcast" << std::endl;
+
+    struct bpf_program filter_pgm;
+
+    status = pcap_compile(_handle, &filter_pgm, sstream.str().c_str(), 1, PCAP_NETMASK_UNKNOWN);
+
+    if (status != 0)
+    {
+    	Logger::Log(LOG_FATAL, "Failed to compile filter");
+    	Logger::Log(LOG_FATAL, sstream.str());
+    	Logger::Log(LOG_FATAL, pcap_geterr(_handle));
+    	return COMPILE_FILTER_FAILED;
+    }
+
+    status = pcap_setfilter(_handle, &filter_pgm);
+
+    if (status != 0)
+    {
+    	Logger::Log(LOG_FATAL, "Failed to set filter");
+    	return SET_FILTER_FAILED;
+    }
+
+    Logger::Log(LOG_DEBUG, "Filter Set Successfully");
+
     if (async)
     {
         // If async, start up a thread on which
@@ -73,8 +121,8 @@ int EthernetInterface::Listen(Layer2ReceiveCallback callback, NewARPEntryListene
         // If not async, capture on current thread
         _captureLoop();
     }
-    
-    return 0;
+
+    return NO_ERROR;
 }
 
 int EthernetInterface::StopListen()
@@ -89,15 +137,20 @@ int EthernetInterface::StopListen()
         _thread.join();
     }
     
-    return 0;
+    return NO_ERROR;
 }
 
 int EthernetInterface::SendPacket(const struct sockaddr &l3_local_addr, const struct sockaddr &l3_dest_addr, const uint8_t *data, size_t len)
 {
     std::scoped_lock { _mutex };
 
-    int status = 0;
+    int status = NO_ERROR;
     
+    if (len + ETHER_HDR_LEN > MAX_FRAME_LEN)
+    {
+    	return 4;
+    }
+
     // Get destination address from ARP table
     bool hit;
     struct ether_addr l2_dest_addr;
@@ -157,15 +210,10 @@ int EthernetInterface::SendPacket(const struct sockaddr &l3_local_addr, const st
         len = MAX_FRAME_LEN;
         status = request.Serialize(_frame_buffer + ETHER_HDR_LEN, len);
         
-        if (status != 0)
-        {
-            // ARP Serialization error
-            status = 2;
-        }
-        else
+        if (status == NO_ERROR)
         {
             // Indicate an ARP miss
-            status = 1;
+            status = ARP_CACHE_MISS;
         }
     }
     else
@@ -175,7 +223,7 @@ int EthernetInterface::SendPacket(const struct sockaddr &l3_local_addr, const st
     }
     
     // Only send if no error has occurred up to this point
-    if (status == 0 || status == 1)
+    if (status == NO_ERROR || status == ARP_CACHE_MISS)
     {
         // Populate header
         struct ether_header *eth_header = (struct ether_header*)_frame_buffer;
@@ -184,7 +232,7 @@ int EthernetInterface::SendPacket(const struct sockaddr &l3_local_addr, const st
         
         // Status of 0 means IP packet goes through
         // Statys of 1 means ARP packet
-        if (status == 0)
+        if (status == NO_ERROR)
         {
             eth_header->ether_type = htons(ETHERTYPE_IP);
         }
@@ -202,11 +250,14 @@ int EthernetInterface::SendPacket(const struct sockaddr &l3_local_addr, const st
         
         if (bytes_written <= 0)
         {
-            status = 3;
+            status = INTERFACE_SEND_FAILED;
+			Logger::Log(LOG_WARNING, "PCAP Inject Failed");
+			Logger::Log(LOG_WARNING, pcap_geterr(_handle));
+			Logger::Log(LOG_WARNING, std::to_string(ETHER_HDR_LEN + len));
         }
         else
         {
-            status = 0;
+            status = NO_ERROR;
         }
     }
 
@@ -228,9 +279,25 @@ void EthernetInterface::_captureLoop()
 
 void EthernetInterface::_receive(u_char *user, const struct pcap_pkthdr *h, const u_char *bytes)
 {
+	if (user == nullptr)
+	{
+		Logger::Log(LOG_DEBUG, "EthernetInterface::_receive got NULL user pointer.");
+		return;
+	}
+
+	if (h->len > BUFSIZ)
+	{
+		Logger::Log(LOG_DEBUG, "Packet too large. Discarding");
+		return;
+	}
+
     // Cast user variable to pointer to ethernet interface object
     EthernetInterface *_this = (EthernetInterface*)user;
     
+	std::stringstream sstream;
+	sstream << "Received " << h->len << " bytes on " << _this->GetName();
+	Logger::Log(LOG_DEBUG, sstream.str());
+
     // Pass to appropriate handler based on EtherType field
     struct ether_header *eth_header = (struct ether_header*)bytes;
     switch (ntohs(eth_header->ether_type))
@@ -266,9 +333,19 @@ void EthernetInterface::_handle_ip(const struct pcap_pkthdr *h, const u_char *by
     // Size of ethernet frame minus size of
     // header. Trailer is not included.
     l3_pkt_len = h->len - (ETHER_HDR_LEN);
-    
-    // Execute callback
-    _callback((ILayer2Interface*)this, l3_pkt, l3_pkt_len);
+
+    // If destination MAC is broadcast address, the packet
+    // must not be routed. Drop now.
+    struct ether_header *eth_header = (struct ether_header*)bytes;
+    if (memcmp(&BROADCAST_MAC, eth_header->ether_dhost, ETH_ALEN) != 0)
+    {
+		// Execute callback
+		_callback((ILayer2Interface*)this, l3_pkt, l3_pkt_len);
+    }
+    else
+    {
+    	Logger::Log(LOG_DEBUG, "Not routing broadcast frame");
+    }
 }
 
 void EthernetInterface::_handle_arp(const struct pcap_pkthdr *h, const u_char *bytes)
@@ -345,6 +422,9 @@ void EthernetInterface::_handle_arp_reply(ARPMessage &arp_msg)
 
 void EthernetInterface::_handle_arp_request(ARPMessage &arp_msg)
 {
+	Logger::Log(LOG_DEBUG, "ARP Request Hadling Disabled");
+	return;
+
     bool owned = false;
     
     switch (arp_msg.GetProtocolType())

@@ -37,10 +37,12 @@ int Layer3Router::Initialize()
     // Initialize Ethernet Interfaces Only
     status = _if_manager.InitializeInterfaces(IM_IF_ETHERNET);
 
+    Logger::Log(LOG_DEBUG, "Interface Initialization Complete");
+
     if (status != 0)
     {
         Logger::Log(LOG_FATAL, "Failed to initialize interfaces");
-        return 1;
+        return INTERFACE_INIT_FAILED;
     }
 
     // Open all interfaces
@@ -49,11 +51,11 @@ int Layer3Router::Initialize()
     if (status != 0)
     {
         Logger::Log(LOG_FATAL, "Failed to open interfaces");
-        return 2;
+        return INTERFACE_OPEN_FAILED;
     }
 
     // Bind receive callback
-    Layer2ReceiveCallback callback = std::bind(&Layer3Router::_receive_packet, this, std::placeholders::_1, std::placeholders::_2);
+    Layer3ReceiveCallback callback = std::bind(&Layer3Router::_receive_packet, this, std::placeholders::_1);
     
     NewARPEntryListener arp_listener = std::bind(&Layer3Router::_queue_arp_reply, this, std::placeholders::_1, std::placeholders::_2);
     
@@ -63,7 +65,7 @@ int Layer3Router::Initialize()
     if (status != 0)
     {
         Logger::Log(LOG_FATAL, "Failed to listen on interfaces");
-        return 3;
+        return INTERFACE_LISTEN_FAILED;
     }
 
     ////////////////////////////////
@@ -86,7 +88,7 @@ int Layer3Router::Initialize()
     // Add submodules to central module
     _access_control.AddModule((IAccessControlModule*)&_null_access);
 
-    return 0;
+    return NO_ERROR;
 }
 
 void Layer3Router::MainLoop()
@@ -106,21 +108,21 @@ void Layer3Router::MainLoop()
         if (!_rcv_queue.IsEmpty())
         {
             // Get data from queue
-            queued_message_t msg;
-            _rcv_queue.Dequeue(msg);
+        	IIPPacket *pkt;
+            _rcv_queue.Dequeue(pkt);
             
             // Pass to packet processing
-            _process_packet(msg.data, msg.len);
+            _process_packet(pkt);
         }
     }
 }
 
 void Layer3Router::_receive_packet(IIPPacket *packet)
 {
-    
     // Add to receive queue
     // Ownership of buff pointer transfers
     // to receive queue
+
     _rcv_queue.Enqueue(packet);
 }
 
@@ -128,66 +130,61 @@ void Layer3Router::_process_packet(IIPPacket *packet)
 {
     if (packet == nullptr)
     {
+    	Logger::Log(LOG_WARNING, "Unexpected nullptr found in layer3 receive queue");
         return;
     }
+    std::stringstream sstream;
     
     // Consult Access Control Module
     bool allowed = _access_control.IsAllowed(packet);
     
     if (allowed)
     {
-        if (status == 0)
-        {
-            status = _if_manager.SendPacket(packet);
-            
-            switch (status)
-            {
-                case 0:
-                {
-                    // Success
-                    Logger::Log(LOG_DEBUG, "Message sent successfully");
-                    break;
-                }
-                case 1:
-                {
-                    // ARP cache miss
-                    Logger::Log(LOG_DEBUG, "ARP Cache Miss");
-                    
-                    outstanding_msg_t msg;
-                    msg.pkt = packet;
-                    msg.expires_at = time(NULL) + 5; // 5 seconds
-                    
-                    _outstanding_msgs.push_back(msg);
-                    
-                    // Prevent packet from being freed
-                    packet = nullptr;
-                    break;
-                }
-                case 2:
-                {
-                    sstream.str("");
-                    sstream << "Could not find outgoing interface (" << Logger::IPToString(packet->GetDestinationAddress()) << ")";
-                    Logger::Log(LOG_DEBUG, sstream.str());
-                    break;
-                }
-                default:
-                {
-                    sstream.str("");
-                    sstream << "Unknown error(" << status << ")";
-                    Logger::Log(LOG_WARNING, sstream.str());
-                    break;
-                }
-            }
-        }
-        else
-        {
-            Logger::Log(LOG_ERROR, "Failed to serialize packet");
-        }
+		int status = _if_manager.SendPacket(packet);
+
+		switch (status)
+		{
+			case NO_ERROR:
+			{
+				// Success
+				Logger::Log(LOG_DEBUG, "Message sent successfully");
+				break;
+			}
+			case ARP_CACHE_MISS:
+			{
+				// ARP cache miss
+				Logger::Log(LOG_DEBUG, "ARP Cache Miss");
+
+				outstanding_msg_t msg;
+				msg.pkt = packet;
+				msg.expires_at = time(NULL) + 5; // 5 seconds
+
+				_outstanding_msgs.push_back(msg);
+
+				// Prevent packet from being freed
+				packet = nullptr;
+				break;
+			}
+			case ROUTE_INTERFACE_NOT_FOUND:
+			{
+				sstream.str("");
+				sstream << "Could not find outgoing interface (" << Logger::IPToString(packet->GetDestinationAddress()) << ")";
+				Logger::Log(LOG_DEBUG, sstream.str());
+				break;
+			}
+			default:
+			{
+				sstream.str("");
+				sstream << "Miscellaneous error (" << status << ")";
+				Logger::Log(LOG_WARNING, sstream.str());
+				break;
+			}
+		}
     }
     else
     {
         // TODO Log more information about denied packet
-        Logger::Log(LOG_WARNING, "Packet denied");
+        Logger::Log(LOG_SECURE, "Packet denied");
     }
     
     // End of packet lifetime, free memory
@@ -238,6 +235,11 @@ void Layer3Router::_process_arp_replies()
         struct sockaddr *target_addr;
         _arp_replies.Dequeue(target_addr);
         
+        if (target_addr == nullptr)
+        {
+        	Logger::Log(LOG_DEBUG, "Unexpected nullptr found in ARP reply queue.");
+        }
+
         // Send all outstanding messages to this target address
         for (auto m = _outstanding_msgs.begin(); m < _outstanding_msgs.end(); m++)
         {
@@ -246,10 +248,18 @@ void Layer3Router::_process_arp_replies()
             if (IPUtils::AddressesAreEqual(*target_addr, msg.pkt->GetDestinationAddress()))
             {
                 // Destination address matches, send packet
-                _if_manager.SendPacket(msg.pkt);
+            	if (msg.pkt != nullptr)
+            	{
+                    _if_manager.SendPacket(msg.pkt);
                 
-                // Free packet memory and remove from outgoing messages
-                delete msg.pkt;
+                    // Free packet memory and remove from outgoing messages
+                    delete msg.pkt;
+            	}
+            	else
+            	{
+            		Logger::Log(LOG_DEBUG, "Unexpected nullptr found in outgoing messages.");
+            	}
+
                 _outstanding_msgs.erase(m);
             }
         }
@@ -289,8 +299,15 @@ void Layer3Router::_drop_stale_messages()
         if (current_time > msg.expires_at)
         {
             // Free packet memory and remove from outgoing messages
-            delete msg.pkt;
-            _outstanding_msgs.erase(m);
+        	if (msg.pkt != nullptr)
+        	{
+                delete msg.pkt;
+                _outstanding_msgs.erase(m);
+        	}
+        	else
+        	{
+        		Logger::Log(LOG_DEBUG, "Unexpected nullptr found when dropping stale queued messages.");
+        	}
         }
     }
 }

@@ -37,7 +37,7 @@ int IPv4Packet::Deserialize(const uint8_t *buff, uint16_t len)
     // If the first word can't be formed, return overflow error
     if (len < sizeof(uint32_t))
     {
-        return IPV4_PACKET_ERROR_OVERFLOW;
+        return IPV4_ERROR_OVERFLOW;
     }
     
     // Converting to uint32_t makes bitwise manipulation easier
@@ -49,7 +49,7 @@ int IPv4Packet::Deserialize(const uint8_t *buff, uint16_t len)
     uint8_t version = (uint8_t)((tmp >> 4) & 0xF);
     if (version != 4)
     {
-        return IPV4_PACKET_ERROR_INVALID_VERSION;
+        return IPV4_ERROR_INVALID_VERSION;
     }
     
     // Get Header Length, convert to bytes
@@ -66,7 +66,7 @@ int IPv4Packet::Deserialize(const uint8_t *buff, uint16_t len)
     // for specified total length
     if (len < total_len)
     {
-        return IPV4_PACKET_ERROR_OVERFLOW;
+        return IPV4_ERROR_OVERFLOW;
     }
     
     // Get second word
@@ -107,17 +107,17 @@ int IPv4Packet::Deserialize(const uint8_t *buff, uint16_t len)
     // must be 0
     if (checksum_calculated != 0)
     {
-        return IPV4_PACKET_ERROR_INVALID_CHECKSUM;
+        return IPV4_ERROR_INVALID_CHECKSUM;
     }
     
     // Extract Source Address
-    tmp = ntohl(*(uint32_t*)ptr);
+    tmp = *(uint32_t*)ptr;
     _src_addr.sin_family = AF_INET;
     memcpy(&_src_addr.sin_addr, &tmp, 4);
     ptr += 4;
     
     // Extract Destination Address
-    tmp = ntohl(*(uint32_t*)ptr);
+    tmp = *(uint32_t*)ptr;
     _dest_addr.sin_family = AF_INET;
     memcpy(&_dest_addr.sin_addr, &tmp, 4);
     ptr += 4;
@@ -138,7 +138,7 @@ int IPv4Packet::Deserialize(const uint8_t *buff, uint16_t len)
         // Check for an undefined option type
         if (!IPv4Option::OptionTable[option_type].defined)
         {
-            return IPV4_PACKET_ERROR_UNDEFINED_OPTION;
+            return IPV4_ERROR_UNDEFINED_OPTION;
         }
         
         // Check if this is a variable-length option
@@ -167,7 +167,7 @@ int IPv4Packet::Deserialize(const uint8_t *buff, uint16_t len)
     // Copy data payload
     _data = std::vector<uint8_t>(ptr, ptr + payload_len);
     
-    return IPV4_PACKET_SUCCESS;
+    return NO_ERROR;
 }
 
 int IPv4Packet::Serialize(uint8_t* buff, uint16_t& len)
@@ -175,6 +175,11 @@ int IPv4Packet::Serialize(uint8_t* buff, uint16_t& len)
     uint8_t *ptr = buff;
     uint32_t tmp;
     
+    if (GetTotalLengthBytes() > len)
+    {
+    	return IPV4_ERROR_OVERFLOW;
+    }
+
     // Construct word 0
     tmp = 0x40; // Version (always 4)
     tmp |= (uint32_t)(GetHeaderLengthBytes() / sizeof(uint32_t));
@@ -203,12 +208,12 @@ int IPv4Packet::Serialize(uint8_t* buff, uint16_t& len)
     
     // Write Source Address
     memcpy(&tmp, &_src_addr.sin_addr, 4);
-    *(uint32_t*)ptr = htonl(tmp);
+    *(uint32_t*)ptr = tmp;
     ptr += 4;
     
     // Write Destination Address
     memcpy(&tmp, &_dest_addr.sin_addr, 4);
-    *(uint32_t*)ptr = htonl(tmp);
+    *(uint32_t*)ptr = tmp;
     ptr += 4;
     
     // Write options
@@ -222,7 +227,7 @@ int IPv4Packet::Serialize(uint8_t* buff, uint16_t& len)
         // Cannot serialize unknown option type
         if (!IPv4Option::OptionTable[option.GetOptionType()].defined)
         {
-            return IPV4_PACKET_ERROR_UNDEFINED_OPTION;
+            return IPV4_ERROR_UNDEFINED_OPTION;
         }
         
         // If variable length, write length and data
@@ -255,7 +260,7 @@ int IPv4Packet::Serialize(uint8_t* buff, uint16_t& len)
     
     len = GetTotalLengthBytes();
     
-    return IPV4_PACKET_SUCCESS;
+    return NO_ERROR;
 }
 
 // Read-only

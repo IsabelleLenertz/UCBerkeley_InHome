@@ -4,6 +4,7 @@
 #include "layer2/ILayer2Interface.hpp"
 #include "arp/ARPMessage.hpp"
 #include "arp/IARPTable.hpp"
+#include "status/error_codes.hpp"
 
 #include <pcap/pcap.h>
 #include <thread>
@@ -37,7 +38,7 @@ public:
     static constexpr struct ether_addr BROADCAST_MAC {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
     static constexpr struct ether_addr BLANK_MAC {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
     
-    static const size_t MAX_FRAME_LEN = 1500;
+    static const size_t MAX_FRAME_LEN = BUFSIZ;
 
 private:
     char error_buffer[PCAP_ERRBUF_SIZE];

@@ -14,7 +14,7 @@ LocalRoutingTable::~LocalRoutingTable()
 {
 }
 
-ILayer2Interface* LocalRoutingTable::GetInterface(const struct sockaddr &ip_addr, const struct sockaddr **local_ip)
+ILayer2Interface* LocalRoutingTable::GetInterface(const struct sockaddr &ip_addr, struct sockaddr_storage &local_ip)
 {
     std::scoped_lock {_mutex};
     
@@ -23,7 +23,7 @@ ILayer2Interface* LocalRoutingTable::GetInterface(const struct sockaddr &ip_addr
     {
         RoutingTableEntry_t& entry = *e;
         
-        // Only evaluate if address family is the same
+        // Only evaluate if address family is the samelocal_ip
         if (entry.local_ip.ss_family == ip_addr.sa_family)
         {
             const struct sockaddr &entry_local_ip = reinterpret_cast<const struct sockaddr&>(entry.local_ip);
@@ -40,7 +40,37 @@ ILayer2Interface* LocalRoutingTable::GetInterface(const struct sockaddr &ip_addr
             // then ip_addr is on that subnet
             if (IPUtils::AddressesAreEqual(subnet, entry_subnet))
             {
-                *local_ip = reinterpret_cast<const struct sockaddr*>(&entry.local_ip);
+            	switch (ip_addr.sa_family)
+            	{
+                    case AF_INET:
+                    {
+                        struct sockaddr_in &_local_ip = reinterpret_cast<struct sockaddr_in&>(local_ip);
+                        const struct sockaddr_in &_entry_ip = reinterpret_cast<const struct sockaddr_in&>(entry_local_ip);
+
+                        _local_ip.sin_family = AF_INET;
+                        _local_ip.sin_port = _entry_ip.sin_port;
+                        memcpy(&_local_ip.sin_addr, &_entry_ip.sin_addr, 4);
+
+                    	break;
+                    }
+                    case AF_INET6:
+                    {
+                    	struct sockaddr_in6 &_local_ip = reinterpret_cast<struct sockaddr_in6&>(local_ip);
+                    	const struct sockaddr_in6 &_entry_ip = reinterpret_cast<const struct sockaddr_in6&>(entry_local_ip);
+
+                    	_local_ip.sin6_family = AF_INET;
+                    	_local_ip.sin6_port = _entry_ip.sin6_port;
+                    	_local_ip.sin6_flowinfo = _entry_ip.sin6_flowinfo;
+                    	memcpy(&_local_ip.sin6_addr, &_entry_ip.sin6_addr, 16);
+
+                    	break;
+                    }
+                    default:
+                    {
+                    	return nullptr;
+                    }
+            	}
+
                 return entry.interface;
             }
         }
@@ -129,6 +159,8 @@ void LocalRoutingTable::RemoveSubnetAssociation(const struct sockaddr &ip_addr, 
 
 bool LocalRoutingTable::IsOwnedByInterface(const ILayer2Interface *interface, const struct sockaddr &ip_addr)
 {
+	std::scoped_lock {_mutex};
+
     for (auto e = _table.begin(); e < _table.end(); e++)
     {
         RoutingTableEntry_t& entry = *e;

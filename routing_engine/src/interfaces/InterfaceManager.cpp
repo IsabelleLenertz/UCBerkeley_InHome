@@ -1,6 +1,7 @@
 #include "interfaces/InterfaceManager.hpp"
 #include "layer2/EtherUtils.hpp"
 #include "layer3/IPUtils.hpp"
+#include "layer3/IPPacketFactory.hpp"
 
 #include <pcap/pcap.h>
 
@@ -30,14 +31,16 @@ int InterfaceManager::InitializeInterfaces(int flags)
 {
     pcap_if_t *alldevsp;
     char errbuf[PCAP_ERRBUF_SIZE];
-    int status;
+    int status = ERROR_UNSET;
     
     // Use PCAP to find all available devices
     status = pcap_findalldevs(&alldevsp, errbuf);
     
     if (status != 0)
     {
-        return status;
+    	Logger::Log(LOG_FATAL, "Failed to get available interfaces.");
+    	Logger::Log(LOG_FATAL, (char*)errbuf);
+        return INTERFACE_INIT_FAILED;
     }
     
     pcap_if_t *node = alldevsp;
@@ -113,7 +116,7 @@ int InterfaceManager::InitializeInterfaces(int flags)
 
 int InterfaceManager::OpenAll()
 {
-    int status = 0;
+    int status = NO_ERROR;
     
     for (auto _if = _interfaces.begin(); _if < _interfaces.end(); _if++)
     {
@@ -122,7 +125,7 @@ int InterfaceManager::OpenAll()
         
         if (tmp != 0)
         {
-            status = 1;
+            status = INTERFACE_OPEN_FAILED;
         }
     }
     
@@ -131,7 +134,7 @@ int InterfaceManager::OpenAll()
 
 int InterfaceManager::CloseAll()
 {
-    int status = 0;
+    int status = NO_ERROR;
     
     for (auto _if = _interfaces.begin(); _if < _interfaces.end(); _if++)
     {
@@ -140,16 +143,16 @@ int InterfaceManager::CloseAll()
         
         if (tmp != 0)
         {
-            status = 1;
+            status = INTERFACE_CLOSE_FAILED;
         }
     }
     
     return status;
 }
 
-int InterfaceManager::ListenAll(Layer2ReceiveCallback callback, NewARPEntryListener arp_listener)
+int InterfaceManager::ListenAll(Layer3ReceiveCallback callback, NewARPEntryListener arp_listener)
 {
-    int status = 0;
+    int status = NO_ERROR;
     
     _callback = callback;
     
@@ -158,12 +161,11 @@ int InterfaceManager::ListenAll(Layer2ReceiveCallback callback, NewARPEntryListe
         ILayer2Interface *_interface = *_if;
         
         int tmp = _interface->Listen(
-            std::bind(&InterfaceManager::ReceiveLayer2Data, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-            callback, arp_listener, true);
+            std::bind(&InterfaceManager::ReceiveLayer2Data, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3), arp_listener, true);
         
         if (tmp != 0)
         {
-            status = 1;
+            status = INTERFACE_LISTEN_FAILED;
         }
     }
     
@@ -172,7 +174,7 @@ int InterfaceManager::ListenAll(Layer2ReceiveCallback callback, NewARPEntryListe
 
 int InterfaceManager::StopListenAll()
 {
-    int status = 0;
+    int status = NO_ERROR;
     
     for (auto _if = _interfaces.begin(); _if < _interfaces.end(); _if++)
     {
@@ -181,7 +183,7 @@ int InterfaceManager::StopListenAll()
         
         if (tmp != 0)
         {
-            status = 1;
+            status = INTERFACE_STOP_LISTEN_FAILED;
         }
     }
     
@@ -196,13 +198,15 @@ int InterfaceManager::SendPacket(IIPPacket *packet)
     int status = 0;
     
     // Locate the outgoing interface based on destination address
-    const struct sockaddr *local_ip = nullptr;
-    ILayer2Interface *_if = _ip_rte_table->GetInterface(dst_addr, &local_ip);
+    struct sockaddr_storage local_ip;
+    ILayer2Interface *_if = _ip_rte_table->GetInterface(dst_addr, local_ip);
     
+    struct sockaddr &_local_ip = reinterpret_cast<struct sockaddr&>(local_ip);
+
     if (_if == nullptr)
     {
         // Interface not found
-        return 2;
+        return ROUTE_INTERFACE_NOT_FOUND;
     }
     
     uint16_t len = SEND_BUFFER_SIZE;
@@ -210,10 +214,10 @@ int InterfaceManager::SendPacket(IIPPacket *packet)
     
     if (status != 0)
     {
-        return 3;
+        return status;
     }
     
-    status = _if->SendPacket(*local_ip, dst_addr, _send_buff, (size_t)len);
+    status = _if->SendPacket(_local_ip, dst_addr, _send_buff, (size_t)len);
     
     return status;
 }
@@ -227,7 +231,7 @@ void InterfaceManager::_registerAddresses(ILayer2Interface* _if, pcap_if_t *pcap
     struct ether_addr mac_addr;
     
     int status = EtherUtils::GetMACAddress(pcap_if->name, mac_addr);
-    
+
     if (status != 0)
     {
         // Error parsing MAC address. Cannot continue.
@@ -289,9 +293,10 @@ void InterfaceManager::ReceiveLayer2Data(ILayer2Interface *_if, const uint8_t *d
     {
         // Check if this packet is destined for an IP address owned by
         // this interface. If so, do not pass it to the router
-        if (ip_rte_table->IsOwnedByInterface(_if, packet->GetDestinationAddress()))
+        if (_ip_rte_table->IsOwnedByInterface(_if, packet->GetDestinationAddress()))
         {
             // IP owned by this interface. Do not pass to routing engine.
+        	Logger::Log(LOG_DEBUG, "Packet owned by interface. Dropping");
         }
         else
         {

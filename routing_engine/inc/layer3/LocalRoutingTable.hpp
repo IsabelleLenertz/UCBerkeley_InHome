@@ -28,7 +28,7 @@ public:
     /// </summary>
     ~LocalRoutingTable();
     
-    ILayer2Interface *GetInterface(const struct sockaddr &ip_addr, const struct sockaddr **local_ip);
+    ILayer2Interface *GetInterface(const struct sockaddr &ip_addr, struct sockaddr_storage &local_ip);
     bool IsOwnedByInterface(const ILayer2Interface *interface, const struct sockaddr &ip_addr);
     void AddSubnetAssociation(ILayer2Interface *interface, const struct sockaddr &ip_addr, const struct sockaddr &netmask);
     void RemoveSubnetAssociation(const struct sockaddr &ip_addr, const struct sockaddr &netmask);

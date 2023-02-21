@@ -8,10 +8,12 @@
 #include <ctime>
 
 #define LOG_FATAL   0
-#define LOG_ERROR   1
-#define LOG_WARNING 2
-#define LOG_INFO    3
-#define LOG_DEBUG   4
+#define LOG_SECURE  1
+#define LOG_ERROR   2
+#define LOG_WARNING 3
+#define LOG_INFO    4
+#define LOG_DEBUG   5
+#define LOG_VERBOSE 6
 
 class Logger
 {
@@ -75,7 +77,7 @@ private:
     static int _log_level;
     static bool _log_stdout;
     
-    static constexpr char* level_strings[LOG_DEBUG + 1] = {"FATAL", "ERROR", "WARN ", "INFO ", "DEBUG"};
+    static constexpr char* level_strings[LOG_VERBOSE + 1] = {" FATAL ", "SECURE ", " ERROR ", " WARN  ", " INFO  ", " DEBUG ", "VERBOSE"};
 };
 
 #endif

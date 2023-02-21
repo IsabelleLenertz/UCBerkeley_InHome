@@ -3,17 +3,11 @@
 
 #include "layer3/IIPPacket.hpp"
 #include "IPv4Option.hpp"
+#include "status/error_codes.hpp"
 
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <vector>
-
-// Error Definitions
-#define IPV4_PACKET_SUCCESS                0
-#define IPV4_PACKET_ERROR_OVERFLOW         1
-#define IPV4_PACKET_ERROR_INVALID_CHECKSUM 2
-#define IPV4_PACKET_ERROR_UNDEFINED_OPTION 3
-#define IPV4_PACKET_ERROR_INVALID_VERSION  4
 
 /// <summary>
 /// Encapsulates IPv4 Data. Provides methods

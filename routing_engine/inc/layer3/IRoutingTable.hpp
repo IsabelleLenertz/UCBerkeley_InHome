@@ -30,7 +30,7 @@ public:
     /// subnet (which is not usually desirable), there is
     /// no guarantee which will be returned.
     /// </remarks>
-    virtual ILayer2Interface *GetInterface(const struct sockaddr &ip_addr, const struct sockaddr **local_ip) = 0;
+    virtual ILayer2Interface *GetInterface(const struct sockaddr &ip_addr, struct sockaddr_storage& local_ip) = 0;
     
     /// <summary>
     /// Returns true if the specified IP address is owned by the specified interface

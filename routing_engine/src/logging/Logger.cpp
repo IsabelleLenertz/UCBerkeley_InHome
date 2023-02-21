@@ -114,4 +114,6 @@ std::string Logger::IPToString(const struct sockaddr &addr)
             return std::string(addr_str);
         }
     }
+
+    return "";
 }
