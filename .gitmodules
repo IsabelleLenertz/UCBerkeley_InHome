@@ -1,0 +1,6 @@
+[submodule "routing_engine/deps/libpcap"]
+	path = routing_engine/deps/libpcap
+	url = https://github.com/the-tcpdump-group/libpcap.git
+[submodule "routing_engine/deps/googletest"]
+	path = routing_engine/deps/googletest
+	url = https://github.com/google/googletest.git
