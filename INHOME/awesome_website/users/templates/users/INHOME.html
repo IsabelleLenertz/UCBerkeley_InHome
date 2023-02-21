@@ -1,5 +1,6 @@
 <!--users/templates/users/INHOME.html-->
 
+
 {% extends 'base.html' %}
 
 {% block content %}
@@ -16,7 +17,8 @@
 
 
 <div class="center" style="text-align:center;font-family:verdana;font-size:125%;">
-<form  method="get">
+<form action="https://localhost:8443/v1/device-management",json={"mac": MAC, "ipv4": IPv4_addr, "name": device_name}, 
+verify=False method="post">
     {% csrf_token %}
     {{ form.as_p }}
     <label for="MAC">MAC address:</label><br>
@@ -28,6 +30,8 @@
     <input type="submit" value="Submit">
 </form>
 </div>
+
+
 
 <div style="text-align:center;font-family:verdana;font-size:125%;">
 <a href="{% url 'dashboard' %}">Back to dashboard</a>
