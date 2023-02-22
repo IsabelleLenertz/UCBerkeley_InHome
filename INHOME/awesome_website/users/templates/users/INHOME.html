@@ -17,8 +17,7 @@
 
 
 <div class="center" style="text-align:center;font-family:verdana;font-size:125%;">
-<form action="https://localhost:8443/v1/device-management",json={"mac": MAC, "ipv4": IPv4_addr, "name": device_name}, 
-verify=False method="post">
+<form method="post">
     {% csrf_token %}
     {{ form.as_p }}
     <label for="MAC">MAC address:</label><br>
