@@ -8,4 +8,6 @@ public abstract class queries {
     public static String SELECT_ALL_DEVICES = "SELECT * FROM devices";
     public static String GET_ONE_DEVICE = "SELECT * FROM devices WHERE mac = ? LIMIT 1";
 
+    public static String INSERT_USER = "INSERT INTO login (Username, Salt, PwdHash) VALUES (?, ?, ?)";
+
 }

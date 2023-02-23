@@ -17,8 +17,8 @@ public class ServletsModule extends ServletModule {
 
         bind(PolicyServlet.class).in(Scopes.SINGLETON);
         serveRegex("/v1/policy-management/?[0-9]{0,5}").with(PolicyServlet.class);
-
         bind(LoginServlet.class).in(Scopes.SINGLETON);
-        serve("/v1/login").with(LoginServlet.class);
+        serveRegex("/v1/login/?(newuser)?").with(LoginServlet.class);
+        filter("/*").through(CorsFilter.class);
     }
 }

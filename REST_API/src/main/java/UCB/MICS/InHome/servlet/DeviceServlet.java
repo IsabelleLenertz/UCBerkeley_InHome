@@ -36,6 +36,7 @@ public class DeviceServlet extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws IOException
     {
+        resp.addHeader("Access-Control-Allow-Origin", "http://localhost:3000");
         Map<String, String> json = null;
         try {
             json = Utilities.getFromRequest(req);

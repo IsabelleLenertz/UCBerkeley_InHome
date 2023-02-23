@@ -22,6 +22,13 @@ CREATE TABLE IF NOT EXISTS policies (
                            deviceTo binary(6) NOT NULL,
                            deviceFrom binary(6) NOT NULL);
 
+
+-- create login table
+CREATE TABLE IF NOT EXISTS login (
+                            Username VARCHAR(30) PRIMARY KEY,
+                            Salt CHAR(5),
+                            PwdHash CHAR(62));
+
 -- create database user
 CREATE USER 'api' IDENTIFIED BY 'password';
 GRANT SELECT, INSERT, UPDATE, DELETE ON InHome.* TO api;
