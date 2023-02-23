@@ -36,6 +36,7 @@
 .idea*
 REST_API/target/
 REST_API/var/
+REST_API/out/
 
 # DB generated files
 .db*
@@ -43,3 +44,7 @@ REST_API/var/
 INHOME/.ipynb*
 INHOME/venv*
 *db.sqlite3*
+*/env/*
+*_pycache_*
+.ipynb_checkpoints/*
+*_init_*

@@ -1,4 +1,4 @@
-"""awesome_website URL Configuration
+"""mytestsite URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/4.1/topics/http/urls/
@@ -13,22 +13,11 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-#from django.contrib import admin
-#from django.urls import include, path
-#
-#urlpatterns = [
-#    path('^', include('users.urls')),
-#    path('admin/', admin.site.urls),
-#]
-# awesome_website/urls.py
-
-from django.urls import include, re_path
 from django.contrib import admin
+from django.urls import path
+from .views import create_device
 
-
-#
 urlpatterns = [
-    re_path(r"^", include("users.urls")),
-    re_path(r"^", include("device_interface.urls")),
-    re_path(r"^admin/", admin.site.urls),
+    path('admin/', admin.site.urls),
+    path('create_device/', create_device, name = "create_device"),
 ]
