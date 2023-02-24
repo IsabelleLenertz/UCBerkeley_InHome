@@ -1,0 +1,15 @@
+<!--device_interface/templates/dev_dashboard.html-->
+
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div style="text-align:center;font-family:verdana;font-size:125%;">
+
+    <a href="{% url 'create_device' %}">Add a device</a>
+    <p> </p>
+    <a href="{% url 'display_devices' %}">Display all devices</a>
+	
+</div>
+
+{% endblock %}

@@ -1,0 +1,24 @@
+<!--device_interface/templates/base.html-->
+
+<style>
+    label, input {
+        display: block;
+    }
+    span.helptext {
+        display: none;
+    }
+</style>
+
+
+{% load static %}
+
+<h1 style="text-align:center;font-family:verdana;font-size:150%">Welcome to INHOME</h1>
+<h2 style="text-align:center;font-family:verdana;font-size:75%;">Zero trust home network protection</h2>
+<p style="text-align:center;">
+
+<img src="{% static 'device_interface/Symbols.jpg' %}" alt="Athena Owl">
+
+</p>
+
+{% block content %}
+{% endblock %}
