@@ -31,7 +31,7 @@ public:
     /// Only the central access control module may
     /// make the final authorization decision
     /// </remarks>
-    virtual bool IsAllowed(const IIPPacket *packet) = 0;
+    virtual bool IsAllowed(IIPPacket *packet) = 0;
     
     /// <summary>
     /// Sets a pointer to the configuration module.

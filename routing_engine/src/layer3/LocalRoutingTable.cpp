@@ -27,18 +27,20 @@ ILayer2Interface* LocalRoutingTable::GetInterface(const struct sockaddr &ip_addr
         if (entry.local_ip.ss_family == ip_addr.sa_family)
         {
             const struct sockaddr &entry_local_ip = reinterpret_cast<const struct sockaddr&>(entry.local_ip);
-            struct sockaddr entry_subnet, subnet;
+            struct sockaddr_storage entry_subnet, subnet;
+            struct sockaddr &_entry_subnet = reinterpret_cast<struct sockaddr&>(entry_subnet);
+            struct sockaddr &_subnet = reinterpret_cast<struct sockaddr&>(subnet);
             
             const struct sockaddr &entry_mask = reinterpret_cast<const struct sockaddr&>(entry.netmask);
             
             // Use entry subnet mask to calculate subnet ID
             // for the input IP address and the entry IP address
-            IPUtils::GetSubnetID(ip_addr, entry_mask, subnet);
-            IPUtils::GetSubnetID(entry_local_ip, entry_mask, entry_subnet);
+            IPUtils::GetSubnetID(ip_addr, entry_mask, _subnet);
+            IPUtils::GetSubnetID(entry_local_ip, entry_mask, _entry_subnet);
             
             // Compare Subnets. If they match,
             // then ip_addr is on that subnet
-            if (IPUtils::AddressesAreEqual(subnet, entry_subnet))
+            if (IPUtils::AddressesAreEqual(_subnet, _entry_subnet))
             {
             	switch (ip_addr.sa_family)
             	{
@@ -93,18 +95,20 @@ void LocalRoutingTable::AddSubnetAssociation(ILayer2Interface *interface, const 
         if (entry.local_ip.ss_family == ip_addr.sa_family)
         {
             const struct sockaddr &entry_local_ip = reinterpret_cast<const struct sockaddr&>(entry.local_ip);
-            struct sockaddr entry_subnet, subnet;
-            
+            struct sockaddr_storage entry_subnet, subnet;
+            struct sockaddr &_entry_subnet = reinterpret_cast<struct sockaddr&>(entry_subnet);
+            struct sockaddr &_subnet = reinterpret_cast<struct sockaddr&>(subnet);
+
             const struct sockaddr &entry_mask = reinterpret_cast<const struct sockaddr&>(entry.netmask);
             
             // Use entry subnet mask to calculate subnet ID
             // for the input IP address and the entry IP address
-            IPUtils::GetSubnetID(ip_addr, entry_mask, subnet);
-            IPUtils::GetSubnetID(entry_local_ip, entry_mask, entry_subnet);
+            IPUtils::GetSubnetID(ip_addr, entry_mask, _subnet);
+            IPUtils::GetSubnetID(entry_local_ip, entry_mask, _entry_subnet);
             
             // Compare Subnets. If they match,
             // then ip_addr is on that subnet
-            if (IPUtils::AddressesAreEqual(subnet, entry_subnet))
+            if (IPUtils::AddressesAreEqual(_subnet, _entry_subnet))
             {
                 _table.erase(e);
                 break;
@@ -137,18 +141,20 @@ void LocalRoutingTable::RemoveSubnetAssociation(const struct sockaddr &ip_addr, 
         if (entry.local_ip.ss_family == ip_addr.sa_family)
         {
             const struct sockaddr &entry_local_ip = reinterpret_cast<const struct sockaddr&>(entry.local_ip);
-            struct sockaddr entry_subnet, subnet;
+            struct sockaddr_storage entry_subnet, subnet;
+            struct sockaddr &_entry_subnet = reinterpret_cast<struct sockaddr&>(entry_subnet);
+            struct sockaddr &_subnet = reinterpret_cast<struct sockaddr&>(subnet);
             
             const struct sockaddr &entry_mask = reinterpret_cast<const struct sockaddr&>(entry.netmask);
             
             // Use entry subnet mask to calculate subnet ID
             // for the input IP address and the entry IP address
-            IPUtils::GetSubnetID(ip_addr, entry_mask, subnet);
-            IPUtils::GetSubnetID(entry_local_ip, entry_mask, entry_subnet);
+            IPUtils::GetSubnetID(ip_addr, entry_mask, _subnet);
+            IPUtils::GetSubnetID(entry_local_ip, entry_mask, _entry_subnet);
             
             // Compare Subnets. If they match,
             // then ip_addr is on that subnet
-            if (IPUtils::AddressesAreEqual(subnet, entry_subnet))
+            if (IPUtils::AddressesAreEqual(_subnet, _entry_subnet))
             {
                 _table.erase(e);
                 break;

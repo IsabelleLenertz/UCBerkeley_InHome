@@ -2,7 +2,8 @@
 
 CentralAccessControl::CentralAccessControl()
     : _modules(),
-      _config(nullptr)
+      _config(nullptr),
+	  _arp_table(nullptr)
 {
 }
 
@@ -10,7 +11,7 @@ CentralAccessControl::~CentralAccessControl()
 {
 }
 
-bool CentralAccessControl::IsAllowed(const IIPPacket *packet)
+bool CentralAccessControl::IsAllowed(IIPPacket *packet)
 {
     bool result = true;
     

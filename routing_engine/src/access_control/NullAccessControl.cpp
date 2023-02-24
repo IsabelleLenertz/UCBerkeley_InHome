@@ -8,7 +8,7 @@ NullAccessControl::~NullAccessControl()
 {
 }
 
-bool NullAccessControl::IsAllowed(const IIPPacket *packet)
+bool NullAccessControl::IsAllowed(IIPPacket *packet)
 {
     return true;
 }
