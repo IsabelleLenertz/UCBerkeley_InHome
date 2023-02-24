@@ -1,15 +1,19 @@
 #ifndef INC_LAYER3ROUTER_HPP_
 #define INC_LAYER3ROUTER_HPP_
 
+#include "access_control/AccessControlList.hpp"
 #include "access_control/CentralAccessControl.hpp"
 #include "access_control/NullAccessControl.hpp"
 #include "arp/LocalARPTable.hpp"
 #include "concurrency/ConcurrentQueue.hpp"
+#include "config/LocalConfiguration.hpp"
 #include "config/MySQLConfiguration.hpp"
 #include "interfaces/InterfaceManager.hpp"
 #include "layer2/ILayer2Interface.hpp"
 #include "layer3/IIPPacket.hpp"
 #include "layer3/LocalRoutingTable.hpp"
+
+#define USE_LOCAL_CONFIG
 
 /// <summary>
 /// Structure to store a message
@@ -65,10 +69,15 @@ private:
     InterfaceManager _if_manager;
 
     // Configuration Module
+#ifndef USE_LOCAL_CONFIG
     MySQLConfiguration _config;
+#else
+    LocalConfiguration _config;
+#endif
 
     // ACE Modules
     CentralAccessControl _access_control;
+    AccessControlList _access_list;
     NullAccessControl _null_access;
     
     // ARP Table

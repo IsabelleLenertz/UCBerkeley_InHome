@@ -15,7 +15,11 @@
 
 Layer3Router::Layer3Router()
     : _if_manager(&_arp_table, &_ip_rte_table),
+#ifndef USE_LOCAL_CONFIG
       _config((uint16_t)3306),
+#else
+	  _config(),
+#endif
       _access_control(),
       _rcv_queue(),
       _exiting(false)
@@ -69,14 +73,6 @@ int Layer3Router::Initialize()
     }
 
     ////////////////////////////////
-    /////// Static ARP Setup ///////
-    ////////////////////////////////
-
-    ////////////////////////////////
-    // Static Routing Table Setup //
-    ////////////////////////////////
-
-    ////////////////////////////////
     //////// Access Control ////////
     ////////////////////////////////
 
@@ -84,9 +80,46 @@ int Layer3Router::Initialize()
     // with each access control module
     _access_control.SetConfiguration((IConfiguration*)&_config);
     _null_access.SetConfiguration((IConfiguration*)&_config);
+    _access_list.SetConfiguration((IConfiguration*)&_config);
+
+    // Associate ARP table
+    // with each access control module
+    _access_control.SetARPTable((IARPTable*)&_arp_table);
+    _null_access.SetARPTable((IARPTable*)&_arp_table);
+    _access_list.SetARPTable((IARPTable*)&_arp_table);
 
     // Add submodules to central module
     _access_control.AddModule((IAccessControlModule*)&_null_access);
+    _access_control.AddModule((IAccessControlModule*)&_access_list);
+
+    ////////////////////////////////
+    /////// Static ACL Setup ///////
+    ////////////////////////////////
+#ifdef USE_LOCAL_CONFIG
+    struct sockaddr_in device1;
+    device1.sin_family = AF_INET;
+    device1.sin_port = 0;
+    inet_pton(AF_INET, "192.168.1.100", &device1.sin_addr);
+
+    struct sockaddr_in device2;
+    device2.sin_family = AF_INET;
+    device2.sin_port = 0;
+    inet_pton(AF_INET, "192.168.2.100", &device2.sin_addr);
+
+    struct sockaddr_in netmask;
+    netmask.sin_family = AF_INET;
+    netmask.sin_port = 0;
+    inet_pton(AF_INET, "255.255.255.0", &netmask.sin_addr);
+
+    const struct sockaddr &_device1 = reinterpret_cast<const sockaddr&>(device1);
+    const struct sockaddr &_device2 = reinterpret_cast<const sockaddr&>(device2);
+    const struct sockaddr &_netmask = reinterpret_cast<const sockaddr&>(netmask);
+
+    // Allow bi-directional communication
+    _config.SetAccessRule(_device1, _netmask, _device2, _netmask, true);
+    _config.SetAccessRule(_device2, _netmask, _device1, _netmask, true);
+
+#endif
 
     return NO_ERROR;
 }

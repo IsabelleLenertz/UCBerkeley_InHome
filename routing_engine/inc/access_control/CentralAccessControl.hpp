@@ -17,7 +17,7 @@ public:
     CentralAccessControl();
     ~CentralAccessControl();
     
-    bool IsAllowed(const IIPPacket *packet);
+    bool IsAllowed(IIPPacket *packet);
     void SetConfiguration(IConfiguration* config);
     void SetARPTable(IARPTable *arp_table);
     

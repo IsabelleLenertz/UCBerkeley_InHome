@@ -12,10 +12,11 @@ typedef struct
 
 typedef struct
 {
-    struct sockaddr src_subnet_id;
-    int src_prefix_len;
-    struct sockaddr dest_subnet_id;
-    int dest_prefix_len;
+	struct sockaddr_storage src_subnet_id;
+	struct sockaddr_storage src_netmask;
+	struct sockaddr_storage dest_subnet_id;
+	struct sockaddr_storage dest_netmask;
+	bool allowed;
 } access_rule_t;
 
 class LocalConfiguration : IConfiguration
@@ -32,12 +33,12 @@ public:
     // Controls
     void SetDeviceKey(const struct ether_addr &mac_addr, const DeviceKey_t &key);
     
-    void SetAccessRule(const struct sockaddr &src, int src_prefix_len, const struct sockaddr &dest, int dest_prefix_len, bool allow);
+    void SetAccessRule(const struct sockaddr &src, const struct sockaddr &src_mask, const struct sockaddr &dest, const struct sockaddr &dest_mask, bool allow);
 
 private:
     std::vector<key_entry_t> _key_table;
-    
-    uint32_t _getIPv4SubnetID(uint32_t ip_addr, uint8_t prefix_len);
+    std::vector<access_rule_t> _rule_table;
+
 };
 
 #endif
