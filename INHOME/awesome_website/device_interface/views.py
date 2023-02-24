@@ -19,7 +19,6 @@ def create_device(request):
             else:
                 form = CreateDeviceForm
                 return render(request, 'create_device.html', {'message':'error adding the device', 'form': form})
-
     form = CreateDeviceForm
     return render(request, 'create_device.html', {'form': form})
 
