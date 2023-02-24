@@ -1,4 +1,6 @@
+from django.http import HttpResponse
 from django.shortcuts import render
+import requests
 from users.forms import DeviceForm
 from django.views.generic.edit import FormView
 
@@ -8,16 +10,11 @@ def dashboard(request):
     return render(request, "users/dashboard.html")
 
 def INHOME(request):
-    return render(request, "users/INHOME.html")
-
-class DeviceFormView(FormView):
-    template_name = 'INHOME.html'
-    form_class = DeviceForm
-    success_url = '/'
-
-def form_valid(self, form):
-    MAC = self.form.cleaned_data["MAC"]
-    IPv4_addr = self.form.cleaned_data["IPv4_addr"]
-    device_name = self.form.cleaned_data["device_name"]
-    sendDataToServer("url", MAC,  IPVv4_addr, device_name)
-    return super().form_valid(form)
+    if(request.method == 'POST'):
+        form = DeviceForm(request.POST)
+        if(form.is_valid()):
+            result = requests.post(url="https://localhost:8443/v1/device-management", json={"mac": form.cleaned_data['MAC'], "ipv4": form.cleaned_data['IPv4_addr'], "name": form.cleaned_data['device_name']}, verify=False)
+            if(result.status_code == 200):
+                return HttpResponse("Device added successfully")
+    form = DeviceForm
+    return render(request, "users/INHOME.html",  {'form': form})
