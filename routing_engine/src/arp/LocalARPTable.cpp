@@ -1,4 +1,6 @@
 #include "arp/LocalARPTable.hpp"
+#include "layer3/IPUtils.hpp"
+
 #include <exception>
 #include <cstring>
 #include <iomanip>
@@ -6,7 +8,7 @@
 #include <arpa/inet.h>
 
 LocalARPTable::LocalARPTable()
-    : _v4table(),
+    : _table(),
       _mutex()
 {
 }
@@ -19,43 +21,27 @@ void LocalARPTable::SetARPEntry(const struct sockaddr &l3_addr, const struct eth
 {
     std::scoped_lock {_mutex};
 
-    switch (l3_addr.sa_family)
+    for (auto e = _table.begin(); e < _table.end(); e++)
     {
-        case AF_INET:
-        {
-            // Get a pointer to the address segment of the
-            // sockaddr structure. This is the IPv4 address
-            uint32_t *addr1 = (uint32_t*)l3_addr.sa_data;
-        
-            // See if an entry exists for this L3 address
-            // If so, remove it
-            for (auto e = _v4table.begin(); e < _v4table.end(); e++)
-            {
-                if (*addr1 == *(uint32_t*)(*e).l3_addr)
-                {
-                    _v4table.erase(e);
-                    break;
-                }
-            }
-            
-            // Add new entry
-            ARPv4Entry_t new_entry;
-            new_entry.l2_addr = l2_addr;
-            memcpy(new_entry.l3_addr, addr1, sizeof(uint32_t));
-            
-            _v4table.push_back(new_entry);
-            
-            break;
-        }
-        case AF_INET6:
-        {
-            break;
-        }
-        default:
-        {
-            break;
-        }
+    	const ARPEntry_t& entry = *e;
+    	const struct sockaddr &_entry_l3_addr = reinterpret_cast<const struct sockaddr&>(entry.l3_addr);
+
+    	if (IPUtils::AddressesAreEqual(l3_addr, _entry_l3_addr))
+    	{
+    		_table.erase(e);
+    		break;
+    	}
     }
+
+    // Create empty entry
+    _table.push_back(ARPEntry_t { 0 });
+
+    // Get reference to new entry
+    ARPEntry_t &new_entry = _table.back();
+
+    // Populate new entry
+    memcpy(&new_entry.l2_addr, &l2_addr, ETH_ALEN);
+    IPUtils::StoreSockaddr(l3_addr, new_entry.l3_addr);
 }
 
 bool LocalARPTable::GetL2Address(const struct sockaddr &l3_addr, struct ether_addr& l2_addr)
@@ -64,32 +50,17 @@ bool LocalARPTable::GetL2Address(const struct sockaddr &l3_addr, struct ether_ad
 
     bool found = false;
     
-    switch (l3_addr.sa_family)
+    for (auto e = _table.begin(); e < _table.end(); e++)
     {
-        case AF_INET:
-        {
-            // Get a pointer to the address segment of the
-            // sockaddr structure. This is the IPv4 address
-            uint32_t *addr1 = (uint32_t*)l3_addr.sa_data;
-            
-            for (auto e = _v4table.begin(); e < _v4table.end(); e++)
-            {
-                // Check for matching layer 3 address
-                if (*addr1 == *(uint32_t*)(*e).l3_addr)
-                {
-                    // Set output and break loop
-                    l2_addr = (*e).l2_addr;
-                    found = true;
-                    break;
-                }
-            }
-        
-            break;
-        }
-        case AF_INET6:
-        {
-            break;
-        }
+    	const ARPEntry_t &entry = *e;
+    	const struct sockaddr &_entry_l3_addr = reinterpret_cast<const struct sockaddr&>(entry.l3_addr);
+
+    	if (IPUtils::AddressesAreEqual(l3_addr, _entry_l3_addr))
+    	{
+    		memcpy(&l2_addr, &entry.l2_addr, ETH_ALEN);
+    		found = true;
+    		break;
+    	}
     }
     
     return found;

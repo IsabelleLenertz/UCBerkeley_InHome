@@ -158,6 +158,8 @@ int EthernetInterface::SendPacket(const struct sockaddr &l3_local_addr, const st
     
     if (!hit)
     {
+    	Logger::Log(LOG_DEBUG, "ARP Cache Miss");
+
         // Set destination address to broadcast address
         memcpy(&l2_dest_addr, &BROADCAST_MAC, ETH_ALEN);
         
@@ -218,6 +220,8 @@ int EthernetInterface::SendPacket(const struct sockaddr &l3_local_addr, const st
     }
     else
     {
+    	Logger::Log(LOG_DEBUG, "ARP Cache Hit");
+
         // Copy payload
         memcpy(_frame_buffer + ETHER_HDR_LEN, data, len);
     }
@@ -422,9 +426,6 @@ void EthernetInterface::_handle_arp_reply(ARPMessage &arp_msg)
 
 void EthernetInterface::_handle_arp_request(ARPMessage &arp_msg)
 {
-	Logger::Log(LOG_DEBUG, "ARP Request Hadling Disabled");
-	return;
-
     bool owned = false;
     
     switch (arp_msg.GetProtocolType())

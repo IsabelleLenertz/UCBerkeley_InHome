@@ -186,7 +186,7 @@ int InterfaceManager::StopListenAll()
             status = INTERFACE_STOP_LISTEN_FAILED;
         }
     }
-    
+
     return status;
 }
 
@@ -205,10 +205,10 @@ int InterfaceManager::SendPacket(IIPPacket *packet)
 
     if (_if == nullptr)
     {
-        // Interface not found
-        return ROUTE_INTERFACE_NOT_FOUND;
+		// Interface not found
+		return ROUTE_INTERFACE_NOT_FOUND;
     }
-    
+
     uint16_t len = SEND_BUFFER_SIZE;
     status = packet->Serialize(_send_buff, len);
     

@@ -7,36 +7,14 @@
 #include <mutex>
 
 /// <summary>
-/// Stores a mapping between a layer 2
-/// address and an IPv4 address
+/// Stores a mapping between a layer 2 (MAC)
+/// and layer 3 (IPv4/v6) address
 /// </summary>
-/// <remarks>
-/// The l3_addr data member is essentially
-/// the same as the sa_data member of
-/// the sockaddr structure defined in
-/// sys/socket.h, specialized for IPv4
-/// </remarks>
 typedef struct
 {
-    struct ether_addr l2_addr;
-    uint8_t l3_addr[4];
-} ARPv4Entry_t;
-
-/// <summary>
-/// Stores a mapping between a layer 2
-/// address and an IPv6 address
-/// </summary>
-/// <remarks>
-/// The l3_addr data member is essentially
-/// the same as the sa_data member of
-/// the sockaddr structure defined in
-/// sys/socket.h, specialized for IPv6
-/// </remarks>
-typedef struct
-{
-    struct ether_addr l2_addr;
-    uint8_t l3_addr[16];
-} ARPv6Entry_t;
+	struct ether_addr l2_addr;
+	struct sockaddr_storage l3_addr;
+} ARPEntry_t;
 
 /// <summary>
 /// Concrete implementation of IARPTable
@@ -60,8 +38,7 @@ public:
     bool GetL2Address(const struct sockaddr &l3_addr, struct ether_addr& l2_addr);
 
 private:
-    std::vector<ARPv4Entry_t> _v4table;
-    std::vector<ARPv6Entry_t> _v6table;
+    std::vector<ARPEntry_t> _table;
     
     std::mutex _mutex;
 };
