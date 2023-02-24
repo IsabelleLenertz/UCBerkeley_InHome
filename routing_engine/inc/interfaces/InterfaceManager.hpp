@@ -122,7 +122,7 @@ private:
     IRoutingTable *_ip_rte_table;
     Layer3ReceiveCallback _callback;
     uint8_t _send_buff[SEND_BUFFER_SIZE];
-    
+
     /// <summary>
     /// Associates an interface's addresses in the ARP
     /// and routing tables.
