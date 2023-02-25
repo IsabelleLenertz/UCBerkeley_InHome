@@ -3,6 +3,7 @@ from django.shortcuts import render
 from .forms import CreateDeviceForm
 from django.http import HttpResponse
 import requests
+from json2html import *
 
 
 def dev_dashboard(request):
@@ -25,7 +26,7 @@ def create_device(request):
 def display_devices(request):
     if(request.method == 'GET'):
         result = requests.get("https://localhost:8443/v1/device-management", verify=False)
-        if result.status_code == 200:
-            print(result.json())
-            return HttpResponse(result.json())   # return render a display page of some sort
+        if result.status_code == 200:            
+#           return HttpResponse(result.json())   # return render a display page of some sort
+            return render(request, 'display_devices.html', {'devices':json2html.convert(json = result.json())})
     return render(request, "dev_dashboard.html")
