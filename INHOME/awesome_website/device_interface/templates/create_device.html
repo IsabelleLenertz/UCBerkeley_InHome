@@ -6,18 +6,18 @@
 <style>
     .center {
       margin: 0 auto;	
-      width: 30%; 
+      width: 15%; 
     }
  </style>
 
 <html>
     <body>
-        <div class="center" style="text-align:center;font-family:verdana;font-size:125%;">
+        <div class="center" style="text-align:center;font-family:verdana;font-size:100%;">
 
         <form action="/create_device/" method="POST">
             {% csrf_token %}
-            {{ form }}
-            <input type="submit" value="Submit">
+            {{ form }}  
+            <input type="submit" value="Submit"> 
             </form>
             <p>         {{ message }}  </p>
             <a href="{% url 'dev_dashboard' %}">Admin options</a>

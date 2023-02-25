@@ -15,10 +15,10 @@ def create_device(request):
             result = requests.post(url="https://localhost:8443/v1/device-management", json={"mac": form.cleaned_data['mac'], "ipv4": form.cleaned_data['ip'], "name": form.cleaned_data['name']}, verify=False)
             if result.status_code == 200:
                 #return HttpResponse("Device was successfully created")
-                return render(request, "create_device.html", {'message':'device was succefuly added.', 'form':form}) 
+                return render(request, "create_device.html", {'message':'Device was sucessfully added.', 'form':form}) 
             else:
                 form = CreateDeviceForm
-                return render(request, 'create_device.html', {'message':'error adding the device', 'form': form})
+                return render(request, 'create_device.html', {'message':'Error adding the device.', 'form': form})
     form = CreateDeviceForm
     return render(request, 'create_device.html', {'form': form})
 
