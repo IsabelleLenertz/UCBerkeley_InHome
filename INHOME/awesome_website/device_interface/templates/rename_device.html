@@ -13,9 +13,9 @@
 <html>
     <body>
         <div class="center" style="text-align:center;font-family:verdana;font-size:100%;">
-         <p> Add a device by supplying valid values for each field</p>
-         <p> </p>
-        <form action="/create_device/" method="POST">
+        <p> Rename a device by supplying valid field values</p>
+        <p> </p>
+        <form action="/rename_device/" method="POST">
             {% csrf_token %}
             {{ form }}  
             <input type="submit" value="Submit"> 
