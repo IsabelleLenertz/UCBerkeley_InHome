@@ -27,6 +27,7 @@ def display_devices(request):
     if(request.method == 'GET'):
         result = requests.get("https://localhost:8443/v1/device-management", verify=False)
         if result.status_code == 200:            
-#           return HttpResponse(result.json())   # return render a display page of some sort
+#            return HttpResponse(json2html.convert(json = result.json()))  
+            print(type(json2html.convert(json = result.json(), clubbing = 'False')))
             return render(request, 'display_devices.html', {'devices':json2html.convert(json = result.json())})
     return render(request, "dev_dashboard.html")

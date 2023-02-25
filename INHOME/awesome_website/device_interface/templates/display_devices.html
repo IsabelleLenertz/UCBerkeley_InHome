@@ -5,7 +5,7 @@
 <style>
     .center {
       margin: 0 auto;	
-      width: 100%; 
+      width: 35%; 
     }
  </style>
 
@@ -14,7 +14,8 @@
         <div class="center" style="text-align:center;font-family:verdana;font-size:100%;">
         <form action="/display_devices/" method="GET">
             {% csrf_token %}
-            {{ devices }}  
+            {{ devices|safe }} 
+            <p> </p> 
             <a href="{% url 'dev_dashboard' %}">Admin options</a>
         </div>                
     </body>
