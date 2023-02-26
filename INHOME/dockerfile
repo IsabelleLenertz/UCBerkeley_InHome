@@ -1,0 +1,8 @@
+FROM python:alpine3.17
+
+EXPOSE 8000
+COPY ./awesome_website /opt/
+WORKDIR /opt
+RUN pip install django
+RUN pip install requests
+CMD ["python3", "manage.py", "runserver", "0.0.0.0:8000"]

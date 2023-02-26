@@ -1,6 +1,5 @@
 version: '3.8'
 services:
-  
   java_app:
     container_name: java_app
     build: ./REST_API
@@ -36,6 +35,15 @@ services:
       - my-db:/var/lib/mysql
       - ./setup.sql:/docker-entrypoint-initdb.d/setup.sql
     command: --init-file /docker-entrypoint-initdb.d/setup.sql
+  django:
+    container_name: front-end
+    build: ./INHOME
+    expose:
+      - "8000"
+    ports:
+      - "8000:8000"
+    depends_on:
+      - java_app
 
 # Names our volume
 volumes:
