@@ -1,0 +1,27 @@
+<!--users/templates/registration/login.html-->
+
+{% extends 'base.html' %}
+
+{% block content %}
+<h2 style="text-align:center;font-family:verdana;font-size:125%;">Login</h2>
+
+<style>
+.center {
+  margin: 0 auto;	
+  width: 20%; 
+}
+</style>
+
+
+<div class="center">
+<form style="font-family:verdana;font-size:75%;" method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" value="Login">
+</form>
+</div>
+
+<div style="text-align:center;font-family:verdana;font-size:125%;">
+<a href="{% url 'dashboard' %}">Back to dashboard</a>
+</div>
+{% endblock %}

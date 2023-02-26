@@ -1,0 +1,32 @@
+<!--users/templates/users/INHOME.html-->
+
+
+{% extends 'base.html' %}
+
+{% block content %}
+
+
+<h2 style="text-align:center;font-family:verdana;font-size:125%;">INHOME and device management</h2>
+
+<style>
+.center {
+  margin: 0 auto;	
+  width: 20%; 
+}
+</style>
+
+
+<div class="center" style="text-align:center;font-family:verdana;font-size:125%;">
+<form method="post" action = "/INHOME/">
+    {% csrf_token %}
+    {{ form }}
+</form>
+</div>
+
+
+
+<div style="text-align:center;font-family:verdana;font-size:125%;">
+<a href="{% url 'dashboard' %}">Back to dashboard</a>
+</div>
+ 
+{% endblock %}

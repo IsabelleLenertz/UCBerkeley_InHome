@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<style>
+    .center {
+      margin: 0 auto;	
+      width: 35%
+    }
+ </style>
+
+<html>
+    <body>
+        <div class="center" style="text-align:center;font-family:verdana;font-size:100%;">
+        <form action="/display_devices/" method="GET">
+            {% csrf_token %}
+            {{ devices|safe }} 
+            <p> </p> 
+            <a href="{% url 'dev_dashboard' %}">Admin options</a>
+        </div>                
+    </body>
+</html>
+
+{% endblock %}

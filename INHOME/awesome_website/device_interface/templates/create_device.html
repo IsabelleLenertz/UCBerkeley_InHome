@@ -1,0 +1,30 @@
+
+{% extends 'base.html' %}
+
+{% block content %}
+
+<style>
+    .center {
+      margin: 0 auto;	
+      width: 10%
+    }
+ </style>
+
+<html>
+    <body>
+        <div class="center" style="text-align:center;font-family:verdana;font-size:100%;">
+         <p> Add a device by supplying valid values for each field</p>
+         <p> </p>
+        <form action="/create_device/" method="POST">
+            {% csrf_token %}
+            {{ form }}  
+            <input type="submit" value="Submit"> 
+            </form>
+            <p>         {{ message }}  </p>
+            <a href="{% url 'dev_dashboard' %}">Admin options</a>
+        </div>   
+           
+    </body>
+</html>
+
+{% endblock %}
