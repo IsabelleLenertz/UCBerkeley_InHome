@@ -1,4 +1,4 @@
-curl -k -i -XPOST https://localhost:8443/v1/device-management -H "Content-Type: application/json" -d '{\"name\": \"somename2\", \"ipv4\": \"125.2.3.1\", \"mac\":\"12:13:5a:56:16:15\"}'
+curl -k -i -XPOST https://localhost:8443/v1/device-management -H "Content-Type: application/json" -d '{\"name\": \"josephsmac\", \"ipv4\": \"125.2.3.2\", \"mac\":\"13:13:5a:56:16:15\"}'
 
 curl -k -i -XDELETE https://localhost:8443/v1/device-management -H "Content-Type: application/json" -d '{\"mac\":\"12:13:5a:56:16:15\"}'
 
@@ -7,3 +7,7 @@ curl -k -i -XPUT https://localhost:8443/v1/device-management -H "Content-Type: a
 curl -k -i https://localhost:8443/v1/device-management
 
 curl -k -i https://localhost:8443/v1/device-management/12.13.5a.56.16.15
+
+curl -k -i -XPOST https://localhost:8443/v1/device-management -H "Content-Type: application/json" -d "{\"name\": \"orange\", \"ipv4\": \"125.2.3.1\", \"mac\":\"12:13:5a:99:16:15\"}"
+
+curl -k -i -XPOST https://localhost:8443/v1/policy-management -H "Content-Type: application/json" -d "{\"namedeviceto\": \"orange\", \"namedevicefrom\": \"apple\"}"
