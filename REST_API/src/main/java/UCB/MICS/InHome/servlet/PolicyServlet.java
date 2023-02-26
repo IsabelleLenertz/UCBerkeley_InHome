@@ -38,7 +38,7 @@ public class PolicyServlet extends HttpServlet {
         }
         String nameFrom = json.get("namedevicefrom");
         String nameTo = json.get("namedeviceto");
-        System.out.println(nameTo);
+
         if (isNullOrEmpty(nameFrom)||isNullOrEmpty(nameTo)) {
             resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "name of device from or to missing");
             return;
