@@ -38,6 +38,8 @@ services:
   django:
     container_name: front-end
     build: ./INHOME
+    environment:
+      - JAVA_HOST=java_app
     expose:
       - "8000"
     ports:
