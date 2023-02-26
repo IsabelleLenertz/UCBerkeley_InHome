@@ -9,7 +9,6 @@ MySQLConfiguration::~MySQLConfiguration()
 {
 }
 
-
 bool MySQLConfiguration::LocalIsOutdated()
 {
     // TODO Implement
@@ -21,7 +20,13 @@ void MySQLConfiguration::UpdateLocal()
     // TODO Implement
 }
 
-bool MySQLConfiguration::GetDeviceKey(const struct ether_addr &mac_addr, DeviceKey_t &key)
+bool MySQLConfiguration::GetDeviceSecurityParams(const struct sockaddr &ip_addr, DeviceSecParams_t &params)
+{
+    // TODO Implement
+    return false;
+}
+
+bool MySQLConfiguration::GetDeviceSecurityParams(const struct ether_addr &mac_addr, DeviceSecParams_t &params)
 {
     // TODO Implement
     return false;

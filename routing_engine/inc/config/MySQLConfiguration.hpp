@@ -33,7 +33,9 @@ public:
     
     bool LocalIsOutdated();
     void UpdateLocal();
-    bool GetDeviceKey(const struct ether_addr &mac_addr, DeviceKey_t &key);
+    
+    bool GetDeviceSecurityParams(const struct sockaddr &ip_addr, DeviceSecParams_t &params);
+    bool GetDeviceSecurityParams(const struct ether_addr &mac_addr, DeviceSecParams_t &params);
     
     bool IsPermitted(const struct sockaddr &src, const struct sockaddr &dest);
     
