@@ -191,4 +191,59 @@ public class    JdbcClient {
         }
         return list.get(0);
     }
+    
+    public boolean updatePolicy(String fromName, String toName) throws SQLException
+    {
+        byte[] macFrom;
+        byte[] macTo;
+        connection.setAutoCommit(false);
+        try(PreparedStatement getMacFrom = connection.prepareStatement(GET_MAC_FROM_NAME);
+            PreparedStatement getMacTo = connection.prepareStatement(GET_MAC_FROM_NAME);
+            PreparedStatement updatePolicies = connection.prepareStatement(UPDATE_POLICIES);
+            PreparedStatement updateRevisions = connection.prepareStatement(UPDATE_REVISIONS)) {
+
+
+            getMacTo.setString(1, toName);
+            ResultSet resultsTo = getMacTo.executeQuery();
+
+            if(resultsTo.next()){
+                macTo = resultsTo.getBytes("mac");
+                getMacFrom.setString(1, fromName);
+                ResultSet resultsFrom = getMacFrom.executeQuery();
+                if(resultsFrom.next()){
+                    macFrom = resultsFrom.getBytes("mac");
+                }
+                else{
+                    return false;
+                }
+            }
+            else{
+                return false;
+            }
+            
+            // Update device table
+            updatePolicies.setBytes(1, macTo);
+            updatePolicies.setBytes(2, macFrom);
+            int affected = updatePolicies.executeUpdate();
+
+            // Update revision table
+            updateRevisions.setLong(1, LocalDateTime.now().toEpochSecond(ZoneOffset.UTC));
+            int revisions = updateRevisions.executeUpdate();
+
+            // test for errors
+            if(revisions != 1 || affected != 1) {
+                connection.rollback();
+                return false;
+            }
+            connection.commit();
+        }
+        catch (SQLException e) {
+            connection.rollback();
+            throw e;
+        }
+        finally {
+            connection.setAutoCommit(true);
+        }
+        return true;
+    }
 }
