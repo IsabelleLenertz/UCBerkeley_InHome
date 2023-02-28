@@ -143,7 +143,10 @@ public class DeviceServlet extends HttpServlet {
             return;
         }
         try {
-            client.updateName(newName, oldName);
+            if(!client.updateName(newName, oldName)) {
+                resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "device does not exist");
+                return;
+            }
         }
         catch(SQLException e) {
             logger.log(Level.SEVERE, String.format("could not update device name %s", e.getMessage()));
