@@ -10,4 +10,8 @@ class RemoveDeviceForm(forms.Form):
 
 class RenameDeviceForm(forms.Form):
     CurrentName = forms.CharField(label ="Current device name", max_length=30)   
-    NewName = forms.CharField(label ="New device name", max_length=30)     
+    NewName = forms.CharField(label ="New device name", max_length=30) 
+
+class CreatePolicyForm(forms.Form):
+    name1 = forms.CharField(label = "Device name ", max_length=30)
+    name2 = forms.CharField(label = "Device name ", max_length=30)  

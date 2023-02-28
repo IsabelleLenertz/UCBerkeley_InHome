@@ -1,5 +1,5 @@
 <!--device_interface/templates/base.html-->
-<!--img src="{% static 'device_interface/Symbols.jpg' %}" alt="Athena Owl"-->
+
 
 <style>
     label, input {
@@ -11,13 +11,15 @@
 </style>
 
 
-<!--{% load static %}-->
+{% load static %}
 
 <h1 style="text-align:center;font-family:verdana;font-size:150%">Welcome to INHOME</h1>
-<h2 style="text-align:center;font-family:verdana;font-size:75%;">Zer trust home network protection</h2>
+<h2 style="text-align:center;font-family:verdana;font-size:75%;">Zero trust home network protection</h2>
 <p style="text-align:center;">
 
-<img src="https://i.pinimg.com/originals/31/e7/48/31e7481538b7ce210f39ef2389b6e7e9.jpg" alt="Athena Owl">
+<!--img src="https://i.pinimg.com/originals/31/e7/48/31e7481538b7ce210f39ef2389b6e7e9.jpg" alt="Athena Owl"-->
+<img src="{% static 'device_interface/Symbols.jpg' %}" alt="Athena Owl">
+
 
 </p>
 

@@ -5,7 +5,7 @@
 {% block content %}
 
 <div style="text-align:center;font-family:verdana;font-size:100%;">
-    <p>Choose an adminstrative function</p>
+    <p>Choose a device adminstrative function</p>
     <p> </p>
     <a href="{% url 'create_device' %}">Add a device</a>
     <p> </p>
@@ -14,7 +14,11 @@
     <a href="{% url 'remove_device' %}">Remove a device</a>
     <p> </p>
     <a href="{% url 'display_devices' %}">Display all devices</a>
-	
+    <p> </p>
+    <p>Choose a policy adminstrative function</p>
+	<p> </p>
+    <a href="{% url 'create_policy' %}">Create a new device policy</a>
+
 </div>
 
 {% endblock %}

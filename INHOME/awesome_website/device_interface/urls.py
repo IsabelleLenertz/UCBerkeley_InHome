@@ -15,7 +15,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include, re_path 
-from .views import create_device, dev_dashboard, display_devices, remove_device, rename_device
+from .views import create_device, dev_dashboard, display_devices, remove_device, rename_device, create_policy
 
 urlpatterns = [
 #    path('admin/', admin.site.urls),
@@ -24,4 +24,5 @@ urlpatterns = [
     path('remove_device/', remove_device, name="remove_device"),
     path('rename_device/', rename_device, name="rename_device"),
     path('display_devices/', display_devices, name = "display_devices"),
+    path('create_policy/', create_policy, name = "create_policy"),
 ]

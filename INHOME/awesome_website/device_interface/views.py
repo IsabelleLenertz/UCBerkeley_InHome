@@ -1,6 +1,6 @@
 
 from django.shortcuts import render
-from .forms import CreateDeviceForm, RemoveDeviceForm, RenameDeviceForm
+from .forms import CreateDeviceForm, RemoveDeviceForm, RenameDeviceForm, CreatePolicyForm 
 from django.http import HttpResponse
 import requests
 from json2html import *
@@ -55,4 +55,18 @@ def rename_device(request):
                 form = RenameDeviceForm
                 return render(request, 'rename_device.html', {'message':'Error renaming the device.', 'form': form})
     form = RenameDeviceForm
-    return render(request, 'rename_device.html', {'form': form})  
+    return render(request, 'rename_device.html', {'form': form}) 
+
+
+def create_policy(request):
+    if(request.method == 'POST'):
+        form = CreatePolicyForm(request.POST)
+        if(form.is_valid()):
+            result = requests.post(url=host +"/v1/device-management", json={"namedeviceTo": form.cleaned_data['name1'], "namedeviceFrom": form.cleaned_data['name2']}, verify=False)
+            if result.status_code == 200:
+                return render(request, "create_policy.html", {'message':'Policy was successfully created.', 'form':form}) 
+            else:
+                form = CreatePolicyForm
+                return render(request, 'create_policy.html', {'message':'Error creating the policy.', 'form': form})
+    form = CreatePolicyForm
+    return render(request, 'create_policy.html', {'form': form})     
