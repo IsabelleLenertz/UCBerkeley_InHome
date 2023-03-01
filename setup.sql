@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS policies (
 CREATE TABLE IF NOT EXISTS login (
                             Username VARCHAR(30) PRIMARY KEY,
                             Salt CHAR(5),
-                            PwdHash CHAR(62));
+                            PwdHash BINARY(64));
 
 -- create database user
 CREATE USER 'api' IDENTIFIED BY 'password';

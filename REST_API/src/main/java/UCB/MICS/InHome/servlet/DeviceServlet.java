@@ -11,6 +11,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -36,7 +37,7 @@ public class DeviceServlet extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws IOException
     {
-        resp.addHeader("Access-Control-Allow-Origin", "http://localhost:3000");
+        HttpSession session = req.getSession(false);
         Map<String, String> json = null;
         try {
             json = Utilities.getFromRequest(req);

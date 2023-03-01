@@ -7,3 +7,5 @@ curl -k -i -XPUT https://localhost:8443/v1/device-management -H "Content-Type: a
 curl -k -i https://localhost:8443/v1/device-management
 
 curl -k -i https://localhost:8443/v1/device-management/12.13.5a.56.16.15
+
+curl -k -i -XPOST https://localhost:8443/v1/login --user john:somepwd

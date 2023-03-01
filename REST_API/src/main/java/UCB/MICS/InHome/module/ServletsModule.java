@@ -1,11 +1,17 @@
 package UCB.MICS.InHome.module;
 
+import UCB.MICS.InHome.ForLoginCookieMap;
 import UCB.MICS.InHome.jdbc.JdbcClient;
 import UCB.MICS.InHome.servlet.DeviceServlet;
 import UCB.MICS.InHome.servlet.LoginServlet;
 import UCB.MICS.InHome.servlet.PolicyServlet;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.servlet.ServletModule;
+import org.eclipse.jetty.server.SessionIdManager;
+import org.eclipse.jetty.server.session.DefaultSessionIdManager;
+
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ServletsModule extends ServletModule {
 
@@ -17,8 +23,15 @@ public class ServletsModule extends ServletModule {
 
         bind(PolicyServlet.class).in(Scopes.SINGLETON);
         serveRegex("/v1/policy-management/?[0-9]{0,5}").with(PolicyServlet.class);
+
         bind(LoginServlet.class).in(Scopes.SINGLETON);
-        serveRegex("/v1/login/?(newuser)?").with(LoginServlet.class);
-        filter("/*").through(CorsFilter.class);
+        serveRegex("/v1/login/?").with(LoginServlet.class);
+    }
+
+    @Provides
+    @ForLoginCookieMap
+    public ConcurrentHashMap<String, String> provideCookiesMap()
+    {
+        return new ConcurrentHashMap<>();
     }
 }

@@ -3,6 +3,9 @@ package UCB.MICS.InHome;
 import com.google.common.io.Resources;
 import com.google.inject.servlet.GuiceFilter;
 import org.eclipse.jetty.server.*;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.session.DefaultSessionIdManager;
+import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 

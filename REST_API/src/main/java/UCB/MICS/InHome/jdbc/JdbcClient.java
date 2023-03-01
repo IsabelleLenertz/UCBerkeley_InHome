@@ -191,4 +191,27 @@ public class    JdbcClient {
         }
         return list.get(0);
     }
+
+    public boolean insertUser(String username, String salt, byte[] hash)
+    {
+        try (PreparedStatement insert = connection.prepareStatement(INSERT_USER)) {
+            insert.setString(1, username);
+            insert.setString(2, salt);
+            insert.setBytes(3, hash);
+            return insert.executeUpdate() == 1;
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
+    public boolean loginUser(String username, String password)
+    {
+        // Check if user exits and retrieve salt
+
+        // Compose hash of password+salt
+
+        // compare with hash from db
+
+        return true;
+    }
 }
