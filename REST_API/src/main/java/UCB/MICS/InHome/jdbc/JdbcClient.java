@@ -246,4 +246,51 @@ public class    JdbcClient {
         }
         return true;
     }
+
+    public List<Map<String, String>> getAllPolicies() throws SQLException
+    {
+        ImmutableList.Builder listBuilder = ImmutableList.builder();
+        try (PreparedStatement statement = connection.prepareStatement(GET_ALL_POLICIES)) {
+            ResultSet results = statement.executeQuery();
+            while(results.next()) {
+                listBuilder.add(
+                        Map.of(
+                                "policyId", results.getInt("policyId"),
+                                "deviceTo", byteArrayMacToString((results.getBytes("deviceTo"))),
+                                "deviceFrom", byteArrayMacToString(results.getBytes("deviceFrom"))
+                        ));
+            }
+        }
+        catch (SQLException e) {
+            throw e;
+        }
+        return listBuilder.build();
+    }
+
+    public List<Map<String, String>> getAllPoliciesFromName(String name) throws SQLException {
+        ImmutableList.Builder listBuilder = ImmutableList.builder();
+        try (PreparedStatement getMac = connection.prepareStatement(GET_MAC_FROM_NAME);
+             PreparedStatement statement = connection.prepareStatement(GET_POLICY_BY_DEVICE_ANY)) {
+            // Populate prepared statement
+
+            getMac.setString(1, name);
+            ResultSet results = getMac.executeQuery();
+            while(results.next()) {
+                statement.setBytes(1, results.getBytes("Mac"));
+                statement.setBytes(2, results.getBytes("Mac"));
+                ResultSet resultPolicy = statement.executeQuery();
+                while(resultPolicy.next()) {
+                    listBuilder.add(
+                            Map.of(
+                                    "policyId", resultPolicy.getInt("policyId"),
+                                    "deviceTo", byteArrayMacToString((resultPolicy.getBytes("deviceTo"))),
+                                    "deviceFrom", byteArrayMacToString(resultPolicy.getBytes("deviceFrom"))
+                            ));
+                }
+            }
+        } catch (SQLException e) {
+            throw e;
+        }
+        return listBuilder.build();
+    }
 }
