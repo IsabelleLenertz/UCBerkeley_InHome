@@ -12,6 +12,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -93,7 +94,7 @@ public class PolicyServlet extends HttpServlet {
         else if (elements.length == 4) {
             String name = elements[3];
             // Retrieve policy with the given device name
-            List<Map<String, String>> policies = null;
+            ArrayList<String> policies = new ArrayList<>();
             try {
                 policies = client.getAllPoliciesFromName(name);
             } catch (SQLException e) {
@@ -108,10 +109,8 @@ public class PolicyServlet extends HttpServlet {
             }
             // Return a json array with MAC, IpV4, device name
             JSONArray json = new JSONArray();
-            for (Map<String, String> policy : policies) {
-                JSONObject jsonDevice = new JSONObject().put("policyId", policy.get("policyId"))
-                        .put("deviceTo", policy.get("deviceTo"))
-                        .put("deviceFrom", policy.get("deviceFrom"));
+            for (int i = 0; i<policies.size();i++) {
+                JSONObject jsonDevice = new JSONObject().put("Name " + (i+1), policies.get(i));
                 json.put(jsonDevice);
             }
             resp.setStatus(HttpServletResponse.SC_OK);
