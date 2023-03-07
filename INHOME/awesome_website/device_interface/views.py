@@ -61,8 +61,12 @@ def rename_device(request):
 def create_policy(request):
     if(request.method == 'POST'):
         form = CreatePolicyForm(request.POST)
+        print(f"Before checking form")
         if(form.is_valid()):
-            result = requests.post(url=host +"/v1/device-management", json={"namedeviceTo": form.cleaned_data['name1'], "namedeviceFrom": form.cleaned_data['name2']}, verify=False)
+            print(f"Form is valid")
+            result = requests.post(url=host +"/v1/policy-management", json={"namedeviceto": form.cleaned_data['name1'],"namedevicefrom": form.cleaned_data['name2']}, verify=False)
+            print(f"This is the result status code - {result.status_code}")
+            print(f"This is the response string - {result.text}")
             if result.status_code == 200:
                 return render(request, "create_policy.html", {'message':'Policy was successfully created.', 'form':form}) 
             else:
