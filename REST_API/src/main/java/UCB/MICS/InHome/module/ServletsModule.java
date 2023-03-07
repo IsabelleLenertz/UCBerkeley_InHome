@@ -16,7 +16,7 @@ public class ServletsModule extends ServletModule {
         serveRegex("/v1/device-management/?[0-9a-zA-Z\\.]{0,20}").with(DeviceServlet.class);
 
         bind(PolicyServlet.class).in(Scopes.SINGLETON);
-        serveRegex("/v1/policy-management/?[0-9]{0,5}").with(PolicyServlet.class);
+        serveRegex("/v1/policy-management/?[0-9a-zA-Z\\.]{0,20}").with(PolicyServlet.class);
 
         bind(LoginServlet.class).in(Scopes.SINGLETON);
         serve("/v1/login").with(LoginServlet.class);

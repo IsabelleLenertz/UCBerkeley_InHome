@@ -6,6 +6,7 @@ import javax.xml.transform.Result;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -101,7 +102,7 @@ public class    JdbcClient {
     public boolean removeDevice(byte[] mac) throws SQLException {
         connection.setAutoCommit(false);
         try (   PreparedStatement removeStatement = connection.prepareStatement(DELETE_DEVICE);
-                PreparedStatement removePolicyStatement = connection.prepareStatement("remove more");
+                PreparedStatement removePolicyStatement = connection.prepareStatement(DELETE_POLICY);
                 PreparedStatement updateRevisions = connection.prepareStatement(UPDATE_REVISIONS)) {
 
             long now = LocalDateTime.now().toEpochSecond(ZoneOffset.UTC);
@@ -111,13 +112,16 @@ public class    JdbcClient {
             int affected = removeStatement.executeUpdate();
 
             // Remove the policies
-            // TODO
+            removePolicyStatement.setBytes(1, mac);
+            removePolicyStatement.setBytes(2, mac);
+            int affectedPolicies = removePolicyStatement.executeUpdate();
+
 
             // Update the revision table
             updateRevisions.setLong(1, now);
             int revisions = updateRevisions.executeUpdate();
             // test for errors
-            if(revisions != 1 || affected != 1) {
+            if(revisions != 1 || affected != 1 || affectedPolicies != 1) {
                 connection.rollback();
                 return false;
             }
@@ -245,5 +249,57 @@ public class    JdbcClient {
             connection.setAutoCommit(true);
         }
         return true;
+    }
+
+    public List<Map<String, String>> getAllPolicies() throws SQLException
+    {
+        ImmutableList.Builder listBuilder = ImmutableList.builder();
+        try (PreparedStatement statement = connection.prepareStatement(GET_ALL_POLICIES)) {
+            ResultSet results = statement.executeQuery();
+            while(results.next()) {
+                listBuilder.add(
+                        Map.of(
+                                "policyId", results.getInt("policyId"),
+                                "deviceTo", byteArrayMacToString((results.getBytes("deviceTo"))),
+                                "deviceFrom", byteArrayMacToString(results.getBytes("deviceFrom"))
+                        ));
+            }
+        }
+        catch (SQLException e) {
+            throw e;
+        }
+        return listBuilder.build();
+    }
+
+    public ArrayList<String> getAllPoliciesFromName(String name) throws SQLException {
+        ArrayList<String> finalResult = new ArrayList<>();
+        try (PreparedStatement getMac = connection.prepareStatement(GET_MAC_FROM_NAME);
+             PreparedStatement statement = connection.prepareStatement(GET_POLICY_BY_DEVICE_ANY);
+             PreparedStatement getNames = connection.prepareStatement(GET_NAME_FROM_MAC);) {
+            // Populate prepared statement
+
+            getMac.setString(1, name);
+            ResultSet results = getMac.executeQuery();
+            while(results.next()) {
+                statement.setBytes(1, results.getBytes("Mac"));
+                statement.setBytes(2, results.getBytes("Mac"));
+                ResultSet resultPolicy = statement.executeQuery();
+                while(resultPolicy.next()) {
+                    getNames.setBytes(1, resultPolicy.getBytes("deviceTo"));
+                    getNames.setBytes(2, resultPolicy.getBytes("deviceFrom"));
+                    ResultSet resultNames = getNames.executeQuery();
+                    while(resultNames.next()){
+                        String rName = resultNames.getString("Name");
+                        if(!rName.isEmpty() && !finalResult.contains(rName) && !rName.equalsIgnoreCase(name)){
+                            finalResult.add(rName);
+                            System.out.println(finalResult);
+                        }
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            throw e;
+        }
+        return finalResult;
     }
 }

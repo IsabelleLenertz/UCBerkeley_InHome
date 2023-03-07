@@ -2,6 +2,8 @@ package UCB.MICS.InHome.servlet;
 
 import UCB.MICS.InHome.Utilities;
 import UCB.MICS.InHome.jdbc.JdbcClient;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -10,6 +12,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -65,10 +69,56 @@ public class PolicyServlet extends HttpServlet {
         String[] elements = path.split("/");
         if (elements.length == 3) {
             // Retrieve all the policies
+            List<Map<String, String>> policies = null;
+            try {
+                policies = client.getAllPolicies();
+            } catch (SQLException e) {
+                logger.log(Level.SEVERE, String.format("could get policies %s", e.getMessage()));
+                resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                return;
+            }
+            // Return a json array with MAC, IpV4, device name
+            JSONArray json = new JSONArray();
+            for (Map<String, String> policy : policies) {
+                JSONObject jsonDevice = new JSONObject().put("policyId", policy.get("policyId"))
+                        .put("deviceTo", policy.get("deviceTo"))
+                        .put("deviceFrom", policy.get("deviceFrom"));
+                json.put(jsonDevice);
+            }
+            resp.setStatus(HttpServletResponse.SC_OK);
+            resp.setContentType(APPLICATION_JSON);
+            resp.getWriter().write(json.toString());
+            resp.getWriter().flush();
+            logger.log(Level.INFO, "all policies were returned");
         }
         else if (elements.length == 4) {
-            String id = elements[3];
-            // Retrieve policy with the given id
+            String name = elements[3];
+            // Retrieve policy with the given device name
+            ArrayList<String> policies = new ArrayList<>();
+            try {
+                policies = client.getAllPoliciesFromName(name);
+            } catch (SQLException e) {
+                logger.log(Level.SEVERE, String.format("could get policies %s", e.getMessage()));
+                resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                return;
+            }
+            if(policies == null || policies.isEmpty()) {
+                logger.log(Level.INFO, String.format("device not found, name=%s", name));
+                resp.sendError(HttpServletResponse.SC_NOT_FOUND, "Device not found");
+                return;
+            }
+            // Return a json array with MAC, IpV4, device name
+            JSONArray json = new JSONArray();
+            for (int i = 0; i<policies.size();i++) {
+                JSONObject jsonDevice = new JSONObject().put("Name " + (i+1), policies.get(i));
+                json.put(jsonDevice);
+            }
+            resp.setStatus(HttpServletResponse.SC_OK);
+            resp.setContentType(APPLICATION_JSON);
+            resp.getWriter().write(json.toString());
+            resp.getWriter().flush();
+            logger.log(Level.INFO, String.format("all policies were returned from name=%s", name));
+
         }
         else {
             resp.sendError(HttpServletResponse.SC_NOT_FOUND);

@@ -8,10 +8,13 @@ public abstract class queries {
     public static String SELECT_ALL_DEVICES = "SELECT * FROM devices";
     public static String GET_ONE_DEVICE = "SELECT * FROM devices WHERE mac = ? LIMIT 1";
     public static String GET_MAC_FROM_NAME = "SELECT Mac FROM devices WHERE Name = ? LIMIT 1";
+    public static String GET_NAME_FROM_MAC = "SELECT Name FROM devices WHERE Mac = ? or Mac = ?";
     public static String GET_ALL_POLICIES = "SELECT * FROM policies";
+    public static String GET_POLICY_BY_POLICY_ID = "SELECT * FROM policies where policyid = ?";
     public static String GET_POLICY_BY_DEVICE_FROM = "SELECT policyId FROM policies WHERE deviceFrom = ?";
     public static String GET_POLICY_BY_DEVICE_TO = "SELECT policyId FROM policies WHERE deviceTo = ?";
-    public static String GET_POLICY_BY_DEVICE_ANY = "SELECT policyIg FROM policies WHERE deviceTo = ? OR deviceFrom = ?";
+    public static String GET_POLICY_BY_DEVICE_ANY = "SELECT * FROM policies WHERE deviceTo = ? OR deviceFrom = ?";
+    public static String DELETE_POLICY = "DELETE FROM policies WHERE deviceTo = ? OR deviceFrom = ?";
     public static String DELETE_POLICIES_BY_ID = "DELETE FROM policies WHERE policyId = ?";
     public static String UPDATE_POLICIES = "INSERT INTO policies (deviceTo, deviceFrom) VALUES (?, ?)";
 }
