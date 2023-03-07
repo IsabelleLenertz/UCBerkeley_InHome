@@ -73,4 +73,12 @@ def create_policy(request):
                 form = CreatePolicyForm
                 return render(request, 'create_policy.html', {'message':'Error creating the policy.', 'form': form})
     form = CreatePolicyForm
-    return render(request, 'create_policy.html', {'form': form})     
+    return render(request, 'create_policy.html', {'form': form})   
+
+
+def display_policies(request):
+    if(request.method == 'GET'):
+        result = requests.get(host +"/v1/policy-management", verify=False)
+        if result.status_code == 200:         
+            return render(request, 'display_policies.html', {'policies':json2html.convert(json = result.json())})
+    return render(request, "dev_dashboard.html")  
