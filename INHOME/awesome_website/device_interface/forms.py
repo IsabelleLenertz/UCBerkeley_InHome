@@ -15,3 +15,6 @@ class RenameDeviceForm(forms.Form):
 class CreatePolicyForm(forms.Form):
     name1 = forms.CharField(label = "Device name ", max_length=30)
     name2 = forms.CharField(label = "Device name ", max_length=30)  
+
+class DisplayDevicePolicyForm(forms.Form):
+    name = forms.CharField(label ="Device name", max_length=30)

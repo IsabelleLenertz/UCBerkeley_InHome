@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<style>
+    .center {
+      margin: 0 auto;	
+      width: 13%; 
+    }
+ </style>
+
+<html>
+    <body>
+        <div class="center" style="text-align:center;font-family:verdana;font-size:100%;">
+        <p>Display device policy by supplying a valid device name</p>
+        <p> </p>
+        <form action="/display_dev_policy/" method="POST">
+            {% csrf_token %}
+            {{ form }}  
+            <input type="submit" value="Submit"> 
+            </form>
+            <p> {{dev_policy|safe }} </p> 
+            <a href="{% url 'dev_dashboard' %}">Admin options</a>
+        </div>   
+           
+    </body>
+</html>
+
+{% endblock %}

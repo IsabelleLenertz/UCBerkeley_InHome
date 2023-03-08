@@ -1,6 +1,6 @@
 
 from django.shortcuts import render
-from .forms import CreateDeviceForm, RemoveDeviceForm, RenameDeviceForm, CreatePolicyForm 
+from .forms import CreateDeviceForm, RemoveDeviceForm, RenameDeviceForm, CreatePolicyForm, DisplayDevicePolicyForm 
 from django.http import HttpResponse
 import requests
 from json2html import *
@@ -61,12 +61,12 @@ def rename_device(request):
 def create_policy(request):
     if(request.method == 'POST'):
         form = CreatePolicyForm(request.POST)
-        print(f"Before checking form")
+#        print(f"Before checking form")
         if(form.is_valid()):
-            print(f"Form is valid")
+#            print(f"Form is valid")
             result = requests.post(url=host +"/v1/policy-management", json={"namedeviceto": form.cleaned_data['name1'],"namedevicefrom": form.cleaned_data['name2']}, verify=False)
-            print(f"This is the result status code - {result.status_code}")
-            print(f"This is the response string - {result.text}")
+#            print(f"This is the result status code - {result.status_code}")
+#            print(f"This is the response string - {result.text}")
             if result.status_code == 200:
                 return render(request, "create_policy.html", {'message':'Policy was successfully created.', 'form':form}) 
             else:
@@ -75,10 +75,24 @@ def create_policy(request):
     form = CreatePolicyForm
     return render(request, 'create_policy.html', {'form': form})   
 
-
 def display_policies(request):
     if(request.method == 'GET'):
         result = requests.get(host +"/v1/policy-management", verify=False)
         if result.status_code == 200:         
             return render(request, 'display_policies.html', {'policies':json2html.convert(json = result.json())})
     return render(request, "dev_dashboard.html")  
+
+def display_dev_policy(request):
+    if(request.method == 'POST'):
+        form = DisplayDevicePolicyForm(request.POST)
+        if(form.is_valid()):
+            result = requests.get(host +"/v1/policy-management/" + form.cleaned_data['name'], verify=False)
+#            print(f"This is the result status code - {result.status_code}")
+#            print(f"This is the response string - {result.text}")
+            if result.status_code == 200:         
+                return render(request, 'display_dev_policy.html', {'dev_policy':json2html.convert(json = result.json()),'form':form})
+            else:
+                form = DisplayDevicePolicyForm
+                return render(request, 'display_dev_policy.html', {'dev_policy':'Error displaying device policy.', 'form': form})    
+    form = DisplayDevicePolicyForm
+    return render(request, 'display_dev_policy.html', {'form': form})     
