@@ -5,18 +5,18 @@
 <style>
     .center {
       margin: 0 auto;	
-      width: 35%
+      width: 23%
     }
  </style>
 
 <html>
     <body>
         <div class="center" style="text-align:center;font-family:verdana;font-size:100%;">
-        <p>All devices in the network</p>
-        <p> </p>    
-        <form action="/display_devices/" method="GET">
+            <p>All device policies in the network</p>
+            <p> </p>  
+            <form action="/display_policies/" method="GET">
             {% csrf_token %}
-            {{ devices|safe }} 
+            {{ policies|safe }} 
             <p> </p> 
             <a href="{% url 'dev_dashboard' %}">Admin options</a>
         </div>                

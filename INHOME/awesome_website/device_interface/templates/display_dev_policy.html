@@ -5,21 +5,24 @@
 <style>
     .center {
       margin: 0 auto;	
-      width: 35%
+      width: 13%; 
     }
  </style>
 
 <html>
     <body>
         <div class="center" style="text-align:center;font-family:verdana;font-size:100%;">
-        <p>All devices in the network</p>
-        <p> </p>    
-        <form action="/display_devices/" method="GET">
+        <p>Display device policy by supplying a valid device name</p>
+        <p> </p>
+        <form action="/display_dev_policy/" method="POST">
             {% csrf_token %}
-            {{ devices|safe }} 
-            <p> </p> 
+            {{ form }}  
+            <input type="submit" value="Submit"> 
+            </form>
+            <p> {{dev_policy|safe }} </p> 
             <a href="{% url 'dev_dashboard' %}">Admin options</a>
-        </div>                
+        </div>   
+           
     </body>
 </html>
 

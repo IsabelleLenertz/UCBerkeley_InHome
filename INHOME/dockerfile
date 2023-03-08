@@ -6,4 +6,5 @@ WORKDIR /opt
 RUN pip install django
 RUN pip install requests
 RUN pip install json2html
+ENV PYTHONUNBUFFERED=true
 CMD ["python3", "manage.py", "runserver", "0.0.0.0:8000"]
