@@ -53,13 +53,17 @@ public class PolicyServlet extends HttpServlet {
         }
 
         try {
-            client.updatePolicy(nameFrom, nameTo);
+            if(!client.updatePolicy(nameFrom, nameTo)) {
+                logger.log(Level.INFO, String.format("device not found, could not add policy"));
+                resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                return;
+            }
         } catch (SQLException e) {
             logger.log(Level.SEVERE, String.format("could not add new policy %s", e.getMessage()));
             resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             return;
         }
-        logger.log(Level.INFO, String.format("new device was added mac=%s, ip=%s", nameFrom, nameTo));
+        logger.log(Level.INFO, String.format("new policy was added device 1=%s, device 2=%s", nameFrom, nameTo));
         resp.setStatus(HttpServletResponse.SC_OK);
     }
 
