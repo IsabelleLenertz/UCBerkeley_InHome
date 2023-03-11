@@ -7,7 +7,12 @@
       margin: 0 auto;	
       width: 13%; 
     }
+    .nobull {
+     list-style-type: none;   
+    }
  </style>
+
+
 
 <html>
     <body>
@@ -19,7 +24,7 @@
             {{ form }}  
             <input type="submit" value="Submit"> 
             </form>
-            <p> {{dev_policy|safe }} </p> 
+            <p> <ul class="nobull"> {{dev_policy|safe }} </ul> </p> 
             <a href="{% url 'dev_dashboard' %}">Admin options</a>
         </div>   
            
