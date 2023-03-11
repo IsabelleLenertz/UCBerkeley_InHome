@@ -1,6 +1,8 @@
 package UCB.MICS.InHome.jdbc;
 
+import UCB.MICS.InHome.Utilities;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import javax.xml.transform.Result;
 import java.sql.*;
@@ -257,22 +259,40 @@ public class    JdbcClient {
         try (PreparedStatement statement = connection.prepareStatement(GET_ALL_POLICIES)) {
             ResultSet results = statement.executeQuery();
             while(results.next()) {
+                byte[] macFrom = results.getBytes("deviceFrom");
+                byte[] macTo = results.getBytes("deviceTo");
+                String nameTo;
+                String nameFrom;
+                try(PreparedStatement to = connection.prepareStatement(GET_NAME_FROM_ONE_MAC);
+                    PreparedStatement from = connection.prepareStatement(GET_NAME_FROM_ONE_MAC)) {
+                    to.setBytes(1, macTo);
+                    from.setBytes(1, macFrom);
+                    ResultSet resTo = to.executeQuery();
+                    ResultSet resFrom = from.executeQuery();
+                    if (resFrom.next()) {
+                        nameFrom = resFrom.getString(NAME);
+                    } else {
+                        throw new SQLException();
+                    }
+                    if(resTo.next()) {
+                        nameTo = resTo.getString(NAME);
+                    } else {
+                        throw new SQLException();
+                    }
+                }
                 listBuilder.add(
                         Map.of(
                                 "policyId", results.getInt("policyId"),
-                                "deviceTo", byteArrayMacToString((results.getBytes("deviceTo"))),
-                                "deviceFrom", byteArrayMacToString(results.getBytes("deviceFrom"))
+                                "deviceTo", nameTo,
+                                "deviceFrom", nameFrom
                         ));
             }
-        }
-        catch (SQLException e) {
-            throw e;
         }
         return listBuilder.build();
     }
 
-    public ArrayList<String> getAllPoliciesFromName(String name) throws SQLException {
-        ArrayList<String> finalResult = new ArrayList<>();
+    public List<Map<String, String>> getAllPoliciesFromName(String name) throws SQLException {
+        ImmutableList.Builder<Map<String, String>> listBuilder = ImmutableList.builder();
         try (PreparedStatement getMac = connection.prepareStatement(GET_MAC_FROM_NAME);
              PreparedStatement statement = connection.prepareStatement(GET_POLICY_BY_DEVICE_ANY);
              PreparedStatement getNames = connection.prepareStatement(GET_NAME_FROM_MAC);) {
@@ -290,16 +310,18 @@ public class    JdbcClient {
                     ResultSet resultNames = getNames.executeQuery();
                     while(resultNames.next()){
                         String rName = resultNames.getString("Name");
-                        if(!rName.isEmpty() && !finalResult.contains(rName) && !rName.equalsIgnoreCase(name)){
-                            finalResult.add(rName);
-                            System.out.println(finalResult);
+                        String rMac = Utilities.byteArrayMacToString(resultNames.getBytes("Mac"));
+                        String rIp = Utilities.byteArrayIpv4ToString(resultNames.getBytes("Ipv4"));
+                        if(!rName.isEmpty() && !rName.equalsIgnoreCase(name)){
+                            Map<String, String> map = ImmutableMap.of(NAME, rName,
+                                    MAC, rMac,
+                                    IPV4, rIp);
+                            listBuilder.add(map);
                         }
                     }
                 }
             }
-        } catch (SQLException e) {
-            throw e;
         }
-        return finalResult;
+        return listBuilder.build();
     }
 }
