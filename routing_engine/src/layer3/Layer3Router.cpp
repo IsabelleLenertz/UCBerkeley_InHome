@@ -14,7 +14,7 @@
 #include "logging/Logger.hpp"
 
 Layer3Router::Layer3Router()
-    : _if_manager(&_arp_table, &_ip_rte_table),
+    : _if_manager(&_arp_table, &_ip_rte_table, &_napt_table),
 #ifndef USE_LOCAL_CONFIG
       _config((uint16_t)3306),
 #else
@@ -90,7 +90,7 @@ int Layer3Router::Initialize()
 
     // Add submodules to central module
     _access_control.AddModule((IAccessControlModule*)&_null_access);
-    _access_control.AddModule((IAccessControlModule*)&_access_list);
+    //_access_control.AddModule((IAccessControlModule*)&_access_list);
 
     ////////////////////////////////
     /////// Static ACL Setup ///////
@@ -183,7 +183,8 @@ void Layer3Router::_process_packet(IIPPacket *packet)
 				Logger::Log(LOG_DEBUG, "Message sent successfully");
 				break;
 			}
-			case ARP_CACHE_MISS:
+			case ARP_CACHE_MISS_LOCAL:
+			case ARP_CACHE_MISS_DEFAULT:
 			{
 				// ARP cache miss
 				Logger::Log(LOG_DEBUG, "ARP Cache Miss");
@@ -191,6 +192,17 @@ void Layer3Router::_process_packet(IIPPacket *packet)
 				outstanding_msg_t msg;
 				msg.pkt = packet;
 				msg.expires_at = time(NULL) + 5; // 5 seconds
+
+				// Set next hop based on whether the destination is
+				// local or via the default gateway
+				if (status == ARP_CACHE_MISS_DEFAULT)
+				{
+					msg.next_hop = _if_manager.GetDefaultGateway(packet->GetIPVersion());
+				}
+				else
+				{
+					msg.next_hop = &packet->GetDestinationAddress();
+				}
 
 				_outstanding_msgs.push_back(msg);
 
@@ -278,7 +290,7 @@ void Layer3Router::_process_arp_replies()
         {
             outstanding_msg_t &msg = *m;
             
-            if (IPUtils::AddressesAreEqual(*target_addr, msg.pkt->GetDestinationAddress()))
+            if (IPUtils::AddressesAreEqual(*target_addr, *msg.next_hop))
             {
                 // Destination address matches, send packet
             	if (msg.pkt != nullptr)

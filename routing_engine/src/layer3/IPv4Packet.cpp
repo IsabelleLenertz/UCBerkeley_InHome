@@ -1,4 +1,5 @@
 #include "layer3/IPv4Packet.hpp"
+#include "layer3/IPUtils.hpp"
 
 #include <arpa/inet.h>
 #include <cstring>
@@ -101,7 +102,7 @@ int IPv4Packet::Deserialize(const uint8_t *buff, uint16_t len)
     //////// Validate Checksum ////////
     
     // Calculate checksum
-    uint16_t checksum_calculated = CalcHeaderChecksum(buff, header_len);
+    uint16_t checksum_calculated = IPUtils::Calc16BitChecksum(buff, header_len);
     
     // Checksum of header (including checksum bytes)
     // must be 0
@@ -250,7 +251,7 @@ int IPv4Packet::Serialize(uint8_t* buff, uint16_t& len)
     }
     
     // Calculate Header Checksum
-    uint16_t checksum = CalcHeaderChecksum(buff, GetHeaderLengthBytes());
+    uint16_t checksum = IPUtils::Calc16BitChecksum(buff, GetHeaderLengthBytes());
     
     // Write checksum to header
     *(uint16_t*)(buff + 10) = checksum;
@@ -453,34 +454,18 @@ void IPv4Packet::RemoveOption(uint8_t option_type)
     }
 }
 
-void IPv4Packet::SetData(uint8_t *data_in, uint16_t len)
+void IPv4Packet::SetData(const uint8_t *data_in, size_t len)
 {
+	if (len > UINT16_MAX)
+	{
+		return;
+	}
+
     _data = std::vector<uint8_t>(data_in, data_in + len);
 }
 
-uint16_t IPv4Packet::GetData(const uint8_t* &data_out)
+size_t IPv4Packet::GetData(const uint8_t* &data_out)
 {
     data_out = _data.data();
     return _data.size();
-}
-
-uint16_t IPv4Packet::CalcHeaderChecksum(const uint8_t *buff, size_t len)
-{
-    if (len % 2 != 0)
-    {
-        return 0;
-    }
-
-    uint32_t result = 0;
-    uint32_t offset = 0;
-    
-    for (offset = 0; offset < len; offset += 2)
-    {
-        result += *(uint16_t*)(buff + offset);
-    }
-
-    uint16_t carry = (uint16_t)(result >> 16);
-    result += carry;
-
-    return ~(uint16_t)result;
 }

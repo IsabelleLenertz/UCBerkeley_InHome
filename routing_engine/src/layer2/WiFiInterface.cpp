@@ -1,7 +1,8 @@
 #include "layer2/WiFiInterface.hpp"
 
 WiFiInterface::WiFiInterface(const char *if_name, IARPTable* arp_table)
-    : _arp_table(arp_table)
+    : _arp_table(arp_table),
+	  _is_default(false)
 {
     _if_name = std::string(if_name);
 }
@@ -46,4 +47,9 @@ void WiFiInterface::SetMACAddress(const struct ether_addr& mac_addr)
 
 void WiFiInterface::SetIPAddressQueryMethod(IPOwnershipQuery method)
 {
+}
+
+void WiFiInterface::SetAsDefault()
+{
+	_is_default = true;
 }

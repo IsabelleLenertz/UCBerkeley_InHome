@@ -120,3 +120,24 @@ void IPUtils::StoreSockaddr(const struct sockaddr &src, struct sockaddr_storage 
         }
     }
 }
+
+uint16_t IPUtils::Calc16BitChecksum(const uint8_t *buff, size_t len)
+{
+    if (len % 2 != 0)
+    {
+        return 0;
+    }
+
+    uint32_t result = 0;
+    uint32_t offset = 0;
+
+    for (offset = 0; offset < len; offset += 2)
+    {
+        result += *(uint16_t*)(buff + offset);
+    }
+
+    uint16_t carry = (uint16_t)(result >> 16);
+    result += carry;
+
+    return ~(uint16_t)result;
+}

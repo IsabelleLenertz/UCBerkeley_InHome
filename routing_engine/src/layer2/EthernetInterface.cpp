@@ -14,7 +14,8 @@ EthernetInterface::EthernetInterface(const char *if_name, IARPTable *arp_table)
       _arp_table(arp_table),
       _callback(),
       _arp_listener(),
-      _owns_address()
+      _owns_address(),
+	  _is_default(false)
 {
     memset(error_buffer, 0, sizeof(error_buffer));
     memset(&_mac_addr, 0, sizeof(_mac_addr));
@@ -144,6 +145,18 @@ int EthernetInterface::SendPacket(const struct sockaddr &l3_local_addr, const st
 {
     std::scoped_lock { _mutex };
 
+    if (_is_default)
+    {
+    	char addr_str[64];
+    	std::stringstream sstream;
+
+    	const struct sockaddr_in _l3_dest_addr = reinterpret_cast<const struct sockaddr_in&>(l3_dest_addr);
+    	inet_ntop(AF_INET, &_l3_dest_addr.sin_addr, addr_str, 64);
+
+    	sstream << "Sending to Default Gateway: " << addr_str;
+    	Logger::Log(LOG_DEBUG, sstream.str());
+    }
+
     int status = NO_ERROR;
     
     if (len + ETHER_HDR_LEN > MAX_FRAME_LEN)
@@ -203,6 +216,7 @@ int EthernetInterface::SendPacket(const struct sockaddr &l3_local_addr, const st
             }
             default:
             {
+            	Logger::Log(LOG_DEBUG, "ARP: Unrecognized Address Family");
                 break;
             }
         }
@@ -214,8 +228,15 @@ int EthernetInterface::SendPacket(const struct sockaddr &l3_local_addr, const st
         
         if (status == NO_ERROR)
         {
-            // Indicate an ARP miss
-            status = ARP_CACHE_MISS;
+        	if (!_is_default)
+        	{
+				// Indicate an ARP miss
+				status = ARP_CACHE_MISS_LOCAL;
+        	}
+        	else
+        	{
+        		status = ARP_CACHE_MISS_DEFAULT;
+        	}
         }
     }
     else
@@ -227,7 +248,7 @@ int EthernetInterface::SendPacket(const struct sockaddr &l3_local_addr, const st
     }
     
     // Only send if no error has occurred up to this point
-    if (status == NO_ERROR || status == ARP_CACHE_MISS)
+    if (status == NO_ERROR || status == ARP_CACHE_MISS_LOCAL || status == ARP_CACHE_MISS_DEFAULT)
     {
         // Populate header
         struct ether_header *eth_header = (struct ether_header*)_frame_buffer;
@@ -568,4 +589,9 @@ void EthernetInterface::_build_arp_reply(ARPMessage &request, ARPMessage &reply)
     
     // Fill in MAC address
     reply.SetSenderHWAddress((uint8_t*)&_mac_addr, hw_addr_len);
+}
+
+void EthernetInterface::SetAsDefault()
+{
+	_is_default = true;
 }

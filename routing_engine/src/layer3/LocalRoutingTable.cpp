@@ -2,6 +2,9 @@
 #include <arpa/inet.h>
 #include <cstring>
 
+#include <sstream>
+#include "logging/Logger.hpp"
+
 #include "layer3/IPUtils.hpp"
 
 LocalRoutingTable::LocalRoutingTable()
@@ -53,6 +56,12 @@ ILayer2Interface* LocalRoutingTable::GetInterface(const struct sockaddr &ip_addr
                         _local_ip.sin_port = _entry_ip.sin_port;
                         memcpy(&_local_ip.sin_addr, &_entry_ip.sin_addr, 4);
 
+                        char ip_str[64];
+                        inet_ntop(AF_INET, &_local_ip.sin_addr, ip_str, 64);
+                        std::stringstream sstream;
+                        sstream << "Local IP: " << ip_str;
+                        Logger::Log(LOG_DEBUG, sstream.str());
+
                     	break;
                     }
                     case AF_INET6:
@@ -60,7 +69,7 @@ ILayer2Interface* LocalRoutingTable::GetInterface(const struct sockaddr &ip_addr
                     	struct sockaddr_in6 &_local_ip = reinterpret_cast<struct sockaddr_in6&>(local_ip);
                     	const struct sockaddr_in6 &_entry_ip = reinterpret_cast<const struct sockaddr_in6&>(entry_local_ip);
 
-                    	_local_ip.sin6_family = AF_INET;
+                    	_local_ip.sin6_family = AF_INET6;
                     	_local_ip.sin6_port = _entry_ip.sin6_port;
                     	_local_ip.sin6_flowinfo = _entry_ip.sin6_flowinfo;
                     	memcpy(&_local_ip.sin6_addr, &_entry_ip.sin6_addr, 16);
@@ -123,6 +132,16 @@ void LocalRoutingTable::AddSubnetAssociation(ILayer2Interface *interface, const 
     // last entry in the table
     RoutingTableEntry_t &new_entry = _table.back();
     
+    char ip_str[64];
+    if (ip_addr.sa_family == AF_INET)
+    {
+    	const struct sockaddr_in &_ip_addr = reinterpret_cast<const struct sockaddr_in&>(ip_addr);
+    	inet_ntop(AF_INET, &_ip_addr.sin_addr, ip_str, 64);
+    	std::stringstream sstream;
+    	sstream << "Adding local address: " << ip_str;
+    	Logger::Log(LOG_DEBUG, sstream.str());
+    }
+
     // Populate entry
     new_entry.interface = interface;
     IPUtils::StoreSockaddr(ip_addr, new_entry.local_ip);

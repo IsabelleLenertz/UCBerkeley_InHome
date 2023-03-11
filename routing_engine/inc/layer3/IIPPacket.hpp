@@ -2,6 +2,7 @@
 #define INC_IIPPACKET_HPP_
 
 #include <cstdint>
+#include <cstdlib>
 
 class IIPPacket
 {
@@ -53,6 +54,26 @@ public:
     /// </returns>
     virtual int Serialize(uint8_t* buff, uint16_t& len) = 0;
     
+    /// <summary>
+    /// Gets the layer 4 protocol number.
+    /// </summary>
+    /// <returns>Layer 4 protocol number</returns>
+    virtual uint8_t GetProtocol() = 0;
+
+    /// <summary>
+    /// Gets the data payload
+    /// </summary>
+    /// <param name="data_out">Pointer to data</param>
+    /// <returns>Length of data, in bytes</returns>
+    virtual size_t GetData(const uint8_t* &data_out) = 0;
+
+    /// <summary>
+    /// Sets the data payload
+    /// </summary>
+    /// <param name="data">Data</param>
+    /// <param name="len">Length of data, in bytes</param>
+    virtual void SetData(const uint8_t* data, size_t len) = 0;
+
     /// <summary>
     /// Returns a reference to a sockaddr object which
     /// stores the source address of this packet
