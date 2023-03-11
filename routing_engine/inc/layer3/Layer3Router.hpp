@@ -12,6 +12,7 @@
 #include "layer2/ILayer2Interface.hpp"
 #include "layer3/IIPPacket.hpp"
 #include "layer3/LocalRoutingTable.hpp"
+#include "nat/NAPTTable.hpp"
 
 #define USE_LOCAL_CONFIG
 
@@ -23,6 +24,7 @@
 typedef struct
 {
     IIPPacket *pkt;
+    const struct sockaddr *next_hop;
     time_t expires_at;
 } outstanding_msg_t;
 
@@ -85,6 +87,9 @@ private:
     
     // Routing Table
     LocalRoutingTable _ip_rte_table;
+
+    // NAPT Table
+    NAPTTable _napt_table;
 
     /// <summary>
     /// Stores incoming layer 3 data

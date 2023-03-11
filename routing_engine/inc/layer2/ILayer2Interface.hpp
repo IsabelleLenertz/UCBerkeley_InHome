@@ -131,6 +131,11 @@ public:
     /// </summary>
     /// <param name="method">Query method</param>
     virtual void SetIPAddressQueryMethod(IPOwnershipQuery method) = 0;
+
+    /// <summary>
+    /// Sets this interface as the default (internet-facing) interface
+    /// </summary>
+    virtual void SetAsDefault() = 0;
 };
 
 #endif

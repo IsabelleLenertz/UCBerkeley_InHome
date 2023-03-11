@@ -35,6 +35,14 @@ public:
     /// <param name="src">Address to store</param>
     /// <param name="dst">Socket storage structure</param>
     static void StoreSockaddr(const struct sockaddr &src, struct sockaddr_storage &dst);
+
+    /// <summary>
+    /// Calculates the 16-bit checksum of the specified data
+    /// </summary>
+    /// <param name="buff">Data to be checksummed</param>
+    /// <param name="len">Length of data buffer, in bytes</param>
+    /// <returns>16-bit checksum, in host byte order</returns>
+    static uint16_t Calc16BitChecksum(const uint8_t *buff, size_t len);
 };
 
 #endif
