@@ -1,6 +1,10 @@
 #include "nat/NAPTTable.hpp"
 #include <cstring>
 #include <ctime>
+#include <unistd.h>
+
+#include <sstream>
+#include <arpa/inet.h>
 
 #include "status/error_codes.hpp"
 
@@ -17,15 +21,29 @@ NAPTTable::NAPTTable()
 	  _icmp_table(),
 	  _mutex()
 {
-	// Mark all TCP/UDP/ICMP IDs as available,
-	// since no mappings exist yet
-	memset(_tcp_portmap, 0, sizeof(_tcp_portmap));
-	memset(_udp_portmap, 0, sizeof(_udp_portmap));
-	memset(_icmp_idmap, 0, sizeof(_icmp_idmap));
 }
 
 NAPTTable::~NAPTTable()
 {
+	// Close any remaining sockets
+	for (auto e = _icmp_table.begin(); e < _icmp_table.end(); e++)
+	{
+		const napt_entry_t &entry = *e;
+
+		close(entry.socket_d);
+	}
+	for (auto e = _udp_table.begin(); e < _udp_table.end(); e++)
+	{
+		const napt_entry_t &entry = *e;
+
+		close(entry.socket_d);
+	}
+	for (auto e = _tcp_table.begin(); e < _tcp_table.end(); e++)
+	{
+		const napt_entry_t &entry = *e;
+
+		close(entry.socket_d);
+	}
 }
 
 int NAPTTable::TranslateToInternal(IIPPacket *packet)
@@ -255,7 +273,7 @@ napt_tuple_t *NAPTTable::GetExternal(uint8_t protocol, const struct sockaddr &ip
 
 	if (table != nullptr)
 	{
-		// Search the table for an entry which matches the
+		// Search the table for an entry which matches theexternal_id
 		// specified address/identifier tuple
 		for (auto e = table->begin(); e < table->end(); e++)
 		{
@@ -283,16 +301,16 @@ napt_tuple_t *NAPTTable::CreateMappingToExternal(uint8_t protocol, const sockadd
 	// DO NOT lock the mutex, as this will result in deadlock
 	napt_tuple_t *result = nullptr;
 
-	// Reserve an ID number
+	int socket_d;
 	uint16_t external_id;
-	int status = ReserveID(protocol, external_id);
+	int status = BindMapping(protocol, external_ip, socket_d, external_id);
 
 	if (status != NO_ERROR)
 	{
 		return nullptr;
 	}
 
-	// Point to the correct translation table based on the protocol requested
+	// Select table based on protocol
 	std::vector<napt_entry_t> *table = nullptr;
 	switch (protocol)
 	{
@@ -311,185 +329,149 @@ napt_tuple_t *NAPTTable::CreateMappingToExternal(uint8_t protocol, const sockadd
 			table = &_tcp_table;
 			break;
 		}
+		default:
+		{
+			break;
+		}
 	}
 
-	if (table != nullptr)
+	if (table == nullptr)
 	{
-		// Add new entry and get a reference to it
-		table->push_back(napt_entry_t {0});
-		napt_entry_t &new_entry = table->back();
-
-		// Populate entry
-		IPUtils::StoreSockaddr(internal_ip, new_entry.internal.addr);
-		new_entry.internal.identifier = id;
-		IPUtils::StoreSockaddr(external_ip, new_entry.external.addr);
-		new_entry.external.identifier = external_id;
-
-		Logger::Log(LOG_DEBUG, "Created mapping");
-
-		// Set initial expiration time
-		new_entry.expires_at = time(NULL) + NAPT_EXP_TIME_SEC;
-
-		// Set the result to the external tuple of the new entry
-		result = &new_entry.external;
+		return nullptr;
 	}
+
+	// Add new entry and get a reference to it
+	table->push_back(napt_entry_t {0});
+	napt_entry_t &new_entry = table->back();
+
+	// Populate entry
+	IPUtils::StoreSockaddr(internal_ip, new_entry.internal.addr);
+	new_entry.internal.identifier = id;
+	IPUtils::StoreSockaddr(external_ip, new_entry.external.addr);
+	new_entry.external.identifier = external_id;
+	new_entry.socket_d = socket_d;
+
+	Logger::Log(LOG_DEBUG, "Created mapping");
+
+	// Set initial expiration time
+	new_entry.expires_at = time(NULL) + NAPT_EXP_TIME_SEC;
+
+	// Set the result to the external tuple of the new entry
+	result = &new_entry.external;
 
 	return result;
 }
 
-int NAPTTable::ReserveID(uint8_t protocol, uint16_t &id)
+int NAPTTable::BindMapping(uint8_t protocol, const sockaddr &external_ip, int &socket_d, uint16_t &id)
 {
-	uint32_t *map = nullptr;
-	size_t mapsize = 0;
-	uint16_t min_id = 0;
-	bool found = false;
+	socket_d = -1;
+	int status = ERROR_UNSET;
 
+	char ipstr[64];
+	const struct sockaddr_in &_external_ip = reinterpret_cast<const sockaddr_in&>(external_ip);
+	inet_ntop(AF_INET, &_external_ip.sin_addr, ipstr, 64);
+	std::stringstream sstream;
+	sstream << "Binding socket (" << _external_ip.sin_family << "): " << ipstr << ":" << _external_ip.sin_port;
+	Logger::Log(LOG_DEBUG, sstream.str());
+
+	// Based on the protocol, open a socket
 	switch (protocol)
 	{
 		case IPPROTO_ICMP:
 		{
-			map = (uint32_t*)&_icmp_idmap;
-			mapsize = sizeof(_icmp_idmap) / sizeof(uint32_t);
-			min_id = ICMP_ID_START;
+			socket_d = socket(external_ip.sa_family, SOCK_DGRAM, IPPROTO_ICMP);
 			break;
 		}
 		case IPPROTO_UDP:
 		{
-			map = (uint32_t*)&_udp_portmap;
-			mapsize = sizeof(_udp_portmap) / sizeof(uint32_t);
-			min_id = UDP_PORT_START;
+			socket_d = socket(external_ip.sa_family, SOCK_DGRAM, IPPROTO_UDP);
 			break;
 		}
 		case IPPROTO_TCP:
 		{
-			map = (uint32_t*)&_tcp_portmap;
-			mapsize = sizeof(_tcp_portmap) / sizeof(uint32_t);
-			min_id = TCP_PORT_START;
+			socket_d = socket(external_ip.sa_family, SOCK_STREAM, IPPROTO_TCP);
 			break;
 		}
 		default:
 		{
-			break;
+			Logger::Log(LOG_ERROR, "NAT Error: Unsupported Protocol");
+			return NAT_ERROR_UNSUPPORTED_PROTOCOL;
 		}
 	}
 
-	if (map != nullptr)
+	sstream.str("");
+	sstream << "Socket FD: " << socket_d;
+	Logger::Log(LOG_DEBUG, sstream.str());
+
+	if (socket_d < 0)
 	{
-		int word_num  = 0;
-		int bit_num = 0;
-
-		for (word_num = 0; word_num < mapsize; word_num++)
-		{
-			// Check if all ports at this word are in use
-			if (map[word_num] == 0xFFFFFFFF)
-			{
-				// All in use. Skip.
-				continue;
-			}
-
-			uint32_t bitmask = 1;
-			for (bit_num = 0; bit_num < 32; bit_num++)
-			{
-				if ((map[word_num] & bitmask) == 0)
-				{
-					// Found available port
-					found = true;
-
-					// Mark port as in-use
-					map[word_num] |= bitmask;
-					break;
-				}
-				bitmask <<= 1;
-			}
-
-			if (found)
-			{
-				break;
-			}
-		}
-
-		if (!found)
-		{
-			return NAT_ERROR_NO_AVAILABLE_ID;
-		}
-
-		// Calculate port offset from word/bit number
-		uint16_t offset = word_num * 32 + bit_num;
-		id = min_id + offset;
-	}
-	else
-	{
-		return NAT_ERROR_UNSUPPORTED_PROTOCOL;
+		Logger::Log(LOG_ERROR, "NAT Error: Socket Create Failed");
+		return NAT_ERROR_SOCKET_CREATE_FAILED;
 	}
 
-	return NO_ERROR;
-}
-
-int NAPTTable::FreeID(uint8_t protocol, uint16_t id)
-{
-	uint32_t *map = nullptr;
-	size_t mapsize = 0;
-	uint16_t min_id = 0;
-
-	switch (protocol)
+	// Bind the socket and retrieve the identifier
+	// (Query ID or Port, as applicable) bound to the socket
+	switch (external_ip.sa_family)
 	{
-		case IPPROTO_ICMP:
+		case AF_INET:
 		{
-			if (id > ICMP_ID_END)
+			// Bind the socket
+			status = bind(socket_d, &external_ip, sizeof(struct sockaddr_in));
+			if (status != NO_ERROR)
 			{
-				return NAT_ERROR_OUT_OF_RANGE;
+				sstream.str("");
+				sstream << "NAT Error: Socket Bind Failed (" << errno << ")";
+				Logger::Log(LOG_ERROR, sstream.str());
+				return NAT_ERROR_SOCKET_BIND_FAILED;
 			}
 
-			map = (uint32_t*)&_icmp_idmap;
-			mapsize = sizeof(_icmp_idmap) / sizeof(uint32_t);
-			min_id = ICMP_ID_START;
+			// Retrieve bound address
+			struct sockaddr_in saddr;
+			socklen_t addrlen;
+			struct sockaddr &_saddr = reinterpret_cast<struct sockaddr&>(saddr);
+
+			status = getsockname(socket_d, &_saddr, &addrlen);
+
+			id = saddr.sin_port;
+
 			break;
 		}
-		case IPPROTO_UDP:
+		case AF_INET6:
 		{
-			if (id > UDP_PORT_END)
+			// Bind the socket
+			status = bind(socket_d, &external_ip, sizeof(struct sockaddr_in6));
+			if (status != NO_ERROR)
 			{
-				return NAT_ERROR_OUT_OF_RANGE;
+				sstream.str("");
+				sstream << "NAT Error: Socket Bind Failed (" << status << ")";
+				Logger::Log(LOG_ERROR, sstream.str());
+				return NAT_ERROR_SOCKET_BIND_FAILED;
 			}
 
-			map = (uint32_t*)&_udp_portmap;
-			mapsize = sizeof(_udp_portmap) / sizeof(uint32_t);
-			min_id = UDP_PORT_START;
-			break;
-		}
-		case IPPROTO_TCP:
-		{
-			if (id > TCP_PORT_END)
-			{
-				return NAT_ERROR_OUT_OF_RANGE;
-			}
+			// Retrieve bound address
+			struct sockaddr_in6 saddr;
+			socklen_t addrlen;
+			struct sockaddr &_saddr = reinterpret_cast<struct sockaddr&>(saddr);
 
-			map = (uint32_t*)&_tcp_portmap;
-			mapsize = sizeof(_tcp_portmap) / sizeof(uint32_t);
-			min_id = TCP_PORT_START;
+			status = getsockname(socket_d, &_saddr, &addrlen);
+
+			id = saddr.sin6_port;
+
 			break;
 		}
 		default:
 		{
-			break;
+			Logger::Log(LOG_ERROR, "NAT Error: Unsupported Protocol");
+			return NAT_ERROR_UNSUPPORTED_PROTOCOL;
 		}
 	}
 
-	if (map != nullptr)
+	if (status != NO_ERROR)
 	{
-		uint16_t offset = id - min_id;
-		int word_num = offset / 32;
-		int bit_num = offset % 32;
-		uint32_t bitmask = ~(1 << bit_num);
-
-		// Clear bit
-		map[word_num] &= bitmask;
-
-		return NO_ERROR;
-	}
-	else
-	{
-		return NAT_ERROR_UNSUPPORTED_PROTOCOL;
+		sstream.str("");
+		sstream << "NAT Error: Get Address Failed (" << errno << ")";
+		Logger::Log(LOG_ERROR, sstream.str());
+		return NAT_ERROR_GET_ADDRESS_FAILED;
 	}
 
 	return NO_ERROR;
@@ -559,11 +541,11 @@ void NAPTTable::RemoveExpired()
 		napt_entry_t &entry = *e;
 
 		// If the expiration time is not 0 (special case: no expiration)
-		// and is before the current time, free the external ID
+		// and is before the current time, close the socket
 		// and remove the entry from the list
 		if (entry.expires_at != 0 && entry.expires_at < current_time)
 		{
-			FreeID(IPPROTO_ICMP, entry.external.identifier);
+			close(entry.socket_d);
 			_icmp_table.erase(e);
 		}
 	}
@@ -573,11 +555,11 @@ void NAPTTable::RemoveExpired()
 		napt_entry_t &entry = *e;
 
 		// If the expiration time is not 0 (special case: no expiration)
-		// and is before the current time, free the external ID
+		// and is before the current time, close the socket
 		// and remove the entry from the list
 		if (entry.expires_at != 0 && entry.expires_at < current_time)
 		{
-			FreeID(IPPROTO_UDP, entry.external.identifier);
+			close(entry.socket_d);
 			_udp_table.erase(e);
 		}
 	}
@@ -587,11 +569,11 @@ void NAPTTable::RemoveExpired()
 		napt_entry_t &entry = *e;
 
 		// If the expiration time is not 0 (special case: no expiration)
-		// and is before the current time, free the external ID
+		// and is before the current time, close the socket
 		// and remove the entry from the list
 		if (entry.expires_at != 0 && entry.expires_at < current_time)
 		{
-			FreeID(IPPROTO_TCP, entry.external.identifier);
+			close(entry.socket_d);
 			_tcp_table.erase(e);
 		}
 	}

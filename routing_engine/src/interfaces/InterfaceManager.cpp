@@ -8,6 +8,7 @@
 #include <sstream>
 #include <cstring>
 #include <fstream>
+#include <arpa/inet.h>
 
 #include "logging/Logger.hpp"
 
@@ -199,6 +200,7 @@ int InterfaceManager::StopListenAll()
 
 int InterfaceManager::SendPacket(IIPPacket *packet)
 {
+	std::stringstream sstream;
 	int status = NO_ERROR;
 
 	// Locate the outgoing interface based on destination address
@@ -253,7 +255,7 @@ int InterfaceManager::SendPacket(IIPPacket *packet)
 		return status;
 	}
 
-	std::stringstream sstream;
+	sstream.str("");
 	sstream << "Address Family: " << _local_ip.sa_family;
 	Logger::Log(LOG_DEBUG, sstream.str());
 
@@ -317,14 +319,18 @@ void InterfaceManager::_registerAddresses(ILayer2Interface* _if, pcap_if_t *pcap
 						inet_ntop(AF_INET, &gateway.sin_addr, ip_str, 64);
 
 						std::stringstream sstream;
-						sstream << "Setting IPv4 Default Gateway: " << _if->GetName() << " at " << ip_str;
+						sstream << "Setting IPv4 Default Gateway: " << _if->GetName() << " at " << ip_str << ":" << gateway.sin_port;
+						Logger::Log(LOG_INFO, sstream.str());
+
+						sstream.str("");
+						inet_ntop(AF_INET, &_ip_addr.sin_addr, ip_str, 64);
+						sstream << "Local IP: " << ip_str << ":" << _ip_addr.sin_port;
+						Logger::Log(LOG_INFO, sstream.str());
 
 						const struct sockaddr &_gateway = reinterpret_cast<const struct sockaddr&>(gateway);
 						SetDefaultGateway(_gateway, ip_addr);
 						_if->SetAsDefault();
 						_default_if = _if;
-
-						Logger::Log(LOG_INFO, sstream.str());
 					}
 					break;
 				}
@@ -423,6 +429,9 @@ void InterfaceManager::ReceiveLayer2Data(ILayer2Interface *_if, const uint8_t *d
 
 void InterfaceManager::SetDefaultGateway(const struct sockaddr &gateway_ip, const struct sockaddr &local_ip)
 {
+	char ipstr[64];
+	std::stringstream sstream;
+
 	switch (gateway_ip.sa_family)
 	{
 		case AF_INET:
@@ -434,7 +443,7 @@ void InterfaceManager::SetDefaultGateway(const struct sockaddr &gateway_ip, cons
 
 			const struct sockaddr_in &_local_ip = reinterpret_cast<const struct sockaddr_in&>(local_ip);
 			_v4_gateway_local.sin_family = AF_INET;
-			_v4_gateway.sin_port = 0;
+			_v4_gateway_local.sin_port = 0;
 			memcpy(&_v4_gateway_local.sin_addr, &_local_ip.sin_addr, 4);
 
 			_v4_gateway_set = true;

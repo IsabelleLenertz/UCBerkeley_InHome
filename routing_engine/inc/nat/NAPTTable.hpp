@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <mutex>
 #include <netinet/in.h>
+#include <sys/socket.h>
 
 #include "layer3/IPv4Packet.hpp"
 
@@ -28,7 +29,8 @@ typedef struct
 {
 	napt_tuple_t internal; // Address on the internal (stub) network
 	napt_tuple_t external; // Address on globally-routable network
-	time_t expires_at; // Timestamp at which this entry will expire
+	time_t expires_at;     // Timestamp at which this entry will expire
+	int socket_d;          // File descriptor of associated socket
 } napt_entry_t;
 
 /// <summary>
@@ -105,54 +107,23 @@ private:
 	/// <param name="protocol">Layer 4 protocol</param>
 	/// <param name="internal_ip">Internal IP address</param>
 	/// <param name="id">Internal identifier</param>
-	/// <param name="exterrnal_ip">External IP address</param>
+	/// <param name="external_ip">External IP address</param>
 	/// <returns>External tuple</returns>
 	napt_tuple_t *CreateMappingToExternal(uint8_t protocol, const sockaddr &internal_ip, uint16_t id, const sockaddr &external_ip);
 
 	/// <summary>
-	/// Reserves an ID value for the specified protocol
+	/// Binds a socket and retrieves the bound identifier
 	/// </summary>
 	/// <param name="protocol">Layer 4 protocol</param>
-	/// <param name="id">ID value out</param>
-	/// <returns>Error code</returns>
-	/// <remarks>
-	/// If return value is non-zero, then the value of ID is undefined
-	/// </remarks>
-	int ReserveID(uint8_t protocol, uint16_t &id);
-
-	/// <summary>
-	/// Frees the specified ID for the specified protocol
-	/// </summary>
-	/// <param name="protocol">Layer 4 protocol</param>
-	/// <param name="id">Identifier</param>
-	/// <returns>Error code</returns>
-	int FreeID(uint8_t protocol, uint16_t id);
+	/// <param name="external_ip">External IP address</param>
+	/// <param name="socket_d">File descriptor of bound socket out</param>
+	/// <param name="id">Bound identifier out</param>
+	/// <returns>Error Code</returns>
+	int BindMapping(uint8_t protocol, const sockaddr &external_ip, int &socket_d, uint16_t &id);
 
 	std::vector<napt_entry_t> _tcp_table;
 	std::vector<napt_entry_t> _udp_table;
 	std::vector<napt_entry_t> _icmp_table;
-
-	static const size_t TCP_PORT_START = 1024;
-	static const size_t TCP_PORT_END = 65535;
-	static const size_t TCP_PORT_COUNT = TCP_PORT_END - TCP_PORT_START + 1;
-
-	static const size_t UDP_PORT_START = 1024;
-	static const size_t UDP_PORT_END = 65535;
-	static const size_t UDP_PORT_COUNT = UDP_PORT_END - UDP_PORT_START + 1;
-
-	static const size_t ICMP_ID_START = 1024;
-	static const size_t ICMP_ID_END = 65535;
-	static const size_t ICMP_ID_COUNT = ICMP_ID_END - ICMP_ID_START + 1;
-
-	// Bitmaps indicating which IDs are currently in use
-	// Starting with the first valid ID at the LSB of word 0
-	// then increasing by 1 with each significant bit of the word
-	// Minimum ID + 32 is at the LSB of word 1, and so on
-	// Word Index = floor(ID / 32)
-	// Bit Index = ID % 32
-	uint32_t _tcp_portmap[TCP_PORT_COUNT / 32];
-	uint32_t _udp_portmap[UDP_PORT_COUNT / 32];
-	uint32_t _icmp_idmap[ICMP_ID_COUNT / 32];
 
 	std::mutex _mutex;
 };
