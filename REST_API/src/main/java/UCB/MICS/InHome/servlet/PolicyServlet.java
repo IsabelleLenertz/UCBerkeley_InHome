@@ -81,8 +81,8 @@ public class PolicyServlet extends HttpServlet {
             JSONArray json = new JSONArray();
             for (Map<String, String> policy : policies) {
                 JSONObject jsonDevice = new JSONObject().put("policyId", policy.get("policyId"))
-                        .put("deviceTo", policy.get("deviceTo"))
-                        .put("deviceFrom", policy.get("deviceFrom"));
+                        .put("device_1", policy.get("deviceTo"))
+                        .put("device_2", policy.get("deviceFrom"));
                 json.put(jsonDevice);
             }
             resp.setStatus(HttpServletResponse.SC_OK);
@@ -94,31 +94,32 @@ public class PolicyServlet extends HttpServlet {
         else if (elements.length == 4) {
             String name = elements[3];
             // Retrieve policy with the given device name
-            ArrayList<String> policies = new ArrayList<>();
+            List<Map<String, String>> devices;
             try {
-                policies = client.getAllPoliciesFromName(name);
+                devices = client.getAllPoliciesFromName(name);
             } catch (SQLException e) {
-                logger.log(Level.SEVERE, String.format("could get policies %s", e.getMessage()));
+                logger.log(Level.SEVERE, String.format("could not get policies %s", e.getMessage()));
                 resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
                 return;
             }
-            if(policies == null || policies.isEmpty()) {
+            if(devices == null || devices.isEmpty()) {
                 logger.log(Level.INFO, String.format("device not found, name=%s", name));
                 resp.sendError(HttpServletResponse.SC_NOT_FOUND, "Device not found");
                 return;
             }
             // Return a json array with MAC, IpV4, device name
-            JSONArray json = new JSONArray();
-            for (int i = 0; i<policies.size();i++) {
-                JSONObject jsonDevice = new JSONObject().put("Name " + (i+1), policies.get(i));
-                json.put(jsonDevice);
+            JSONArray array = new JSONArray();
+            for(var device : devices) {
+               array.put( new JSONObject()
+                       .put(NAME, device.get(NAME))
+                       .put(MAC, device.get(MAC))
+                       .put(IPV4, device.get(IPV4)));
             }
             resp.setStatus(HttpServletResponse.SC_OK);
             resp.setContentType(APPLICATION_JSON);
-            resp.getWriter().write(json.toString());
+            resp.getWriter().write(array.toString());
             resp.getWriter().flush();
             logger.log(Level.INFO, String.format("all policies were returned from name=%s", name));
-
         }
         else {
             resp.sendError(HttpServletResponse.SC_NOT_FOUND);
