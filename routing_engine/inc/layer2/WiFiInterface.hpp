@@ -29,9 +29,12 @@ public:
     
     void SetIPAddressQueryMethod(IPOwnershipQuery method);
 
+    void SetAsDefault();
+
 private:
     std::string _if_name;
     IARPTable* _arp_table;
+    bool _is_default;
 };
 
 #endif

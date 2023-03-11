@@ -11,11 +11,17 @@
 
 #include "logging/Logger.hpp"
 
-InterfaceManager::InterfaceManager(IARPTable *arp_table, IRoutingTable *ip_rte_table)
+InterfaceManager::InterfaceManager(IARPTable *arp_table, IRoutingTable *ip_rte_table, NAPTTable *napt_table)
     : _interfaces(),
       _arp_table(arp_table),
-      _ip_rte_table(ip_rte_table)
+      _ip_rte_table(ip_rte_table),
+	  _napt_table(napt_table),
+	  _v4_gateway_set(false),
+	  _v6_gateway_set(false),
+	  _default_if(nullptr)
 {
+	memset(&_v4_gateway, 0, sizeof(_v4_gateway));
+	memset(&_v6_gateway, 0, sizeof(_v6_gateway));
 }
 
 InterfaceManager::~InterfaceManager()
@@ -193,33 +199,67 @@ int InterfaceManager::StopListenAll()
 
 int InterfaceManager::SendPacket(IIPPacket *packet)
 {
-    const struct sockaddr &src_addr = packet->GetSourceAddress();
-    const struct sockaddr &dst_addr = packet->GetDestinationAddress();
-    int status = 0;
-    
-    // Locate the outgoing interface based on destination address
+	int status = NO_ERROR;
+
+	// Locate the outgoing interface based on destination address
     struct sockaddr_storage local_ip;
-    ILayer2Interface *_if = _ip_rte_table->GetInterface(dst_addr, local_ip);
-    
-    struct sockaddr &_local_ip = reinterpret_cast<struct sockaddr&>(local_ip);
+	ILayer2Interface *_if = _ip_rte_table->GetInterface(packet->GetDestinationAddress(), local_ip);
 
-    if (_if == nullptr)
-    {
-		// Interface not found
-		return ROUTE_INTERFACE_NOT_FOUND;
-    }
+	// Set gateway based on IP version
+	const struct sockaddr &gateway = (packet->GetIPVersion() == 4) ?
+			reinterpret_cast<const struct sockaddr&>(_v4_gateway) :
+			reinterpret_cast<const struct sockaddr&>(_v6_gateway);
 
-    uint16_t len = SEND_BUFFER_SIZE;
-    status = packet->Serialize(_send_buff, len);
-    
-    if (status != 0)
-    {
-        return status;
-    }
-    
-    status = _if->SendPacket(_local_ip, dst_addr, _send_buff, (size_t)len);
-    
-    return status;
+	const struct sockaddr &gateway_local = (packet->GetIPVersion() == 4) ?
+			reinterpret_cast<const struct sockaddr&>(_v4_gateway_local) :
+			reinterpret_cast<const struct sockaddr&>(_v6_gateway_local);
+
+	// If nullptr is returned for interface, use default
+	if (_if == nullptr)
+	{
+		_if = _default_if;
+	}
+
+	// Set local IP based on whether the egress interface is the default interface
+	const struct sockaddr &_local_ip = (_if == _default_if) ?
+			reinterpret_cast<const struct sockaddr&>(gateway_local) :
+			reinterpret_cast<const struct sockaddr&>(local_ip);
+
+	// Set destination address based on whether the egress
+	// interface is the default interface (used to resolve MAC address)
+	// Default: Use default gateway
+	// Otherwise: Use destination address
+	const struct sockaddr &dst_addr = (_if == _default_if) ? gateway : packet->GetDestinationAddress();
+
+	// If egress interface is default interface,
+	// need to perform network address translation
+	if (_if == _default_if)
+	{
+		Logger::Log(LOG_DEBUG, "Performing Network Address Translation");
+
+		status = _napt_table->TranslateToExternal(packet, _local_ip);
+
+		if (status != NO_ERROR)
+		{
+			return status;
+		}
+	}
+
+	uint16_t len = SEND_BUFFER_SIZE;
+	status = packet->Serialize(_send_buff, len);
+
+	if (status != NO_ERROR)
+	{
+		return status;
+	}
+
+	std::stringstream sstream;
+	sstream << "Address Family: " << _local_ip.sa_family;
+	Logger::Log(LOG_DEBUG, sstream.str());
+
+	status = _if->SendPacket(_local_ip, dst_addr, _send_buff, len);
+
+	return status;
 }
 
 void InterfaceManager::_registerAddresses(ILayer2Interface* _if, pcap_if_t *pcap_if)
@@ -251,16 +291,61 @@ void InterfaceManager::_registerAddresses(ILayer2Interface* _if, pcap_if_t *pcap
         {
             const struct sockaddr &ip_addr = *node->addr;
             const struct sockaddr &netmask = *node->netmask;
-            struct sockaddr subnet;
-            
-            // Calculate subnet ID
-            IPUtils::GetSubnetID(ip_addr, netmask, subnet);
             
             // Register with ARP table
             _arp_table->SetARPEntry(ip_addr, mac_addr);
             
             // Register subnet on interface
-            _ip_rte_table->AddSubnetAssociation(_if, subnet, netmask);
+            _ip_rte_table->AddSubnetAssociation(_if, ip_addr, netmask);
+
+            char ip_str[64];
+
+            switch (ip_addr.sa_family)
+            {
+				case AF_INET:
+				{
+					if (!_v4_gateway_set)
+					{
+						const struct sockaddr_in &_ip_addr = reinterpret_cast<const struct sockaddr_in&>(ip_addr);
+						struct sockaddr_in gateway;
+						gateway.sin_family = AF_INET;
+						gateway.sin_port = 0;
+						memcpy(&gateway.sin_addr, &_ip_addr.sin_addr, 4);
+						uint8_t *addr_ptr = (uint8_t*)&gateway.sin_addr;
+						*(addr_ptr + 3) = 1;
+
+						inet_ntop(AF_INET, &gateway.sin_addr, ip_str, 64);
+
+						std::stringstream sstream;
+						sstream << "Setting IPv4 Default Gateway: " << _if->GetName() << " at " << ip_str;
+
+						const struct sockaddr &_gateway = reinterpret_cast<const struct sockaddr&>(gateway);
+						SetDefaultGateway(_gateway, ip_addr);
+						_if->SetAsDefault();
+						_default_if = _if;
+
+						Logger::Log(LOG_INFO, sstream.str());
+					}
+					break;
+				}
+				case AF_INET6:
+				{
+					if (!_v6_gateway_set)
+					{
+						// SetDefaultGateway(ip_addr);
+						_if->SetAsDefault();
+
+						const struct sockaddr_in6 &_ip_addr = reinterpret_cast<const struct sockaddr_in6&>(ip_addr);
+						inet_ntop(AF_INET6, &_ip_addr.sin6_addr, ip_str, 64);
+
+						std::stringstream sstream;
+						sstream << "Setting IPv6 Default Gateway: " << _if->GetName() << " at " << ip_str;
+
+						Logger::Log(LOG_INFO, sstream.str());
+					}
+					break;
+				}
+            }
         }
         
         node = node->next;
@@ -293,16 +378,39 @@ void InterfaceManager::ReceiveLayer2Data(ILayer2Interface *_if, const uint8_t *d
     {
         // Check if this packet is destined for an IP address owned by
         // this interface. If so, do not pass it to the router
+    	/*
         if (_ip_rte_table->IsOwnedByInterface(_if, packet->GetDestinationAddress()))
         {
             // IP owned by this interface. Do not pass to routing engine.
         	Logger::Log(LOG_DEBUG, "Packet owned by interface. Dropping");
         }
         else
+        */
         {
-            // Pass to routing engine. Routing engine is now responsible for memory management.
-            _callback(packet);
-            transferred = true;
+        	// If the ingress interface is the default interface,
+        	// then network address translation must be performed
+        	if (_if == _default_if)
+        	{
+        		status = _napt_table->TranslateToInternal(packet);
+
+        		if (status != NO_ERROR)
+        		{
+        			std::stringstream sstream;
+        			sstream << "Network address translation failed: (" << status << ")";
+
+        			Logger::Log(LOG_ERROR, sstream.str());
+        		}
+        	}
+
+        	// If network address translation was attempted, it
+        	// must have been successfuly in order to pass the
+        	// packet to the routing engine
+        	if (status == NO_ERROR)
+        	{
+        		// Pass to routing engine. Routing engine is now responsible for memory management.
+        		_callback(packet);
+            	transferred = true;
+        	}
         }
     }
     
@@ -311,4 +419,70 @@ void InterfaceManager::ReceiveLayer2Data(ILayer2Interface *_if, const uint8_t *d
         // Packet was not transferred. Free memory.
         delete packet;
     }
+}
+
+void InterfaceManager::SetDefaultGateway(const struct sockaddr &gateway_ip, const struct sockaddr &local_ip)
+{
+	switch (gateway_ip.sa_family)
+	{
+		case AF_INET:
+		{
+			const struct sockaddr_in _gateway_ip = reinterpret_cast<const struct sockaddr_in&>(gateway_ip);
+			_v4_gateway.sin_family = AF_INET;
+			_v4_gateway.sin_port = 0;
+			memcpy(&_v4_gateway.sin_addr, &_gateway_ip.sin_addr, 4);
+
+			const struct sockaddr_in &_local_ip = reinterpret_cast<const struct sockaddr_in&>(local_ip);
+			_v4_gateway_local.sin_family = AF_INET;
+			_v4_gateway.sin_port = 0;
+			memcpy(&_v4_gateway_local.sin_addr, &_local_ip.sin_addr, 4);
+
+			_v4_gateway_set = true;
+			break;
+		}
+		case AF_INET6:
+		{
+			const struct sockaddr_in6 _gateway_ip = reinterpret_cast<const struct sockaddr_in6&>(gateway_ip);
+			_v6_gateway.sin6_family = AF_INET6;
+			_v6_gateway.sin6_port = 0;
+			_v6_gateway.sin6_flowinfo = 0;
+			memcpy(&_v6_gateway.sin6_addr, &_gateway_ip.sin6_addr, 16);
+
+			const struct sockaddr_in6 _local_ip = reinterpret_cast<const struct sockaddr_in6&>(local_ip);
+			_v6_gateway_local.sin6_family = AF_INET6;
+			_v6_gateway_local.sin6_port = 0;
+			_v6_gateway_local.sin6_flowinfo = 0;
+			memcpy(&_v6_gateway_local.sin6_addr, &_local_ip.sin6_addr, 16);
+
+			_v6_gateway_set = true;
+			break;
+		}
+		default:
+		{
+			break;
+		}
+	}
+}
+
+const struct sockaddr *InterfaceManager::GetDefaultGateway(int version)
+{
+	struct sockaddr *result = nullptr;
+
+	switch (version)
+	{
+		case 4:
+		{
+			result = reinterpret_cast<struct sockaddr*>(&_v4_gateway);
+			break;
+		}
+		case 6:
+		{
+			result = reinterpret_cast<struct sockaddr*>(&_v6_gateway);
+			break;
+		}
+		default:
+		{
+			break;
+		}
+	}
 }

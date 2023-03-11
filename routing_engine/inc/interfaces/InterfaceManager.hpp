@@ -5,6 +5,7 @@
 #include "layer2/WiFiInterface.hpp"
 #include "layer3/IRoutingTable.hpp"
 #include "layer3/IIPPacket.hpp"
+#include "nat/NAPTTable.hpp"
 
 #include <functional>
 
@@ -29,7 +30,7 @@ class InterfaceManager
 public:
     static const int SEND_BUFFER_SIZE = 4096;
 
-    InterfaceManager(IARPTable *arp_table, IRoutingTable *ip_rte_table);
+    InterfaceManager(IARPTable *arp_table, IRoutingTable *ip_rte_table, NAPTTable *napt_table);
     ~InterfaceManager();
     
     /// <summary>
@@ -115,13 +116,39 @@ public:
     /// EtherType field of IPv4 or IPv6.
     /// </remarks>
     void ReceiveLayer2Data(ILayer2Interface *_if, const uint8_t *data, size_t len);
-    
+
+    /// <summary>
+    /// Sets the default gateway IP address.
+    /// IP addresses are stored for both IPv4
+    /// and IPv6, differentiated by the address
+    /// family of the input address.
+    /// </summary>
+    /// <param name="gateway_ip">IP address of the gateway</param>
+    /// <param name="local_ip">Local address on same subnet</param>
+    void SetDefaultGateway(const struct sockaddr &gateway_ip, const struct sockaddr &local_ip);
+
+    /// <summary>
+    /// Returns a pointer to the default gateway address
+    /// for the specified IP version.
+    /// </summary>
+    /// <param name="version">IP version (4 or 6)</param>
+    /// <returns>Pointer to IP address</returns>
+    const struct sockaddr *GetDefaultGateway(int version);
+
 private:
     std::vector<ILayer2Interface*> _interfaces;
     IARPTable *_arp_table;
     IRoutingTable *_ip_rte_table;
+    NAPTTable *_napt_table;
     Layer3ReceiveCallback _callback;
     uint8_t _send_buff[SEND_BUFFER_SIZE];
+    struct sockaddr_in _v4_gateway;
+    struct sockaddr_in _v4_gateway_local;
+    bool _v4_gateway_set;
+    struct sockaddr_in6 _v6_gateway;
+    struct sockaddr_in6 _v6_gateway_local;
+    bool _v6_gateway_set;
+    ILayer2Interface *_default_if;
 
     /// <summary>
     /// Associates an interface's addresses in the ARP

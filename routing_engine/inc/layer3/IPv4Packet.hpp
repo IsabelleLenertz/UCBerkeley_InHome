@@ -274,20 +274,10 @@ public:
     /// has no effect
     /// </remarks>
     void RemoveOption(uint8_t option_type);
+
+    size_t GetData(const uint8_t* &data_out);
     
-    /// <summary>
-    /// Sets the data payload
-    /// </summary>
-    /// <param name="data_in">Pointer to data</param>
-    /// <param name="len">Length of data, in bytes</param>
-    void SetData(uint8_t *data_in, uint16_t len);
-    
-    /// <summary>
-    /// Gets the data payload
-    /// </summary>
-    /// <param name="data_out">Pointer to data</param>
-    /// <returns>Length of data, in bytes</returns>
-    uint16_t GetData(const uint8_t* &data_out);
+    void SetData(const uint8_t *data_in, size_t len);
     
     /// <summary>
     /// Calculates the header checksum for the specified

@@ -14,10 +14,17 @@
 // which return an error code on success
 #define NO_ERROR                    0
 
-// ARP_CACHE_MISS indicates that a destination address
+// ARP_CACHE_MISS codes indicate that a destination address
 // was not found in the ARP table and that a message
-// should be queued. It does not indicate an error
-#define ARP_CACHE_MISS              1
+// should be queued. These codes do not indicate an error
+// ARP_CACHE_MISS_LOCAL indicates the the ARP miss was
+// for a local address, so the next hop is the destination
+// address in the IP packet.
+// ARP_CACHE_MISS_DEFAULT indicates that the ARP cache miss
+// was for the default gateway, so the next hop is the
+// IP address of the default gateway.
+#define ARP_CACHE_MISS_LOCAL         1
+#define ARP_CACHE_MISS_DEFAULT       2
 
 /////////////////////////////
 ////// Interface Errors /////
@@ -27,6 +34,7 @@
 #define INTERFACE_OPEN_FAILED        102
 #define INTERFACE_CLOSE_FAILED       103
 #define INTERFACE_LISTEN_FAILED      104
+	// TODO Write Checksum
 #define INTERFACE_STOP_LISTEN_FAILED 105
 #define COMPILE_FILTER_FAILED        106
 #define SET_FILTER_FAILED            107
@@ -61,6 +69,32 @@
 /////////////////////////////
 /////// Routing Errors //////
 /////////////////////////////
-#define ROUTE_INTERFACE_NOT_FOUND 501
+#define ROUTE_INTERFACE_NOT_FOUND   501
+
+/////////////////////////////
+///////// TCP Errors ////////
+/////////////////////////////
+#define TCP_ERROR_OVERFLOW          601
+#define TCP_ERROR_INVALID_CHECKSUM  602
+
+/////////////////////////////
+///////// UDP Errors ////////
+/////////////////////////////
+#define UDP_ERROR_OVERFLOW          701
+
+/////////////////////////////
+//////// ICMP Errors ////////
+/////////////////////////////
+#define ICMP_ERROR_OVERFLOW         801
+#define ICMP_ERROR_INVALID_CHECKSUM 802
+
+/////////////////////////////
+//////// NAT Errors /////////
+/////////////////////////////
+#define NAT_ERROR_MAPPING_NOT_FOUND     901
+#define NAT_ERROR_CREATE_MAPPING_FAILED 902
+#define NAT_ERROR_UNSUPPORTED_PROTOCOL  903
+#define NAT_ERROR_NO_AVAILABLE_ID       904
+#define NAT_ERROR_OUT_OF_RANGE          905
 
 #endif
