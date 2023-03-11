@@ -5,6 +5,9 @@ from django.http import HttpResponse
 import requests
 from json2html import *
 from os import environ
+import datetime
+#from pyvis.network import Network
+#from graphviz import Graph
 
 host = "https://" + environ['JAVA_HOST'] + ":8443"
 
@@ -26,9 +29,15 @@ def create_device(request):
 
 def display_devices(request):
     if(request.method == 'GET'):
-        result = requests.get(host +"/v1/device-management", verify=False)
-        if result.status_code == 200:         
-            return render(request, 'display_devices.html', {'devices':json2html.convert(json = result.json())})
+        result = requests.get(host +"/v1/device-management", verify=False)                        
+        if result.status_code == 200:            
+            new_list = list()            
+            for i, x in enumerate(result.json()):                
+                y = int(x["date_added"])                
+                z = str(datetime.datetime.fromtimestamp(y))               
+                x.update({"date_added":z})                
+                new_list.append(x)           
+            return render(request, 'display_devices.html', {'devices':json2html.convert(json = new_list)})
     return render(request, "dev_dashboard.html")
 
 def remove_device(request):
@@ -66,7 +75,7 @@ def create_policy(request):
 #            print(f"Form is valid")
             result = requests.post(url=host +"/v1/policy-management", json={"namedeviceto": form.cleaned_data['name1'],"namedevicefrom": form.cleaned_data['name2']}, verify=False)
 #            print(f"This is the result status code - {result.status_code}")
-#            print(f"This is the response string - {result.text}")
+#            print(f"create_policy response string - {result.text}")
             if result.status_code == 200:
                 return render(request, "create_policy.html", {'message':'Policy was successfully created.', 'form':form}) 
             else:
@@ -78,8 +87,26 @@ def create_policy(request):
 def display_policies(request):
     if(request.method == 'GET'):
         result = requests.get(host +"/v1/policy-management", verify=False)
-        if result.status_code == 200:         
-            return render(request, 'display_policies.html', {'policies':json2html.convert(json = result.json())})
+        if result.status_code == 200:
+            return render(request, 'display_policies.html', {'policies':json2html.convert(json = result.json())})             
+            #print(f"display_policies response string - {result.text}") 
+            #net = Network()            
+            #net.add_node("Singapore")
+            #net.add_node("San Franciso")
+            #net.add_node("Tokyo") 
+            #print(f"this is net {net}")
+            #context_data['my_graph'] = net.show("graph.html") 
+            #print(f"this is my_graph {my_graph}")
+            #g = Graph('G',format='svg',engine='twopi') 
+            #g.node('root', shape='rectangle', width='1.5')
+            #g.node('red')
+            #g.node('blue')
+            #g.edge('root', 'red', label='to_red')
+            #g.edge('root', 'blue', label='to_blue')
+            #context_data['my_chart'] = g.pipe().decode('utf-8')                                     
+            #return render(request, 'display_policies.html', {'policies':json2html.convert(json = result.json()), 'graph':my_chart})
+            #return render(request, 'display_policies.html', {'policies':json2html.convert(json = result.json()), 'graph':my_graph})
+            #return render(request, 'display_policies.html', {'policies':json2html.convert(json = result.json()), 'graph':net.write_html("graph.html",notebook=False,local=False,open_browser=False)})
     return render(request, "dev_dashboard.html")  
 
 def display_dev_policy(request):
@@ -88,7 +115,7 @@ def display_dev_policy(request):
         if(form.is_valid()):
             result = requests.get(host +"/v1/policy-management/" + form.cleaned_data['name'], verify=False)
 #            print(f"This is the result status code - {result.status_code}")
-#            print(f"This is the response string - {result.text}")
+            print(f"display_dev_policy response string - {result.text}")
             if result.status_code == 200:         
                 return render(request, 'display_dev_policy.html', {'dev_policy':json2html.convert(json = result.json()),'form':form})
             else:
