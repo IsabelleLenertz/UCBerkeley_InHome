@@ -17,6 +17,8 @@
             <form action="/display_policies/" method="GET">
             {% csrf_token %}
             {{ policies | safe }} 
+            <p> </p>
+            <a href="{% url 'create_policy' %}">Create a new device policy</a>
             <p> </p>             
             <a href="{% url 'dev_dashboard' %}">Admin options</a>
         </div>                

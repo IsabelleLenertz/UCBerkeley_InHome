@@ -89,25 +89,13 @@ def display_policies(request):
     if(request.method == 'GET'):
         result = requests.get(host +"/v1/policy-management", verify=False)
         if result.status_code == 200:
-            return render(request, 'display_policies.html', {'policies':json2html.convert(json = result.json())})             
-            #print(f"display_policies response string - {result.text}") 
-            #net = Network()            
-            #net.add_node("Singapore")
-            #net.add_node("San Franciso")
-            #net.add_node("Tokyo") 
-            #print(f"this is net {net}")
-            #context_data['my_graph'] = net.show("graph.html") 
-            #print(f"this is my_graph {my_graph}")
-            #g = Graph('G',format='svg',engine='twopi') 
-            #g.node('root', shape='rectangle', width='1.5')
-            #g.node('red')
-            #g.node('blue')
-            #g.edge('root', 'red', label='to_red')
-            #g.edge('root', 'blue', label='to_blue')
-            #context_data['my_chart'] = g.pipe().decode('utf-8')                                     
-            #return render(request, 'display_policies.html', {'policies':json2html.convert(json = result.json()), 'graph':my_chart})
-            #return render(request, 'display_policies.html', {'policies':json2html.convert(json = result.json()), 'graph':my_graph})
-            #return render(request, 'display_policies.html', {'policies':json2html.convert(json = result.json()), 'graph':net.write_html("graph.html",notebook=False,local=False,open_browser=False)})
+            new_list = list()
+            for i, x in enumerate(result.json()):                        
+                new_list.append(x)
+            #print(f"{new_list}") 
+            new_list = sorted(new_list, key=lambda k: k['policyId'])
+            #print(f"{new_list}")
+            return render(request, 'display_policies.html', {'policies':json2html.convert(json = new_list)})     
     return render(request, "dev_dashboard.html")  
 
 def display_dev_policy(request):
@@ -117,8 +105,12 @@ def display_dev_policy(request):
             result = requests.get(host +"/v1/policy-management/" + form.cleaned_data['name'], verify=False)
 #            print(f"This is the result status code - {result.status_code}")
 #            print(f"display_dev_policy response string - {result.text}")
-            if result.status_code == 200:         
-                return render(request, 'display_dev_policy.html', {'dev_policy':json2html.convert(json = result.json()),'form':form})
+            if result.status_code == 200:
+                new_list = list()
+                for i, x in enumerate(result.json()):                             
+                    new_list.append(x)         
+                new_list = sorted(new_list, key=lambda k: k['name'])
+                return render(request, 'display_dev_policy.html', {'dev_policy':json2html.convert(json = new_list),'form':form})
             else:
                 form = DisplayDevicePolicyForm
                 return render(request, 'display_dev_policy.html', {'dev_policy':'Error displaying device policy.', 'form': form})    

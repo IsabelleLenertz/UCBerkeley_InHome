@@ -20,10 +20,12 @@
             <input type="submit" value="Submit"> 
             </form>
             <p>         {{ message }}  </p>
-            <a href="{% url 'dev_dashboard' %}">Admin options</a>
+            <p> </p>
+            <a href="{% url 'display_policies' %}">Display all device policies</a>
             <p> </p>
             <a href="{% url 'display_devices' %}">Display all devices</a>
-
+            <p> </p>
+            <a href="{% url 'dev_dashboard' %}">Admin options</a>
         </div>   
            
     </body>
