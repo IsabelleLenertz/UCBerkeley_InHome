@@ -37,6 +37,7 @@ def display_devices(request):
                 z = str(datetime.datetime.fromtimestamp(y))               
                 x.update({"date_added":z})                
                 new_list.append(x)           
+            new_list = sorted(new_list, key=lambda k: k['date_added'], reverse=True)
             return render(request, 'display_devices.html', {'devices':json2html.convert(json = new_list)})
     return render(request, "dev_dashboard.html")
 
@@ -115,7 +116,7 @@ def display_dev_policy(request):
         if(form.is_valid()):
             result = requests.get(host +"/v1/policy-management/" + form.cleaned_data['name'], verify=False)
 #            print(f"This is the result status code - {result.status_code}")
-            print(f"display_dev_policy response string - {result.text}")
+#            print(f"display_dev_policy response string - {result.text}")
             if result.status_code == 200:         
                 return render(request, 'display_dev_policy.html', {'dev_policy':json2html.convert(json = result.json()),'form':form})
             else:
