@@ -99,12 +99,17 @@ def display_policies(request):
         result = requests.get(host +"/v1/policy-management", verify=False)
         if result.status_code == 200:
             new_list = list()
-            for i, x in enumerate(result.json()):                        
-                new_list.append(x)
+            for i, x in enumerate(result.json()): 
+                new_x = dict() 
+                device_pair = x["device_1"] + " + " + x["device_2"]    
+                new_x["device_pair"] = device_pair
+                new_x["policyId"] = x["policyId"]                   
+                new_list.append(new_x)
             #print(f"{new_list}") 
             new_list = sorted(new_list, key=lambda k: k['policyId'])
             #print(f"{new_list}")
-            return render(request, 'display_policies.html', {'policies':json2html.convert(json = new_list)})     
+            return render(request, 'display_policies.html', {'policies':json2html.convert(json = new_list, table_attributes="id=\"myTable\" class=\"table table-bordered table-hover\"")})
+            #return render(request, 'display_policies.html', {'policies':json2html.convert(json = new_list)})     
     return render(request, "dev_dashboard.html")  
 
 def display_dev_policy(request):
@@ -116,12 +121,18 @@ def display_dev_policy(request):
 #            print(f"display_dev_policy response string - {result.text}")
             if result.status_code == 200:
                 new_list = list()
-                for i, x in enumerate(result.json()):                             
-                    new_list.append(x)         
+                for i, x in enumerate(result.json()):                    
+                     new_x = dict()                     
+                     new_x["name"] = x["name"]                     
+                     new_x["ipv4"] = x["ipv4"]               
+                     new_x["mac"] = x["mac"]  
+                     #print(f'{new_x}')                
+                     new_list.append(new_x)             
                 new_list = sorted(new_list, key=lambda k: k['name'])
-                return render(request, 'display_dev_policy.html', {'dev_policy':json2html.convert(json = new_list),'form':form})
+                return render(request, 'display_dev_policy.html', {'dev_policy':json2html.convert(json = new_list, table_attributes="id=\"myTable\" class=\"table table-bordered table-hover\""),'form':form})
+                #return render(request, 'display_dev_policy.html', {'dev_policy':json2html.convert(json = new_list),'form':form})
             else:
-                form = DisplayDevicePolicyForm
+                form = DisplayDevicePolicyForm                
                 return render(request, 'display_dev_policy.html', {'dev_policy':'Error displaying device policy.', 'form': form})    
     form = DisplayDevicePolicyForm
     return render(request, 'display_dev_policy.html', {'form': form})     
