@@ -35,10 +35,19 @@ def display_devices(request):
             for i, x in enumerate(result.json()):                
                 y = int(x["date_added"])                
                 z = str(datetime.datetime.fromtimestamp(y))               
-                x.update({"date_added":z})                
-                new_list.append(x)           
+                x.update({"date_added":z})
+                new_x = dict() 
+                new_x["name"] = x["name"]
+                new_x["date_added"] = x["date_added"]
+                new_x["ipv4"] = x["ipv4"]
+                new_x["ipv6"] = x["ipv6"]
+                new_x["is_trusted"] = x["is_trusted"]
+                new_x["mac"] = x["mac"] 
+                #print(f'{new_x}')                
+                new_list.append(new_x)           
             new_list = sorted(new_list, key=lambda k: k['date_added'], reverse=True)
-            return render(request, 'display_devices.html', {'devices':json2html.convert(json = new_list)})
+            #print(f'{new_list}')           
+            return render(request, 'display_devices.html', {'devices':json2html.convert(json = new_list, table_attributes="id=\"myTable\" class=\"table table-bordered table-hover\"")})
     return render(request, "dev_dashboard.html")
 
 def remove_device(request):
