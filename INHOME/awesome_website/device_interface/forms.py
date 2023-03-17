@@ -18,3 +18,6 @@ class CreatePolicyForm(forms.Form):
 
 class DisplayDevicePolicyForm(forms.Form):
     name = forms.CharField(label ="Device name", max_length=30)
+
+class RemovePolicyForm(forms.Form):
+    policyId = forms.CharField(label ="Policy ID", max_length=5)    

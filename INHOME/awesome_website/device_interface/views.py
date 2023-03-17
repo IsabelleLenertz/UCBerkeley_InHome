@@ -1,6 +1,6 @@
 
 from django.shortcuts import render
-from .forms import CreateDeviceForm, RemoveDeviceForm, RenameDeviceForm, CreatePolicyForm, DisplayDevicePolicyForm 
+from .forms import CreateDeviceForm, RemoveDeviceForm, RenameDeviceForm, CreatePolicyForm, DisplayDevicePolicyForm, RemovePolicyForm 
 from django.http import HttpResponse
 import requests
 from json2html import *
@@ -20,10 +20,10 @@ def create_device(request):
         if(form.is_valid()):
             result = requests.post(url=host +"/v1/device-management", json={"mac": form.cleaned_data['mac'], "ipv4": form.cleaned_data['ip'], "name": form.cleaned_data['name']}, verify=False)
             if result.status_code == 200:
-                return render(request, "create_device.html", {'message':'Device was successfully added.', 'form':form}) 
+                return render(request, "create_device.html", {'message':'Device was successfully added', 'form':form}) 
             else:
                 form = CreateDeviceForm
-                return render(request, 'create_device.html', {'message':'Error adding the device.', 'form': form})
+                return render(request, 'create_device.html', {'message':'Error adding the device', 'form': form})
     form = CreateDeviceForm
     return render(request, 'create_device.html', {'form': form})
 
@@ -56,10 +56,10 @@ def remove_device(request):
         if(form.is_valid()):
             result = requests.delete(url=host +"/v1/device-management", json={"mac": form.cleaned_data['mac']}, verify=False)
             if result.status_code == 200:
-                return render(request, 'remove_device.html', {'message':'Device was successfully removed.', 'form':form}) 
+                return render(request, 'remove_device.html', {'message':'Device was successfully removed', 'form':form}) 
             else:
                 form = RemoveDeviceForm
-                return render(request, 'remove_device.html', {'message':'Error removing the device.', 'form': form})
+                return render(request, 'remove_device.html', {'message':'Error removing the device', 'form': form})
     form = RemoveDeviceForm
     return render(request, 'remove_device.html', {'form': form})  
 
@@ -69,10 +69,10 @@ def rename_device(request):
         if(form.is_valid()):
             result = requests.put(url=host +"/v1/device-management", json={"old": form.cleaned_data['CurrentName'],"new": form.cleaned_data['NewName'] }, verify=False)
             if result.status_code == 200:
-                return render(request, 'rename_device.html', {'message':'Device was successfully renamed.', 'form':form}) 
+                return render(request, 'rename_device.html', {'message':'Device was successfully renamed', 'form':form}) 
             else:
                 form = RenameDeviceForm
-                return render(request, 'rename_device.html', {'message':'Error renaming the device.', 'form': form})
+                return render(request, 'rename_device.html', {'message':'Error renaming the device', 'form': form})
     form = RenameDeviceForm
     return render(request, 'rename_device.html', {'form': form}) 
 
@@ -87,10 +87,10 @@ def create_policy(request):
 #            print(f"This is the result status code - {result.status_code}")
 #            print(f"create_policy response string - {result.text}")
             if result.status_code == 200:
-                return render(request, "create_policy.html", {'message':'Policy was successfully created.', 'form':form}) 
+                return render(request, "create_policy.html", {'message':'Policy was successfully created', 'form':form}) 
             else:
                 form = CreatePolicyForm
-                return render(request, 'create_policy.html', {'message':'Error creating the policy.', 'form': form})
+                return render(request, 'create_policy.html', {'message':'Error creating the policy', 'form': form})
     form = CreatePolicyForm
     return render(request, 'create_policy.html', {'form': form})   
 
@@ -133,6 +133,19 @@ def display_dev_policy(request):
                 #return render(request, 'display_dev_policy.html', {'dev_policy':json2html.convert(json = new_list),'form':form})
             else:
                 form = DisplayDevicePolicyForm                
-                return render(request, 'display_dev_policy.html', {'dev_policy':'Error displaying device policy.', 'form': form})    
+                return render(request, 'display_dev_policy.html', {'dev_policy':'Error displaying device policy', 'form': form})    
     form = DisplayDevicePolicyForm
-    return render(request, 'display_dev_policy.html', {'form': form})     
+    return render(request, 'display_dev_policy.html', {'form': form}) 
+
+def remove_policy(request):
+    if(request.method == 'POST'):
+        form = RemovePolicyForm(request.POST)
+        if(form.is_valid()):
+            result = requests.delete(url=host +"/v1/policy-management", json={"policyId": form.cleaned_data['policyId']}, verify=False)
+            if result.status_code == 200:
+                return render(request, 'remove_policy.html', {'message':'Device was successfully removed', 'form':form}) 
+            else:
+                form = RemovePolicyForm
+                return render(request, 'remove_policy.html', {'message':'Error removing the device policy', 'form': form})
+    form = RemovePolicyForm
+    return render(request, 'remove_policy.html', {'form': form})      

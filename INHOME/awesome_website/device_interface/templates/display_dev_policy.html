@@ -49,8 +49,8 @@
 </head>
 
     <body>
-        <div class="center" style="text-align:center;font-family:verdana;font-size:100%;">
-        <p>Display a device's policy by supplying a valid device name</p>
+        <p style="text-align:center;font-family:verdana;font-size:100%;">Display a device's policy by supplying a valid device name</p>
+        <div class="center" style="text-align:center;font-family:verdana;font-size:100%;">        
         <p> </p>
         <form action="/display_dev_policy/" method="POST">
             {% csrf_token %}
@@ -58,7 +58,9 @@
             <input type="submit" value="Submit"> 
             </form>
             <input type="text" id="myInput" onkeyup="myFunction()" placeholder="Search for names.."> 
-            <p> {{dev_policy|safe }} </p> 
+            <p> {{dev_policy|safe }} </p>             
+            <p> </p>
+            <a href="{% url 'display_devices' %}">Display all devices</a>
             <p> </p>
             <a href="{% url 'dev_dashboard' %}">Admin options</a>
         </div>   

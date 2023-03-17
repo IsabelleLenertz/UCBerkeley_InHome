@@ -6,14 +6,14 @@
 <style>
     .center {
       margin: 0 auto;	
-      width: 10%; 
+      width: 15%; 
     }
  </style>
 
 <html>
     <body>
-        <div class="center" style="text-align:center;font-family:verdana;font-size:100%;">
-        <p> Rename a device by supplying valid field values</p>
+        <p style="text-align:center;font-family:verdana;font-size:100%;">Rename a device by supplying valid field values</p>
+        <div class="center" style="text-align:center;font-family:verdana;font-size:100%;">        
         <p> </p>
         <form action="/rename_device/" method="POST">
             {% csrf_token %}
@@ -21,6 +21,9 @@
             <input type="submit" value="Submit"> 
             </form>
             <p>         {{ message }}  </p>
+            <p> </p>
+            <a href="{% url 'display_devices' %}">Display all devices</a>
+            <p> </p>
             <a href="{% url 'dev_dashboard' %}">Admin options</a>
         </div>   
            

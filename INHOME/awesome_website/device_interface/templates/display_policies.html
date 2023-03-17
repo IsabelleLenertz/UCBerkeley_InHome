@@ -49,16 +49,14 @@
 </head>
 
     <body>
-        <div class="center" style="text-align:center;font-family:verdana;font-size:100%;">
-            <p>All device policies in the network</p>
+        <p style="text-align:center;font-family:verdana;font-size:100%;">Displaying all device policies in the network</p>
+        <div class="center" style="text-align:center;font-family:verdana;font-size:100%;">            
             <p> </p> 
             <input type="text" id="myInput" onkeyup="myFunction()" placeholder="Search for name in device pair ...">   
             <p> </p>  
             <form action="/display_policies/" method="GET">
             {% csrf_token %}
-            {{ policies | safe }} 
-            <p> </p>
-            <a href="{% url 'create_policy' %}">Create a new device policy</a>
+            {{ policies | safe }}             
             <p> </p>             
             <a href="{% url 'dev_dashboard' %}">Admin options</a>
         </div>                

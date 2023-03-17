@@ -6,23 +6,21 @@
 <style>
     .center {
       margin: 0 auto;	
-      width: 10%
+      width: 12%
     }
  </style>
 
 <html>
     <body>
-        <div class="center" style="text-align:center;font-family:verdana;font-size:100%;">
-         <p> Add a device by supplying valid values for each field</p>
-         <p> </p>
+        <p style="text-align:center;font-family:verdana;font-size:100%;">Add a device by supplying valid values for each field</p>
+        <div class="center" style="text-align:center;font-family:verdana;font-size:100%;">         
+        <p> </p>
         <form action="/create_device/" method="POST">
             {% csrf_token %}
             {{ form }}  
             <input type="submit" value="Submit"> 
             </form>
-            <p>         {{ message }}  </p>
-            <p> </p>
-            <a href="{% url 'display_devices' %}">Display all devices</a>
+            <p>         {{ message }}  </p>            
             <p> </p>
             <a href="{% url 'dev_dashboard' %}">Admin options</a>
         </div>   
