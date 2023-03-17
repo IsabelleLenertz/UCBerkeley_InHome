@@ -40,6 +40,7 @@ REST_API/out/
 
 # DB generated files
 .db*
+
 # Python generated files
 INHOME/.ipynb*
 INHOME/venv*
@@ -48,3 +49,6 @@ INHOME/venv*
 *_pycache_*
 .ipynb_checkpoints/*
 *_init_*
+
+#VS code files
+*.vscode*
