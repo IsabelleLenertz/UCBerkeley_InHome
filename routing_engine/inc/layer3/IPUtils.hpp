@@ -37,6 +37,25 @@ public:
     static void StoreSockaddr(const struct sockaddr &src, struct sockaddr_storage &dst);
 
     /// <summary>
+    /// Copies an IP address from one struct to another
+    /// </summary>
+    /// <param name="src">Address to store</param>
+    /// <param name="dst">Destination sockaddr</param>
+    /// <remarks>
+    /// Destination MUST have sufficient room to store
+    /// the source address type
+    /// </remarks>
+    static void CopySockaddr(const struct sockaddr &src, struct sockaddr &dst);
+
+    /// <summary>
+    /// Returns the actual size of the address stored,
+    /// based on the address family
+    /// </summary>
+    /// <param name="addr">Socket address</param>
+    /// <returns>Size of address, in bytes</returns>
+    static size_t GetAddressSize(const struct sockaddr &addr);
+
+    /// <summary>
     /// Calculates the 16-bit checksum of the specified data
     /// </summary>
     /// <param name="buff">Data to be checksummed</param>

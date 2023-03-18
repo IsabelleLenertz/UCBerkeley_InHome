@@ -1,6 +1,7 @@
 #ifndef INC_LOGGER_HPP_
 #define INC_LOGGER_HPP_
 
+#include <sstream>
 #include <string>
 #include <mutex>
 #include <iostream>

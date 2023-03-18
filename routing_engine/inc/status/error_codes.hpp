@@ -100,4 +100,12 @@
 #define NAT_ERROR_SOCKET_BIND_FAILED    907
 #define NAT_ERROR_GET_ADDRESS_FAILED    908
 
+/////////////////////////////
+/////// PF_KEY Errors ///////
+/////////////////////////////
+#define PF_KEY_ERROR_OVERFLOW             1001
+#define PF_KEY_ERROR_MALFORMED_EXTENSION  1002
+#define PF_KEY_ERROR_UNSUPPORTED_PROTOCOL 1003
+#define PF_KEY_ERROR_KEY_LENGTH_ZERO      1004
+
 #endif
