@@ -16,7 +16,7 @@
         <div class="center" style="text-align:center;font-family:verdana;font-size:100%;">
         <form action="/create_policy/" method="POST">
             {% csrf_token %}
-            {{ form }}  
+            {{ form.as_p }}  
             <input type="submit" value="Submit"> 
             </form>
             <p>         {{ message }}  </p>
