@@ -324,4 +324,35 @@ public class    JdbcClient {
         }
         return listBuilder.build();
     }
+
+    public boolean removeByPolicyId(int pid) throws SQLException {
+        connection.setAutoCommit(false);
+        try (   PreparedStatement removeStatement = connection.prepareStatement(DELETE_BY_POLICY_ID);
+                PreparedStatement updateRevisions = connection.prepareStatement(UPDATE_REVISIONS)) {
+
+            long now = LocalDateTime.now().toEpochSecond(ZoneOffset.UTC);
+            // fill out statements
+            // Remove the device
+            removeStatement.setInt(1, pid);
+            int affected = removeStatement.executeUpdate();
+
+            // Update the revision table
+            updateRevisions.setLong(1, now);
+            int revisions = updateRevisions.executeUpdate();
+            // test for errors
+            if(revisions != 1 || affected != 1) {
+                connection.rollback();
+                return false;
+            }
+            connection.commit();
+        }
+        catch (SQLException e) {
+            connection.rollback();
+            throw e;
+        }
+        finally {
+            connection.setAutoCommit(true);
+        }
+        return true;
+    }
 }
