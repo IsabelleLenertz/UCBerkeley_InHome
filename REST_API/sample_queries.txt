@@ -15,3 +15,5 @@ curl -k -i -XPOST https://localhost:8443/v1/policy-management -H "Content-Type: 
 curl -k -i https://localhost:8443/v1/policy-management/apple
 
 curl -k -i https://localhost:8443/v1/policy-management
+
+curl -k -i -XDELETE https://localhost:8443/v1/device-management -H "Content-Type: application/json" -d "{\"policyId\":\"1\"}"
