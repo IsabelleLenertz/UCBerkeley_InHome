@@ -5,23 +5,31 @@
 {% block content %}
 
 <div style="text-align:center;font-family:verdana;font-size:100%;">
+    <p>  &nbsp;   </p>
     <p>Choose a device adminstrative function</p>
-    <p> </p>
-    <a href="{% url 'create_device' %}">Add a device</a>
-    <p> </p>
-    <a href="{% url 'rename_device' %}">Rename a device</a>
-    <p> </p>
-    <a href="{% url 'remove_device' %}">Remove a device</a>
-    <p> </p>
-    <a href="{% url 'display_devices' %}">Display all devices</a>
-    <p> </p>
+    <p> </p>    
+    <a href="{% url 'create_device' %}">Add a device</a> 
+    <p> </p>    
+    <a href="{% url 'rename_device' %}">Rename a device</a>   
+    <p> </p>   
+    <a href="{% url 'remove_device' %}">Remove a device and its associated policies</a>  
+    <p> </p>   
+    <a href="{% url 'display_devices' %}">Display all devices</a> 
+    <p>  &nbsp;   </p>
     <p>Choose a policy adminstrative function</p>
 	<p> </p>
     <a href="{% url 'create_policy' %}">Create a new device policy</a>
     <p> </p>
-    <a href="{% url 'display_dev_policy' %}">Display a device policy</a>
+    <a href="{% url 'display_dev_policy' %}">Display a device's policy</a>
     <p> </p>
     <a href="{% url 'display_policies' %}">Display all device policies</a>
+    <p> </p>
+    <a href="{% url 'remove_policy' %}">Remove a single device policy</a>
+    <p>  &nbsp;   </p>
+    <p>Back to login / logout / change password dashboard</p>
+    <p> </p>
+    <a href="{% url 'dashboard' %}">Login / logout / change password</a>
+
 
 </div>
 

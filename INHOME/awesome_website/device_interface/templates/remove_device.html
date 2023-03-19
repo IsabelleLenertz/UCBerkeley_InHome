@@ -6,21 +6,24 @@
 <style>
     .center {
       margin: 0 auto;	
-      width: 10%; 
+      width: 12%; 
     }
  </style>
 
 <html>
     <body>
-        <div class="center" style="text-align:center;font-family:verdana;font-size:100%;">
-        <p> Remove a device by supplying valid MAC value</p>
+        <p style="text-align:center;font-family:verdana;font-size:100%;">Remove a device and its policies by supplying a valid MAC value</p>
+        <div class="center" style="text-align:center;font-family:verdana;font-size:100%;">        
         <p> </p>
         <form action="/remove_device/" method="POST">
             {% csrf_token %}
-            {{ form }}  
+            {{ form.as_p }}  
             <input type="submit" value="Submit"> 
             </form>
             <p>         {{ message }}  </p>
+            <p> </p>
+            <a href="{% url 'display_devices' %}">Display all devices</a>
+            <p> </p>
             <a href="{% url 'dev_dashboard' %}">Admin options</a>
         </div>   
            

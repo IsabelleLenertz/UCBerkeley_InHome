@@ -1,4 +1,3 @@
-
 {% extends 'base.html' %}
 
 {% block content %}
@@ -6,23 +5,23 @@
 <style>
     .center {
       margin: 0 auto;	
-      width: 15%; 
+      width: 12%; 
     }
  </style>
 
 <html>
     <body>
-        <p style="text-align:center;font-family:verdana;font-size:100%;">Rename a device by supplying valid field values</p>
+        <p style="text-align:center;font-family:verdana;font-size:100%;">Remove a device policy by supplying a valid policyId value</p>
         <div class="center" style="text-align:center;font-family:verdana;font-size:100%;">        
         <p> </p>
-        <form action="/rename_device/" method="POST">
+        <form action="/remove_policy/" method="POST">
             {% csrf_token %}
             {{ form.as_p }}  
             <input type="submit" value="Submit"> 
             </form>
             <p>         {{ message }}  </p>
             <p> </p>
-            <a href="{% url 'display_devices' %}">Display all devices</a>
+            <a href="{% url 'display_policies' %}">Display all device policies</a>
             <p> </p>
             <a href="{% url 'dev_dashboard' %}">Admin options</a>
         </div>   
