@@ -13,5 +13,6 @@ public abstract class queries {
     public static String GET_ALL_POLICIES = "SELECT * FROM policies";
     public static String GET_POLICY_BY_DEVICE_ANY = "SELECT * FROM policies WHERE deviceTo = ? OR deviceFrom = ?";
     public static String DELETE_POLICY = "DELETE FROM policies WHERE deviceTo = ? OR deviceFrom = ?";
+    public static String DELETE_BY_POLICY_ID = "DELETE FROM policies WHERE policyId = ?";
     public static String UPDATE_POLICIES = "INSERT INTO policies (deviceTo, deviceFrom) VALUES (?, ?)";
 }
