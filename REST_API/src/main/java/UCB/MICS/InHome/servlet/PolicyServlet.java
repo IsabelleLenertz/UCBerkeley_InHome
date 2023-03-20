@@ -7,6 +7,7 @@ import org.json.JSONObject;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -129,6 +130,32 @@ public class PolicyServlet extends HttpServlet {
             resp.sendError(HttpServletResponse.SC_NOT_FOUND);
         }
     }
+    @Override
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException
+    {
+        Map<String, String> json = null;
+        try {
+            json = Utilities.getFromRequest(req);
+        }
+        catch (Exception e) {
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "malformed json");
+            return;
+        }
+        String policyId = json.get("policyId");
+        if (isNullOrEmpty(policyId)) {
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "policyId missing");
+            return;
+        }
 
+        try {
+            client.removeByPolicyId(Integer.parseInt(policyId));
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, String.format("could not delete policyId %s", e.getMessage()));
+            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            return;
+        }
+        logger.log(Level.INFO, String.format("a device was deleted, PolicyId:%s", policyId));
+    }
 
 }
