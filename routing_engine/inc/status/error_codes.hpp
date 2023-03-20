@@ -100,4 +100,20 @@
 #define NAT_ERROR_SOCKET_BIND_FAILED    907
 #define NAT_ERROR_GET_ADDRESS_FAILED    908
 
+/////////////////////////////
+/////// PF_KEY Errors ///////
+/////////////////////////////
+#define PF_KEY_ERROR_OVERFLOW             1001
+#define PF_KEY_ERROR_MALFORMED_EXTENSION  1002
+#define PF_KEY_ERROR_UNSUPPORTED_PROTOCOL 1003
+#define PF_KEY_ERROR_KEY_NOT_FOUND        1004
+
+/////////////////////////////
+/////// IPSEC Errors ////////
+/////////////////////////////
+#define IPSEC_AH_ERROR_OVERFLOW          1101
+#define IPSEC_AH_ERROR_NO_AUTH_HEADER    1102
+#define IPSEC_AH_ERROR_ICV_LEN_INCORRECT 1103
+#define IPSEC_AH_ERROR_HMAC_FAILED       1104
+
 #endif

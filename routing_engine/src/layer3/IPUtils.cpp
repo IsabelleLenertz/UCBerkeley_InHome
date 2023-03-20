@@ -91,6 +91,11 @@ bool IPUtils::AddressesAreEqual(const struct sockaddr &lhs, const struct sockadd
 
 void IPUtils::StoreSockaddr(const struct sockaddr &src, struct sockaddr_storage &dst)
 {
+	CopySockaddr(src, reinterpret_cast<struct sockaddr&>(dst));
+}
+
+void IPUtils::CopySockaddr(const struct sockaddr &src, struct sockaddr &dst)
+{
     switch (src.sa_family)
     {
         case AF_INET:
@@ -119,6 +124,25 @@ void IPUtils::StoreSockaddr(const struct sockaddr &src, struct sockaddr_storage 
             break;
         }
     }
+}
+
+size_t IPUtils::GetAddressSize(const struct sockaddr &addr)
+{
+	switch (addr.sa_family)
+	{
+		case AF_INET:
+		{
+			return sizeof(struct sockaddr_in);
+		}
+		case AF_INET6:
+		{
+			return sizeof(struct sockaddr_in6);
+		}
+		default:
+		{
+			return -1;
+		}
+	}
 }
 
 uint16_t IPUtils::Calc16BitChecksum(const uint8_t *buff, size_t len)

@@ -117,3 +117,26 @@ std::string Logger::IPToString(const struct sockaddr &addr)
 
     return "";
 }
+
+std::string Logger::BytesToString(const uint8_t *data, size_t len)
+{
+	std::stringstream sstream;
+	for (int  i = 0; i < len; i++)
+	{
+		sstream << std::hex << std::setw(2) << std::setfill('0') << +data[i];
+		if ((i + 1) % 8 == 0)
+		{
+			sstream << std::endl;
+		}
+		else
+		{
+			sstream << " ";
+		}
+	}
+	if (len % 8 != 0)
+	{
+		sstream << std::endl;
+	}
+
+	return sstream.str();
+}

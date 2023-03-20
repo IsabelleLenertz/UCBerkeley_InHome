@@ -21,6 +21,38 @@ IPv4Packet::IPv4Packet()
     _dest_addr.sin_family = AF_INET;
 }
 
+IPv4Packet::IPv4Packet(const IPv4Packet &rhs)
+{
+	_tos = rhs._tos;
+	_stream_id = rhs._stream_id;
+	_dont_fragment = rhs._dont_fragment;
+	_more_fragments = rhs._more_fragments;
+	_fragment_offset = rhs._fragment_offset;
+	_ttl = rhs._ttl;
+	_protocol = rhs._protocol;
+	_src_addr = rhs._src_addr;
+	_dest_addr = rhs._dest_addr;
+	_options = rhs._options;
+	_data = rhs._data;
+}
+
+IPv4Packet& IPv4Packet::operator=(const IPv4Packet &rhs)
+{
+	_tos = rhs._tos;
+	_stream_id = rhs._stream_id;
+	_dont_fragment = rhs._dont_fragment;
+	_more_fragments = rhs._more_fragments;
+	_fragment_offset = rhs._fragment_offset;
+	_ttl = rhs._ttl;
+	_protocol = rhs._protocol;
+	_src_addr = rhs._src_addr;
+	_dest_addr = rhs._dest_addr;
+	_options = rhs._options;
+	_data = rhs._data;
+
+	return *this;
+}
+
 IPv4Packet::~IPv4Packet()
 {
 }
