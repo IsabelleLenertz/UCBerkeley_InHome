@@ -107,6 +107,7 @@
 #define PF_KEY_ERROR_MALFORMED_EXTENSION  1002
 #define PF_KEY_ERROR_UNSUPPORTED_PROTOCOL 1003
 #define PF_KEY_ERROR_KEY_NOT_FOUND        1004
+#define PF_KEY_ERROR_MISSING_EXTENSION    1005
 
 /////////////////////////////
 /////// IPSEC Errors ////////
