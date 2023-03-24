@@ -2,7 +2,7 @@ TARGET_EXEC := hello_sql
 
 BUILD_DIR := ./build
 SRC_DIRS := ./src
-LDLIBS := -lmysqlcppconn
+LDLIBS := -lmysqlcppconn8 -lmysqlcppconn -lpthread
 
 SRCS := $(shell find $(SRC_DIRS) -name '*.cpp' -or -name '*.c')
 
@@ -11,10 +11,12 @@ OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 DEPS := $(OBJS:.o=.d)
 
 INC_DIRS := ./inc \
-	    	/usr/include/cppconn
+			/usr/include/mysql-cppconn-8/jdbc/ \
+			/usr/include/mysql-cppconn-8/
 INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
-CPPFLAGS := $(INC_FLAGS) -MMD -MP
+CPPFLAGS := $(INC_FLAGS) -MMD -MP 
+# -D_GLIBCXX_USE_CXX11_ABI=0
 
 $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
 	$(CXX) $(OBJS) -o $@ $(LDLIBS) $(LDFLAGS)

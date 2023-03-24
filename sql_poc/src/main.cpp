@@ -5,17 +5,13 @@
 /* uncomment for applications that use vectors */
 /*#include <vector>*/
 
-#include "mysql_connection.h"
-
-#include <cppconn/driver.h>
-#include <cppconn/exception.h>
-#include <cppconn/resultset.h>
-#include <cppconn/statement.h>
-#include <cppconn/prepared_statement.h>
+// Download the version that matches your ubuntu from here: https://dev.mysql.com/downloads/connector/cpp/8.0.html
+//  sudo apt-get install /mnt/c/Users/Isabelle/Downloads/libmysqlcppconn-dev_8.0.32-1ubuntu22.04_amd64.deb
+#include <mysqlx/xdevapi.h>
 
 #define EXAMPLE_HOST "localhost"
 #define EXAMPLE_USER "root"
-#define EXAMPLE_PASS "password"
+#define EXAMPLE_PASS "password" //my-secret-pw or password
 #define EXAMPLE_DB "InHome"
 
 using namespace std;
@@ -39,46 +35,20 @@ int main(int argc, const char **argv)
 
   cout << "Connector/C++ tutorial framework..." << endl;
   cout << endl;
-
-  try {
-    sql::Driver* driver = get_driver_instance();
-    std::unique_ptr<sql::Connection> con(driver->connect(url, user, pass));
-    con->setSchema(database);
-    std::unique_ptr<sql::Statement> stmt(con->createStatement());
-
-    auto res = stmt->executeQuery("SELECT * FROM devices");
-    while (res->next()) {
-      // The latter is recommended.
-      Device mydevice = {};
-      mydevice.dateAdded = res->getUInt64("dateAdded");
-      mydevice.mac = res->getUInt64("Mac"); // problem, this is actualy a 64 bit array, not an integer
-      mydevice.name = res->getString("Name");
-      mydevice.ipv4 = res->getUInt("Ipv4"); // prolem, this is actualy a 32 bit array, not an integer
-
-      cout << mydevice.name << endl;
-      cout << "date added: " << mydevice.dateAdded << endl;
-      cout << "MAC: " << mydevice.mac << endl;
-      cout << "Ipv4: " << mydevice.ipv4 << endl << endl;
-    }
-
-  } catch (sql::SQLException &e) {
-    /*
-      MySQL Connector/C++ throws three different exceptions:
-
-      - sql::MethodNotImplementedException (derived from sql::SQLException)
-      - sql::InvalidArgumentException (derived from sql::SQLException)
-      - sql::SQLException (derived from std::runtime_error)
-    */
-    cout << "# ERR: SQLException in " << __FILE__;
-    cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
-    /* what() (derived from std::runtime_error) fetches error message */
-    cout << "# ERR: " << e.what();
-    cout << " (MySQL error code: " << e.getErrorCode();
-    cout << ", SQLState: " << e.getSQLState() << " )" << endl;
-
-    return EXIT_FAILURE;
+  mysqlx::Session mySession(mysqlx::SessionOption::HOST, "localhost",
+                mysqlx::SessionOption::PORT, 33060,
+                mysqlx::SessionOption::USER, user,
+                mysqlx::SessionOption::PWD, pass);
+  cout << "connected" << endl;
+  // Use an SQL query to get the result
+  mysqlx::Schema myDb = mySession.getSchema("InHome");
+  cout << "got db" << endl;
+  mysqlx::Table myTable = myDb.getTable("devices");
+  mysqlx::RowResult res = myTable.select("*").execute();
+  list<mysqlx::Row> rows = res.fetchAll();
+  for(mysqlx::Row row : rows) {
+    cout <<  row.getBytes(0);
   }
-
   cout << "Done." << endl;
   return EXIT_SUCCESS;
 }
