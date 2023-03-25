@@ -43,7 +43,6 @@ REST_API/out/
 # Python generated files
 INHOME/.ipynb*
 INHOME/venv*
-*db.sqlite3*
 */env/*
 *_pycache_*
 .ipynb_checkpoints/*
