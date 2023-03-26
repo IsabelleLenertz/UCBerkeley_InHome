@@ -10,24 +10,31 @@ class PFKeyMessageAcquire : public PFKeyMessageBase
 {
 public:
 	PFKeyMessageAcquire();
+	PFKeyMessageAcquire(const PFKeyMessageAcquire &rhs);
 	~PFKeyMessageAcquire() override;
 
 	int Serialize(uint8_t *buff, size_t &len);
 	int Deserialize(const uint8_t *data, size_t len);
 
+	void PrintInfo();
+
 	uint8_t GetMessageType();
 	virtual size_t GetLengthBytes();
 
-	PFKeyAddressExtension* SourceAddress();
-	PFKeyAddressExtension* DestinationAddress();
-	PFKeyAddressExtension* ProxyAddress();
-	PFKeyIdentityExtension* SourceID();
-	PFKeyIdentityExtension* DestinationID();
-	PFKeyProposalExtension* Proposal();
+	PFKeyAddressExtension& SourceAddress();
+	PFKeyAddressExtension& DestinationAddress();
+	PFKeyAddressExtension& ProxyAddress();
+	PFKeyIdentityExtension& SourceID();
+	PFKeyIdentityExtension& DestinationID();
+	PFKeyProposalExtension& Proposal();
 
 	void SetProxyAddressPresent(bool present);
 	void SetSourceIDPresent(bool present);
 	void SetDestinationIDPresent(bool present);
+
+	bool GetProxyAddressPresent();
+	bool GetSourceIDPresent();
+	bool GetDestinationIDPresent();
 
 private:
 	PFKeyAddressExtension _src;

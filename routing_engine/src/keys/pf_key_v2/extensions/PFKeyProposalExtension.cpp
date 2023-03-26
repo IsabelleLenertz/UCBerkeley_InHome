@@ -10,8 +10,24 @@ PFKeyProposalExtension::PFKeyProposalExtension()
 {
 }
 
+/*
+PFKeyProposalExtension::PFKeyProposalExtension(const PFKeyProposalExtension &rhs)
+{
+	_window = rhs._window;
+	_combs = rhs._combs;
+}
+*/
+
 PFKeyProposalExtension::~PFKeyProposalExtension()
 {
+}
+
+PFKeyProposalExtension& PFKeyProposalExtension::operator=(const PFKeyProposalExtension &rhs)
+{
+	_window = rhs._window;
+	_combs = rhs._combs;
+
+	return *this;
 }
 
 int PFKeyProposalExtension::Serialize(uint8_t *buff, size_t &len)

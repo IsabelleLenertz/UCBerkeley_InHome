@@ -7,7 +7,10 @@ class PFKeyAssociationExtension : public IPFKeyExtension
 {
 public:
 	PFKeyAssociationExtension();
+	// PFKeyAssociationExtension(const PFKeyAssociationExtension &rhs);
 	~PFKeyAssociationExtension() override;
+
+	PFKeyAssociationExtension& operator=(const PFKeyAssociationExtension &rhs);
 
 	int Serialize(uint8_t *buff, size_t &len);
 

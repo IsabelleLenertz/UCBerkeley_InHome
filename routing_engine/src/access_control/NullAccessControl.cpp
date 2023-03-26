@@ -20,3 +20,7 @@ void NullAccessControl::SetConfiguration(IConfiguration* config)
 void NullAccessControl::SetARPTable(IARPTable* arp_table)
 {
 }
+
+void NullAccessControl::SetIPSecUtils(IIPSecUtils *ipsec)
+{
+}

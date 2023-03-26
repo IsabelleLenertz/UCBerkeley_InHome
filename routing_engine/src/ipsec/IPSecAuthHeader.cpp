@@ -5,6 +5,7 @@
 #include <cstring>
 
 #include <iostream>
+#include "logging/Logger.hpp"
 
 IPSecAuthHeader::IPSecAuthHeader()
 	: _next_hdr(IPPROTO_TCP),
@@ -108,6 +109,10 @@ int IPSecAuthHeader::Deserialize(const uint8_t *data, size_t &len)
 	// Equal to the full length minus
 	// the first 3 32-bit words
 	size_t icv_len_bytes = hdr_len_bytes - (3 * sizeof(uint32_t));
+
+	std::stringstream sstream;
+	sstream << "ICV Length: " << icv_len_bytes;
+	Logger::Log(LOG_DEBUG, sstream.str());
 
 	// Read ICV
 	_icv = std::vector<uint8_t>(ptr, ptr + icv_len_bytes);

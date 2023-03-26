@@ -3,7 +3,8 @@
 CentralAccessControl::CentralAccessControl()
     : _modules(),
       _config(nullptr),
-	  _arp_table(nullptr)
+	  _arp_table(nullptr),
+	  _ipsec_utils(nullptr)
 {
 }
 
@@ -42,4 +43,9 @@ void CentralAccessControl::SetARPTable(IARPTable *arp_table)
 void CentralAccessControl::AddModule(IAccessControlModule *module)
 {
     _modules.push_back(module);
+}
+
+void CentralAccessControl::SetIPSecUtils(IIPSecUtils *ipsec)
+{
+	_ipsec_utils = ipsec;
 }

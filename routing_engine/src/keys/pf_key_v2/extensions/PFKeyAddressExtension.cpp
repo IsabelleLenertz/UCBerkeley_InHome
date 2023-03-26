@@ -10,8 +10,28 @@ PFKeyAddressExtension::PFKeyAddressExtension()
 {
 }
 
+/*
+PFKeyAddressExtension::PFKeyAddressExtension(const PFKeyAddressExtension &rhs)
+{
+	IPUtils::StoreSockaddr(reinterpret_cast<const sockaddr&>(rhs._addr), _addr);
+	_type = rhs._type;
+	_prefix_len = rhs._prefix_len;
+	_protocol = rhs._protocol;
+}
+*/
+
 PFKeyAddressExtension::~PFKeyAddressExtension()
 {
+}
+
+PFKeyAddressExtension& PFKeyAddressExtension::operator=(const PFKeyAddressExtension &rhs)
+{
+	IPUtils::StoreSockaddr(reinterpret_cast<const sockaddr&>(rhs._addr), _addr);
+	_type = rhs._type;
+	_prefix_len = rhs._prefix_len;
+	_protocol = rhs._protocol;
+
+	return *this;
 }
 
 int PFKeyAddressExtension::Serialize(uint8_t *buff, size_t &len)
@@ -41,7 +61,7 @@ int PFKeyAddressExtension::Serialize(uint8_t *buff, size_t &len)
 	// Get size of address to be written
 	const struct sockaddr &addr = reinterpret_cast<const sockaddr&>(_addr);
 	size_t addrlen = IPUtils::GetAddressSize(addr);
-	if (addrlen < 0)
+	if (addrlen == 0)
 	{
 		return PF_KEY_ERROR_UNSUPPORTED_PROTOCOL;
 	}
@@ -107,7 +127,7 @@ int PFKeyAddressExtension::Deserialize(const uint8_t *data, size_t &len)
 	// Get expected length for address family
 	const struct sockaddr *addr = reinterpret_cast<const sockaddr*>(data + offset);
 	size_t addrlen = IPUtils::GetAddressSize(*addr);
-	if (addrlen < 0)
+	if (addrlen == 0)
 	{
 		return PF_KEY_ERROR_UNSUPPORTED_PROTOCOL;
 	}

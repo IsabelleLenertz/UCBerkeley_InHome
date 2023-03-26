@@ -18,11 +18,7 @@ public:
 	LocalKeyManager();
 	~LocalKeyManager() override;
 
-	void Synchronize();
-
-	int GetKey(const sockaddr &src, const sockaddr &dst, uint8_t *key, size_t &keylen);
-
-	int GetKey(uint32_t spi, uint8_t *key, size_t &keylen);
+	int GetKey(uint32_t spi, const sockaddr &src, const sockaddr &dst, uint8_t *key, size_t &keylen);
 
 	/// <summary>
 	/// Adds a key to the key management database

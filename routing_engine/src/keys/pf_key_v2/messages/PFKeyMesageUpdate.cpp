@@ -2,6 +2,8 @@
 #include <cstring>
 #include "status/error_codes.hpp"
 
+#include "logging/Logger.hpp"
+
 PFKeyMessageUpdate::PFKeyMessageUpdate()
 	: _assoc(),
 	  _src(),
@@ -17,6 +19,10 @@ PFKeyMessageUpdate::PFKeyMessageUpdate()
 	  _src_id_present(false),
 	  _dst_id_present(false)
 {
+	memset(&_header, 0, sizeof(struct sadb_msg));
+	_header.sadb_msg_type = SADB_UPDATE;
+	_header.sadb_msg_version = PF_KEY_V2;
+	_header.sadb_msg_satype = SADB_SATYPE_AH;
 }
 
 PFKeyMessageUpdate::~PFKeyMessageUpdate()
@@ -154,17 +160,22 @@ int PFKeyMessageUpdate::Serialize(uint8_t *buff, size_t &len)
 	// is guaranteed to be 64-bit aligned
 	_header_out->sadb_msg_len = offset / sizeof(uint64_t);
 
+	// Set length output
+	len = offset;
+
 	return NO_ERROR;
 }
 
 int PFKeyMessageUpdate::Deserialize(const uint8_t *data, size_t len)
 {
+	std::stringstream sstream;
 	int status = NO_ERROR;
 	size_t offset = 0;
 
 	// Verify enough data for base header
 	if (len < sizeof(struct sadb_msg))
 	{
+		Logger::Log(LOG_DEBUG, "Not enough data for base header");
 		return PF_KEY_ERROR_OVERFLOW;
 	}
 
@@ -176,6 +187,7 @@ int PFKeyMessageUpdate::Deserialize(const uint8_t *data, size_t len)
 	size_t msg_len_bytes = _header.sadb_msg_len * sizeof(uint64_t);
 	if (len < msg_len_bytes)
 	{
+		Logger::Log(LOG_DEBUG, "Not enough data for stated length");
 		return PF_KEY_ERROR_OVERFLOW;
 	}
 
@@ -190,6 +202,9 @@ int PFKeyMessageUpdate::Deserialize(const uint8_t *data, size_t len)
 		// Verify enough data for extension base
 		if (len < offset + sizeof(struct sadb_ext))
 		{
+			sstream.str("");
+			sstream << "Error at offset: " << offset;
+			Logger::Log(LOG_DEBUG, sstream.str());
 			return PF_KEY_ERROR_OVERFLOW;
 		}
 
@@ -204,6 +219,9 @@ int PFKeyMessageUpdate::Deserialize(const uint8_t *data, size_t len)
 				status = _assoc.Deserialize(data + offset, ext_len);
 				if (status != NO_ERROR)
 				{
+					sstream.str("");
+					sstream << "Error at offset: " << offset;
+					Logger::Log(LOG_DEBUG, sstream.str());
 					return status;
 				}
 				_assoc_present = true;
@@ -214,6 +232,9 @@ int PFKeyMessageUpdate::Deserialize(const uint8_t *data, size_t len)
 				status = _src.Deserialize(data + offset, ext_len);
 				if (status != NO_ERROR)
 				{
+					sstream.str("");
+					sstream << "Error at offset: " << offset;
+					Logger::Log(LOG_DEBUG, sstream.str());
 					return status;
 				}
 				_src_present = true;
@@ -224,6 +245,9 @@ int PFKeyMessageUpdate::Deserialize(const uint8_t *data, size_t len)
 				status = _dst.Deserialize(data + offset, ext_len);
 				if (status != NO_ERROR)
 				{
+					sstream.str("");
+					sstream << "Error at offset: " << offset;
+					Logger::Log(LOG_DEBUG, sstream.str());
 					return status;
 				}
 				_dst_present = true;
@@ -234,6 +258,9 @@ int PFKeyMessageUpdate::Deserialize(const uint8_t *data, size_t len)
 				status = _proxy.Deserialize(data + offset, ext_len);
 				if (status != NO_ERROR)
 				{
+					sstream.str("");
+					sstream << "Error at offset: " << offset;
+					Logger::Log(LOG_DEBUG, sstream.str());
 					return status;
 				}
 				_proxy_present = true;
@@ -244,6 +271,9 @@ int PFKeyMessageUpdate::Deserialize(const uint8_t *data, size_t len)
 				status = _auth_key.Deserialize(data + offset, ext_len);
 				if (status != NO_ERROR)
 				{
+					sstream.str("");
+					sstream << "Error at offset: " << offset;
+					Logger::Log(LOG_DEBUG, sstream.str());
 					return status;
 				}
 				_auth_key_present = true;
@@ -254,6 +284,9 @@ int PFKeyMessageUpdate::Deserialize(const uint8_t *data, size_t len)
 				status = _encrypt_key.Deserialize(data + offset, ext_len);
 				if (status != NO_ERROR)
 				{
+					sstream.str("");
+					sstream << "Error at offset: " << offset;
+					Logger::Log(LOG_DEBUG, sstream.str());
 					return status;
 				}
 				_encrypt_key_present = true;
@@ -264,6 +297,9 @@ int PFKeyMessageUpdate::Deserialize(const uint8_t *data, size_t len)
 				status = _src_id.Deserialize(data + offset, ext_len);
 				if (status != NO_ERROR)
 				{
+					sstream.str("");
+					sstream << "Error at offset: " << offset;
+					Logger::Log(LOG_DEBUG, sstream.str());
 					return status;
 				}
 				_src_id_present = true;
@@ -274,6 +310,9 @@ int PFKeyMessageUpdate::Deserialize(const uint8_t *data, size_t len)
 				status = _dst_id.Deserialize(data + offset, ext_len);
 				if (status != NO_ERROR)
 				{
+					sstream.str("");
+					sstream << "Error at offset: " << offset;
+					Logger::Log(LOG_DEBUG, sstream.str());
 					return status;
 				}
 				_dst_id_present = true;
@@ -296,47 +335,49 @@ int PFKeyMessageUpdate::Deserialize(const uint8_t *data, size_t len)
 		return PF_KEY_ERROR_MISSING_EXTENSION;
 	}
 
+	PrintInfo();
+
 	return NO_ERROR;
 }
 
-PFKeyAssociationExtension* PFKeyMessageUpdate::Association()
+PFKeyAssociationExtension& PFKeyMessageUpdate::Association()
 {
-	return &_assoc;
+	return _assoc;
 }
 
-PFKeyAddressExtension* PFKeyMessageUpdate::SourceAddress()
+PFKeyAddressExtension& PFKeyMessageUpdate::SourceAddress()
 {
-	return &_src;
+	return _src;
 }
 
-PFKeyAddressExtension* PFKeyMessageUpdate::DestinationAddress()
+PFKeyAddressExtension& PFKeyMessageUpdate::DestinationAddress()
 {
-	return &_dst;
+	return _dst;
 }
 
-PFKeyAddressExtension* PFKeyMessageUpdate::ProxyAddress()
+PFKeyAddressExtension& PFKeyMessageUpdate::ProxyAddress()
 {
-	return (_proxy_present) ? &_proxy : nullptr;
+	return _proxy;
 }
 
-PFKeyKeyExtension* PFKeyMessageUpdate::AuthKey()
+PFKeyKeyExtension& PFKeyMessageUpdate::AuthKey()
 {
-	return (_auth_key_present) ? &_auth_key : nullptr;
+	return _auth_key;
 }
 
-PFKeyKeyExtension* PFKeyMessageUpdate::EncryptKey()
+PFKeyKeyExtension& PFKeyMessageUpdate::EncryptKey()
 {
-	return (_encrypt_key_present) ? &_encrypt_key : nullptr;
+	return _encrypt_key;
 }
 
-PFKeyIdentityExtension* PFKeyMessageUpdate::SourceID()
+PFKeyIdentityExtension& PFKeyMessageUpdate::SourceID()
 {
-	return (_src_id_present) ? &_src_id : nullptr;
+	return _src_id;
 }
 
-PFKeyIdentityExtension* PFKeyMessageUpdate::DestinationID()
+PFKeyIdentityExtension& PFKeyMessageUpdate::DestinationID()
 {
-	return (_dst_id_present) ? &_dst_id : nullptr;
+	return _dst_id;
 }
 
 void PFKeyMessageUpdate::SetProxyAddressPresent(bool present)
@@ -362,4 +403,42 @@ void PFKeyMessageUpdate::SetSourceIDPresent(bool present)
 void PFKeyMessageUpdate::SetDestinationIDPresent(bool present)
 {
 	_dst_id_present = present;
+}
+
+bool PFKeyMessageUpdate::GetProxyAddressPresent()
+{
+	return _proxy_present;
+}
+
+bool PFKeyMessageUpdate::GetAuthKeyPresent()
+{
+	return _auth_key_present;
+}
+
+bool PFKeyMessageUpdate::GetEncryptKeyPresent()
+{
+	return _encrypt_key_present;
+}
+
+bool PFKeyMessageUpdate::GetSourceIDPresent()
+{
+	return _src_id_present;
+}
+
+bool PFKeyMessageUpdate::GetDestinationIDPresent()
+{
+	return _dst_id_present;
+}
+
+void PFKeyMessageUpdate::PrintInfo()
+{
+	std::stringstream sstream;
+
+	sstream.str("");
+	sstream << "Source Address: " << Logger::IPToString(_src.GetAddress()) << "/" << _src.GetPrefixLength() << " (" << _src.GetProtocol() << ")";
+	Logger::Log(LOG_VERBOSE, sstream.str());
+
+	sstream.str("");
+	sstream << "Destination Address: " << Logger::IPToString(_dst.GetAddress()) << "/" << _dst.GetPrefixLength() << " (" << _dst.GetProtocol() << ")";
+	Logger::Log(LOG_VERBOSE, sstream.str());
 }

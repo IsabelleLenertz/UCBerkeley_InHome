@@ -8,7 +8,10 @@ class PFKeyProposalExtension : public IPFKeyExtension
 {
 public:
 	PFKeyProposalExtension();
+	// PFKeyProposalExtension(const PFKeyProposalExtension &rhs);
 	~PFKeyProposalExtension() override;
+
+	PFKeyProposalExtension& operator=(const PFKeyProposalExtension &rhs);
 
 	int Serialize(uint8_t *buff, size_t &len);
 

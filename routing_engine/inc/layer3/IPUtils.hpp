@@ -20,6 +20,15 @@ public:
     static void GetSubnetID(const struct sockaddr &addr, const struct sockaddr &netmask, struct sockaddr &subnet_id);
     
     /// <summary>
+    /// Given an IP address (v4 or v6) and a netmask,
+    /// generates the first host IP on the same subnet
+    /// </summary>
+    /// <param name="addr">IP address</param>
+    /// <param name="netmask">Subnet mask</param>
+    /// <param name="first_ip">First host IP on subnet</param>
+    static void GetFirstHostIP(const struct sockaddr &addr, const struct sockaddr &netmask, struct sockaddr &first_ip);
+
+    /// <summary>
     /// Checks if the addresses represented by two sockaddr objects
     /// are equal. Only checks the IP address, not the port or
     /// other metadata.

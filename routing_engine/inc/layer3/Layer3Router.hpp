@@ -4,17 +4,26 @@
 #include "access_control/AccessControlList.hpp"
 #include "access_control/CentralAccessControl.hpp"
 #include "access_control/NullAccessControl.hpp"
+#include "access_control/MessageAuthentication.hpp"
 #include "arp/LocalARPTable.hpp"
 #include "concurrency/ConcurrentQueue.hpp"
 #include "config/LocalConfiguration.hpp"
 #include "config/MySQLConfiguration.hpp"
 #include "interfaces/InterfaceManager.hpp"
+#include "ipsec/LocalIPSecUtils.hpp"
 #include "layer2/ILayer2Interface.hpp"
 #include "layer3/IIPPacket.hpp"
 #include "layer3/LocalRoutingTable.hpp"
 #include "nat/NAPTTable.hpp"
 
 #define USE_LOCAL_CONFIG
+#define USE_LOCAL_KEYS
+
+#ifndef USE_LOCAL_KEYS
+#include "keys/PFKeyManager.hpp"
+#else
+#include "keys/LocalKeyManager.hpp"
+#endif
 
 /// <summary>
 /// Structure to store a message
@@ -81,7 +90,11 @@ private:
     CentralAccessControl _access_control;
     AccessControlList _access_list;
     NullAccessControl _null_access;
+    MessageAuthentication _message_auth;
     
+    // IPSec Utils
+    LocalIPSecUtils _ipsec_utils;
+
     // ARP Table
     LocalARPTable _arp_table;
     
@@ -90,6 +103,13 @@ private:
 
     // NAPT Table
     NAPTTable _napt_table;
+
+    // Key Management
+#ifndef USE_LOCAL_KEYS
+    PFKeyManager _key_manager;
+#else
+    LocalKeyManager _key_manager;
+#endif
 
     /// <summary>
     /// Stores incoming layer 3 data

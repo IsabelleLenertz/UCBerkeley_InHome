@@ -12,35 +12,15 @@ LocalKeyManager::~LocalKeyManager()
 {
 }
 
-void LocalKeyManager::Synchronize()
-{
-}
-
-int LocalKeyManager::GetKey(const sockaddr &src, const sockaddr &dst, uint8_t *key, size_t &keylen)
+int LocalKeyManager::GetKey(uint32_t spi, const sockaddr &src, const sockaddr &dst, uint8_t *key, size_t &keylen)
 {
 	for (auto e = _keys.begin(); e < _keys.end(); e++)
 	{
 		key_entry_t &entry = *e;
 
-		if (IPUtils::AddressesAreEqual(src, reinterpret_cast<const sockaddr&>(entry.src)) &&
+		if (spi == entry.spi &&
+			IPUtils::AddressesAreEqual(src, reinterpret_cast<const sockaddr&>(entry.src)) &&
 			IPUtils::AddressesAreEqual(dst, reinterpret_cast<const sockaddr&>(entry.dst)))
-		{
-			memcpy(key, entry.key.data(), entry.key.size());
-			keylen = entry.key.size();
-			return NO_ERROR;
-		}
-	}
-
-	return PF_KEY_ERROR_KEY_NOT_FOUND;
-}
-
-int LocalKeyManager::GetKey(uint32_t spi, uint8_t *key, size_t &keylen)
-{
-	for (auto e = _keys.begin(); e < _keys.end(); e++)
-	{
-		key_entry_t &entry = *e;
-
-		if (spi == entry.spi)
 		{
 			memcpy(key, entry.key.data(), entry.key.size());
 			keylen = entry.key.size();

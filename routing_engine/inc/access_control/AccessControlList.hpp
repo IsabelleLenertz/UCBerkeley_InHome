@@ -7,7 +7,7 @@ class AccessControlList : public IAccessControlModule
 {
 public:
 	AccessControlList();
-	~AccessControlList();
+	~AccessControlList() override;
 
     bool IsAllowed(IIPPacket *packet);
 
@@ -15,9 +15,12 @@ public:
 
     void SetARPTable(IARPTable *arp_table);
 
+    void SetIPSecUtils(IIPSecUtils *ipsec);
+
 private:
     IConfiguration *_config;
     IARPTable *_arp_table;
+    IIPSecUtils *_ipsec_utils;
 };
 
 #endif

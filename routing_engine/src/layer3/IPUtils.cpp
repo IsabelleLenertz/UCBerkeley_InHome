@@ -50,6 +50,33 @@ void IPUtils::GetSubnetID(const struct sockaddr &addr, const struct sockaddr &ne
     }
 }
 
+void IPUtils::GetFirstHostIP(const struct sockaddr &addr, const struct sockaddr &netmask, struct sockaddr &first_ip)
+{
+	// Get the subnet ID
+	GetSubnetID(addr, netmask, first_ip);
+
+	// Add 1 to the subnet ID
+	switch (addr.sa_family)
+	{
+		case AF_INET:
+		{
+			struct sockaddr_in &_first_ip = reinterpret_cast<struct sockaddr_in&>(first_ip);
+			_first_ip.sin_addr.s_addr |= 0x01000000;
+			break;
+		}
+		case AF_INET6:
+		{
+			struct sockaddr_in6 &_first_ip = reinterpret_cast<struct sockaddr_in6&>(first_ip);
+			_first_ip.sin6_addr.__in6_u.__u6_addr8[15] |= 0x01;
+			break;
+		}
+		default:
+		{
+			break;
+		}
+	}
+}
+
 bool IPUtils::AddressesAreEqual(const struct sockaddr &lhs, const struct sockaddr &rhs)
 {
     bool result = true;
@@ -140,7 +167,7 @@ size_t IPUtils::GetAddressSize(const struct sockaddr &addr)
 		}
 		default:
 		{
-			return -1;
+			return 0;
 		}
 	}
 }

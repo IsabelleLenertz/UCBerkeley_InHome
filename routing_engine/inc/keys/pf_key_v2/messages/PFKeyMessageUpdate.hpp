@@ -16,23 +16,31 @@ public:
 	int Serialize(uint8_t *buff, size_t &len);
 	int Deserialize(const uint8_t *data, size_t len);
 
+	void PrintInfo();
+
 	uint8_t GetMessageType();
 	virtual size_t GetLengthBytes();
 
-	PFKeyAssociationExtension* Association();
-	PFKeyAddressExtension* SourceAddress();
-	PFKeyAddressExtension* DestinationAddress();
-	PFKeyAddressExtension* ProxyAddress();
-	PFKeyKeyExtension* AuthKey();
-	PFKeyKeyExtension* EncryptKey();
-	PFKeyIdentityExtension* SourceID();
-	PFKeyIdentityExtension* DestinationID();
+	PFKeyAssociationExtension& Association();
+	PFKeyAddressExtension& SourceAddress();
+	PFKeyAddressExtension& DestinationAddress();
+	PFKeyAddressExtension& ProxyAddress();
+	PFKeyKeyExtension& AuthKey();
+	PFKeyKeyExtension& EncryptKey();
+	PFKeyIdentityExtension& SourceID();
+	PFKeyIdentityExtension& DestinationID();
 
 	void SetProxyAddressPresent(bool present);
 	void SetAuthKeyPresent(bool present);
 	void SetEncryptKeyPresent(bool present);
 	void SetSourceIDPresent(bool present);
 	void SetDestinationIDPresent(bool present);
+
+	bool GetProxyAddressPresent();
+	bool GetAuthKeyPresent();
+	bool GetEncryptKeyPresent();
+	bool GetSourceIDPresent();
+	bool GetDestinationIDPresent();
 
 private:
 	PFKeyAssociationExtension _assoc;

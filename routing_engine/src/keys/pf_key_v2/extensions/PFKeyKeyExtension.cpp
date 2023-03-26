@@ -1,6 +1,7 @@
 #include "keys/pf_key_v2/extensions/PFKeyKeyExtension.hpp"
 #include "status/error_codes.hpp"
 #include <cstring>
+#include "logging/Logger.hpp"
 
 PFKeyKeyExtension::PFKeyKeyExtension()
 	: _type(SADB_EXT_KEY_AUTH),
@@ -9,8 +10,26 @@ PFKeyKeyExtension::PFKeyKeyExtension()
 {
 }
 
+/*
+PFKeyKeyExtension::PFKeyKeyExtension(const PFKeyKeyExtension &rhs)
+{
+	_type = rhs._type;
+	_bits = rhs._bits;
+	_key_data = rhs._key_data;
+}
+*/
+
 PFKeyKeyExtension::~PFKeyKeyExtension()
 {
+}
+
+PFKeyKeyExtension& PFKeyKeyExtension::operator=(const PFKeyKeyExtension &rhs)
+{
+	_type = rhs._type;
+	_bits = rhs._bits;
+	_key_data = rhs._key_data;
+
+	return *this;
 }
 
 int PFKeyKeyExtension::Serialize(uint8_t *buff, size_t &len)
@@ -123,7 +142,7 @@ bool PFKeyKeyExtension::IsValid()
 	// Verify there are enough bytes in
 	// the key to cover the number of bits
 	size_t key_len_bytes = ((((_bits / 8) - 1) / sizeof(uint64_t)) + 1) * sizeof(uint64_t);
-	if (sizeof(_key_data) < key_len_bytes)
+	if (_key_data.size() < key_len_bytes)
 	{
 		return false;
 	}

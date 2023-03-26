@@ -10,9 +10,10 @@
 
 #include "keys/IKeyManager.hpp"
 
-class LocalIPSecUtils
+class LocalIPSecUtils : public IIPSecUtils
 {
 public:
+	LocalIPSecUtils();
 	LocalIPSecUtils(IKeyManager *key_manager);
 	~LocalIPSecUtils();
 

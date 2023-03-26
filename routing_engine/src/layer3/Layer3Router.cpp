@@ -12,6 +12,7 @@
 #include "layer3/IPPacketFactory.hpp"
 #include "layer3/IPUtils.hpp"
 #include "logging/Logger.hpp"
+#include "keys/KeyUtils.hpp"
 
 Layer3Router::Layer3Router()
     : _if_manager(&_arp_table, &_ip_rte_table, &_napt_table),
@@ -22,7 +23,9 @@ Layer3Router::Layer3Router()
 #endif
       _access_control(),
       _rcv_queue(),
-      _exiting(false)
+      _exiting(false),
+	  _key_manager(),
+	  _ipsec_utils(&_key_manager)
 {
 }
 
@@ -32,6 +35,7 @@ Layer3Router::~Layer3Router()
 
 int Layer3Router::Initialize()
 {
+	std::stringstream sstream;
     int status;
 
     ////////////////////////////////////
@@ -66,30 +70,96 @@ int Layer3Router::Initialize()
     // Listen asynchronously on all interfaces
     status = _if_manager.ListenAll(callback, arp_listener);
     
-    if (status != 0)
+    if (status != NO_ERROR)
     {
         Logger::Log(LOG_FATAL, "Failed to listen on interfaces");
         return INTERFACE_LISTEN_FAILED;
     }
 
+    // Initialize Key Manager
+#ifndef USE_LOCAL_KEYS
+    status = _key_manager.Initialize();
+
+    if (status != NO_ERROR)
+    {
+    	Logger::Log(LOG_FATAL, "Failed to initialize key manager");
+    	return status;
+    }
+    Logger::Log(LOG_INFO, "Initialized Key Manager");
+
+    // Add manual host
+    struct sockaddr_in host;
+    host.sin_family = AF_INET;
+    host.sin_port = 0;
+    inet_pton(AF_INET, "192.168.1.2", &host.sin_addr);
+
+    status = _key_manager.AddHost(reinterpret_cast<struct sockaddr&>(host));
+
+    if (status != NO_ERROR)
+    {
+    	sstream.str("");
+    	sstream << "Failed to add host: " << Logger::IPToString(reinterpret_cast<struct sockaddr&>(host));
+    	Logger::Log(LOG_ERROR, sstream.str());
+    }
+#else
+    // Add manually-configured keys
+    struct sockaddr_in src;
+    src.sin_family = AF_INET;
+    src.sin_port = 0;
+    inet_pton(AF_INET, "192.168.1.2", &src.sin_addr);
+    struct sockaddr_in dst;
+    dst.sin_family = AF_INET;
+    dst.sin_port = 0;
+    inet_pton(AF_INET, "192.168.1.1", &dst.sin_addr);
+
+    const std::string device1key = "0ea5f191085596967637d4de154178728a0c8ad237592738f479b56d265ff716";
+
+    const size_t KEY_LEN = 32;
+    uint8_t key[KEY_LEN];
+
+    KeyUtils::FromHexString(device1key, key, KEY_LEN);
+
+    sstream.str("");
+    sstream << std::endl << "---------------- Key Data ----------------" << std::endl;
+    sstream << Logger::BytesToString(key, KEY_LEN);
+    sstream << std::endl << "------------------------------------------";
+    Logger::Log(LOG_DEBUG, sstream.str());
+
+    _key_manager.AddKey(1000, reinterpret_cast<struct sockaddr&>(src), reinterpret_cast<struct sockaddr&>(dst), key, KEY_LEN);
+    _key_manager.AddKey(1001, reinterpret_cast<struct sockaddr&>(dst), reinterpret_cast<struct sockaddr&>(src), key, KEY_LEN);
+
+#endif
+
     ////////////////////////////////
     //////// Access Control ////////
     ////////////////////////////////
+    sstream.str("");
+    sstream << "IPSecUtils at: " << (uintptr_t)&_ipsec_utils;
+    Logger::Log(LOG_DEBUG, sstream.str());
 
     // Associate configuration module
     // with each access control module
     _access_control.SetConfiguration((IConfiguration*)&_config);
     _null_access.SetConfiguration((IConfiguration*)&_config);
     _access_list.SetConfiguration((IConfiguration*)&_config);
+    _message_auth.SetConfiguration((IConfiguration*)&_config);
 
     // Associate ARP table
     // with each access control module
     _access_control.SetARPTable((IARPTable*)&_arp_table);
     _null_access.SetARPTable((IARPTable*)&_arp_table);
     _access_list.SetARPTable((IARPTable*)&_arp_table);
+    _message_auth.SetConfiguration((IConfiguration*)&_config);
+
+    // Associate IPsec Utils
+    _access_control.SetIPSecUtils((IIPSecUtils*)&_ipsec_utils);
+    _null_access.SetIPSecUtils((IIPSecUtils*)&_ipsec_utils);
+    _access_list.SetIPSecUtils((IIPSecUtils*)&_ipsec_utils);
+    _message_auth.SetIPSecUtils((IIPSecUtils*)&_ipsec_utils);
 
     // Add submodules to central module
     _access_control.AddModule((IAccessControlModule*)&_null_access);
+    _access_control.AddModule((IAccessControlModule*)&_message_auth);
     //_access_control.AddModule((IAccessControlModule*)&_access_list);
 
     ////////////////////////////////
@@ -168,7 +238,7 @@ void Layer3Router::_process_packet(IIPPacket *packet)
     }
     std::stringstream sstream;
     
-    // Consult Access Control Module
+    // Consult Access Control Modules
     bool allowed = _access_control.IsAllowed(packet);
     
     if (allowed)

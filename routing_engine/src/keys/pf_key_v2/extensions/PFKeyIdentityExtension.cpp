@@ -12,8 +12,28 @@ PFKeyIdentityExtension::PFKeyIdentityExtension()
 {
 }
 
+/*
+PFKeyIdentityExtension::PFKeyIdentityExtension(const PFKeyIdentityExtension &rhs)
+{
+	_type = rhs._type;
+	_id_type = rhs._id_type;
+	_id_num = rhs._id_num;
+	_id_string = rhs._id_string;
+}
+*/
+
 PFKeyIdentityExtension::~PFKeyIdentityExtension()
 {
+}
+
+PFKeyIdentityExtension& PFKeyIdentityExtension::operator=(const PFKeyIdentityExtension &rhs)
+{
+	_type = rhs._type;
+	_id_type = rhs._id_type;
+	_id_num = rhs._id_num;
+	_id_string = rhs._id_string;
+
+	return *this;
 }
 
 int PFKeyIdentityExtension::Serialize(uint8_t *buff, size_t &len)

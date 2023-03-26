@@ -2,7 +2,8 @@
 
 AccessControlList::AccessControlList()
     : _config(nullptr),
-	  _arp_table(nullptr)
+	  _arp_table(nullptr),
+	  _ipsec_utils(nullptr)
 {
 }
 
@@ -27,4 +28,9 @@ void AccessControlList::SetConfiguration(IConfiguration* config)
 void AccessControlList::SetARPTable(IARPTable *arp_table)
 {
 	_arp_table = arp_table;
+}
+
+void AccessControlList::SetIPSecUtils(IIPSecUtils *ipsec)
+{
+	_ipsec_utils = ipsec;
 }

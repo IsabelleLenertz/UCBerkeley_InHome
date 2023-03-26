@@ -17,6 +17,10 @@ PFKeyMessageGet::PFKeyMessageGet()
 	  _src_id_present(false),
 	  _dst_id_present(false)
 {
+	memset(&_header, 0, sizeof(struct sadb_msg));
+	_header.sadb_msg_type = SADB_GET;
+	_header.sadb_msg_version = PF_KEY_V2;
+	_header.sadb_msg_satype = SADB_SATYPE_AH;
 }
 
 PFKeyMessageGet::~PFKeyMessageGet()
@@ -153,6 +157,9 @@ int PFKeyMessageGet::Serialize(uint8_t *buff, size_t &len)
 	// a 64-bit aligned length, so the final offset
 	// is guaranteed to be 64-bit aligned
 	_header_out->sadb_msg_len = offset / sizeof(uint64_t);
+
+	// Set length output
+	len = offset;
 
 	return NO_ERROR;
 }
@@ -299,44 +306,44 @@ int PFKeyMessageGet::Deserialize(const uint8_t *data, size_t len)
 	return NO_ERROR;
 }
 
-PFKeyAssociationExtension* PFKeyMessageGet::Association()
+PFKeyAssociationExtension& PFKeyMessageGet::Association()
 {
-	return &_assoc;
+	return _assoc;
 }
 
-PFKeyAddressExtension* PFKeyMessageGet::SourceAddress()
+PFKeyAddressExtension& PFKeyMessageGet::SourceAddress()
 {
-	return &_src;
+	return _src;
 }
 
-PFKeyAddressExtension* PFKeyMessageGet::DestinationAddress()
+PFKeyAddressExtension& PFKeyMessageGet::DestinationAddress()
 {
-	return &_dst;
+	return _dst;
 }
 
-PFKeyAddressExtension* PFKeyMessageGet::ProxyAddress()
+PFKeyAddressExtension& PFKeyMessageGet::ProxyAddress()
 {
-	return (_proxy_present) ? &_proxy : nullptr;
+	return _proxy;
 }
 
-PFKeyKeyExtension* PFKeyMessageGet::AuthKey()
+PFKeyKeyExtension& PFKeyMessageGet::AuthKey()
 {
-	return (_auth_key_present) ? &_auth_key : nullptr;
+	return _auth_key;
 }
 
-PFKeyKeyExtension* PFKeyMessageGet::EncryptKey()
+PFKeyKeyExtension& PFKeyMessageGet::EncryptKey()
 {
-	return (_encrypt_key_present) ? &_encrypt_key : nullptr;
+	return _encrypt_key;
 }
 
-PFKeyIdentityExtension* PFKeyMessageGet::SourceID()
+PFKeyIdentityExtension& PFKeyMessageGet::SourceID()
 {
-	return (_src_id_present) ? &_src_id : nullptr;
+	return _src_id;
 }
 
-PFKeyIdentityExtension* PFKeyMessageGet::DestinationID()
+PFKeyIdentityExtension& PFKeyMessageGet::DestinationID()
 {
-	return (_dst_id_present) ? &_dst_id : nullptr;
+	return _dst_id;
 }
 
 void PFKeyMessageGet::SetProxyAddressPresent(bool present)
@@ -362,4 +369,29 @@ void PFKeyMessageGet::SetSourceIDPresent(bool present)
 void PFKeyMessageGet::SetDestinationIDPresent(bool present)
 {
 	_dst_id_present = present;
+}
+
+bool PFKeyMessageGet::GetProxyAddressPresent()
+{
+	return _proxy_present;
+}
+
+bool PFKeyMessageGet::GetAuthKeyPresent()
+{
+	return _auth_key_present;
+}
+
+bool PFKeyMessageGet::GetEncryptKeyPresent()
+{
+	return _encrypt_key_present;
+}
+
+bool PFKeyMessageGet::GetSourceIDPresent()
+{
+	return _src_id_present;
+}
+
+bool PFKeyMessageGet::GetDestinationIDPresent()
+{
+	return _dst_id_present;
 }

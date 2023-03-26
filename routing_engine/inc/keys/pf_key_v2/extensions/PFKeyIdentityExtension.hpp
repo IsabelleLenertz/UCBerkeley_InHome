@@ -8,7 +8,10 @@ class PFKeyIdentityExtension : public IPFKeyExtension
 {
 public:
 	PFKeyIdentityExtension();
+	// PFKeyIdentityExtension(const PFKeyIdentityExtension &rhs);
 	~PFKeyIdentityExtension() override;
+
+	PFKeyIdentityExtension& operator=(const PFKeyIdentityExtension &rhs);
 
 	int Serialize(uint8_t *buff, size_t &len);
 	int Deserialize(const uint8_t *data, size_t &len);

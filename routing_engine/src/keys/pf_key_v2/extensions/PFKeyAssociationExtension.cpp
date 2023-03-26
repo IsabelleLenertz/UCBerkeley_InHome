@@ -14,8 +14,22 @@ PFKeyAssociationExtension::PFKeyAssociationExtension()
 	_sa.sadb_sa_flags = 0;
 }
 
+/*
+PFKeyAssociationExtension::PFKeyAssociationExtension(const PFKeyAssociationExtension &rhs)
+{
+	_sa = rhs._sa;
+}
+*/
+
 PFKeyAssociationExtension::~PFKeyAssociationExtension()
 {
+}
+
+PFKeyAssociationExtension& PFKeyAssociationExtension::operator=(const PFKeyAssociationExtension &rhs)
+{
+	_sa = rhs._sa;
+
+	return *this;
 }
 
 int PFKeyAssociationExtension::Serialize(uint8_t *buff, size_t &len)

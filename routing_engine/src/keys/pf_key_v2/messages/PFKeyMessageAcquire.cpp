@@ -2,6 +2,8 @@
 #include <cstring>
 #include "status/error_codes.hpp"
 
+#include "logging/Logger.hpp"
+
 PFKeyMessageAcquire::PFKeyMessageAcquire()
 	: _src(),
 	  _dst(),
@@ -12,6 +14,14 @@ PFKeyMessageAcquire::PFKeyMessageAcquire()
 	  _proxy_present(false),
 	  _src_id_present(false),
 	  _dst_id_present(false)
+{
+	memset(&_header, 0, sizeof(struct sadb_msg));
+	_header.sadb_msg_type = SADB_ACQUIRE;
+	_header.sadb_msg_version = PF_KEY_V2;
+	_header.sadb_msg_satype = SADB_SATYPE_AH;
+}
+
+PFKeyMessageAcquire::PFKeyMessageAcquire(const PFKeyMessageAcquire &rhs)
 {
 }
 
@@ -60,6 +70,7 @@ int PFKeyMessageAcquire::Serialize(uint8_t *buff, size_t &len)
 	status = _src.Serialize(buff + offset, ext_len);
 	if (status != NO_ERROR)
 	{
+		Logger::Log(LOG_ERROR, "Malformed source");
 		return status;
 	}
 	offset += ext_len;
@@ -69,6 +80,7 @@ int PFKeyMessageAcquire::Serialize(uint8_t *buff, size_t &len)
 	status = _dst.Serialize(buff + offset, ext_len);
 	if (status != NO_ERROR)
 	{
+		Logger::Log(LOG_ERROR, "Malformed destination");
 		return status;
 	}
 	offset += ext_len;
@@ -80,6 +92,7 @@ int PFKeyMessageAcquire::Serialize(uint8_t *buff, size_t &len)
 		status = _proxy.Serialize(buff + offset, ext_len);
 		if (status != NO_ERROR)
 		{
+			Logger::Log(LOG_ERROR, "Malformed proxy");
 			return status;
 		}
 		offset += ext_len;
@@ -92,6 +105,7 @@ int PFKeyMessageAcquire::Serialize(uint8_t *buff, size_t &len)
 		status = _src_id.Serialize(buff + offset, ext_len);
 		if (status != NO_ERROR)
 		{
+			Logger::Log(LOG_ERROR, "Malformed source ID");
 			return status;
 		}
 		offset += ext_len;
@@ -104,6 +118,7 @@ int PFKeyMessageAcquire::Serialize(uint8_t *buff, size_t &len)
 		status = _dst_id.Serialize(buff + offset, ext_len);
 		if (status != NO_ERROR)
 		{
+			Logger::Log(LOG_ERROR, "Malformed destination ID");
 			return status;
 		}
 		offset += ext_len;
@@ -114,6 +129,7 @@ int PFKeyMessageAcquire::Serialize(uint8_t *buff, size_t &len)
 	status = _proposal.Serialize(buff + offset, ext_len);
 	if (status != NO_ERROR)
 	{
+		Logger::Log(LOG_ERROR, "Malformed proposal");
 		return status;
 	}
 	offset += ext_len;
@@ -123,6 +139,14 @@ int PFKeyMessageAcquire::Serialize(uint8_t *buff, size_t &len)
 	// a 64-bit aligned length, so the final offset
 	// is guaranteed to be 64-bit aligned
 	_header_out->sadb_msg_len = offset / sizeof(uint64_t);
+
+	// TEST
+	_header_out->sadb_msg_len = sizeof(sadb_msg) / 8;
+
+	// Set length output
+	len = offset;
+
+	PrintInfo();
 
 	return NO_ERROR;
 }
@@ -240,43 +264,39 @@ int PFKeyMessageAcquire::Deserialize(const uint8_t *data, size_t len)
 		offset += ext->sadb_ext_len * sizeof(uint64_t);
 	}
 
-	// Check for required extensions
-	if (!_src_present || !_dst_present || !_proposal_present)
-	{
-		return PF_KEY_ERROR_MISSING_EXTENSION;
-	}
+	PrintInfo();
 
 	return NO_ERROR;
 }
 
-PFKeyAddressExtension* PFKeyMessageAcquire::SourceAddress()
+PFKeyAddressExtension& PFKeyMessageAcquire::SourceAddress()
 {
-	return &_src;
+	return _src;
 }
 
-PFKeyAddressExtension* PFKeyMessageAcquire::DestinationAddress()
+PFKeyAddressExtension& PFKeyMessageAcquire::DestinationAddress()
 {
-	return &_dst;
+	return _dst;
 }
 
-PFKeyAddressExtension* PFKeyMessageAcquire::ProxyAddress()
+PFKeyAddressExtension& PFKeyMessageAcquire::ProxyAddress()
 {
-	return (_proxy_present) ? &_proxy : nullptr;
+	return _proxy;
 }
 
-PFKeyIdentityExtension* PFKeyMessageAcquire::SourceID()
+PFKeyIdentityExtension& PFKeyMessageAcquire::SourceID()
 {
-	return (_src_id_present) ? &_src_id : nullptr;
+	return _src_id;
 }
 
-PFKeyIdentityExtension* PFKeyMessageAcquire::DestinationID()
+PFKeyIdentityExtension& PFKeyMessageAcquire::DestinationID()
 {
-	return (_dst_id_present) ? &_dst_id : nullptr;
+	return _dst_id;
 }
 
-PFKeyProposalExtension* PFKeyMessageAcquire::Proposal()
+PFKeyProposalExtension& PFKeyMessageAcquire::Proposal()
 {
-	return &_proposal;
+	return _proposal;
 }
 
 void PFKeyMessageAcquire::SetProxyAddressPresent(bool present)
@@ -292,4 +312,65 @@ void PFKeyMessageAcquire::SetSourceIDPresent(bool present)
 void PFKeyMessageAcquire::SetDestinationIDPresent(bool present)
 {
 	_dst_id_present = present;
+}
+
+bool PFKeyMessageAcquire::GetProxyAddressPresent()
+{
+	return _proxy_present;
+}
+
+bool PFKeyMessageAcquire::GetSourceIDPresent()
+{
+	return _src_id_present;
+}
+
+bool PFKeyMessageAcquire::GetDestinationIDPresent()
+{
+	return _dst_id_present;
+}
+
+void PFKeyMessageAcquire::PrintInfo()
+{
+	std::stringstream sstream;
+
+	sstream.str("");
+	sstream << "SA Type: " << +_header.sadb_msg_satype;
+	Logger::Log(LOG_VERBOSE, sstream.str());
+
+	sstream.str("");
+	sstream << "Sequence number: " << _header.sadb_msg_seq;
+	Logger::Log(LOG_VERBOSE, sstream.str());
+
+	sstream.str("");
+	sstream << "PID: " << _header.sadb_msg_pid;
+	Logger::Log(LOG_VERBOSE, sstream.str());
+
+	sstream.str("");
+	sstream << "Source Address: " << Logger::IPToString(_src.GetAddress()) << "/" << +_src.GetPrefixLength() << " (" << +_src.GetProtocol() << ")";
+	Logger::Log(LOG_VERBOSE, sstream.str());
+
+	sstream.str("");
+	sstream << "Destination Address: " << Logger::IPToString(_dst.GetAddress()) << "/" << +_dst.GetPrefixLength() << " (" << +_dst.GetProtocol() << ")";
+	Logger::Log(LOG_VERBOSE, sstream.str());
+
+	if (_proxy_present)
+	{
+		sstream.str("");
+		sstream << "Proxy Address: " << Logger::IPToString(_proxy.GetAddress()) << "/" << +_proxy.GetPrefixLength() << " (" << +_proxy.GetProtocol() << ")";
+		Logger::Log(LOG_VERBOSE, sstream.str());
+	}
+
+	if (_src_id_present)
+	{
+		sstream.str("");
+		sstream << "Source ID: " << _src_id.GetIDString() << " (" << _src_id.GetIDNumber() << ")";
+		Logger::Log(LOG_VERBOSE, sstream.str());
+	}
+
+	if (_dst_id_present)
+	{
+		sstream.str("");
+		sstream << "Source ID: " << _dst_id.GetIDString() << " (" << _dst_id.GetIDNumber() << ")";
+		Logger::Log(LOG_VERBOSE, sstream.str());
+	}
 }

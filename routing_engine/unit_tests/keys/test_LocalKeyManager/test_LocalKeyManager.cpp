@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include "keys/LocalKeyManager.hpp"
 
-TEST(test_LocalKeyManager, test_StoreRecallSPI)
+TEST(test_LocalKeyManager, test_StoreRecall)
 {
 	LocalKeyManager key_manager;
 
@@ -39,52 +39,7 @@ TEST(test_LocalKeyManager, test_StoreRecallSPI)
 	// Get key 2
 	uint8_t key_result[KEY_LEN];
 	size_t keylen_result;
-	int status = key_manager.GetKey(200, key_result, keylen_result);
-
-	ASSERT_EQ(0, status);
-	ASSERT_EQ(KEY_LEN, keylen_result);
-	ASSERT_EQ(0, memcmp(key2, key_result, KEY_LEN));
-}
-
-TEST(test_LocalKeyManager, test_StoreRecallSrcDst)
-{
-	LocalKeyManager key_manager;
-
-	struct sockaddr_in addr1;
-	addr1.sin_family = AF_INET;
-	addr1.sin_port = 0;
-	inet_pton(AF_INET, "192.168.0.1", &addr1.sin_addr);
-	struct sockaddr &_addr1 = reinterpret_cast<struct sockaddr&>(addr1);
-
-	struct sockaddr_in addr2;
-	addr2.sin_family = AF_INET;
-	addr2.sin_port = 0;
-	inet_pton(AF_INET, "192.168.0.2", &addr2.sin_addr);
-	struct sockaddr &_addr2 = reinterpret_cast<struct sockaddr&>(addr2);
-
-	size_t KEY_LEN = 64;
-	const uint8_t key1[KEY_LEN] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
-                                   0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10,
-                                   0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
-                                   0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10,
-                                   0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
-                                   0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10,
-                                   0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
-                                   0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10};
-	const uint8_t key2[KEY_LEN] = {0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
-                                   0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20,
-                                   0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
-                                   0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20,
-                                   0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
-                                   0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20};
-
-	key_manager.AddKey(100, _addr1, _addr2, key1, KEY_LEN);
-	key_manager.AddKey(200, _addr2, _addr1, key2, KEY_LEN);
-
-	// Get key 2
-	uint8_t key_result[KEY_LEN];
-	size_t keylen_result;
-	int status = key_manager.GetKey(_addr2, _addr1, key_result, keylen_result);
+	int status = key_manager.GetKey(200, _addr2, _addr1, key_result, keylen_result);
 
 	ASSERT_EQ(0, status);
 	ASSERT_EQ(KEY_LEN, keylen_result);

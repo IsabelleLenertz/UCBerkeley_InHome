@@ -6,6 +6,7 @@
 #include "arp/IARPTable.hpp"
 #include "config/IConfiguration.hpp"
 #include "layer3/IIPPacket.hpp"
+#include "ipsec/IIPSecUtils.hpp"
 
 /// <summary>
 /// Generic interface for access control modules.
@@ -19,6 +20,8 @@
 class IAccessControlModule
 {
 public:
+	virtual ~IAccessControlModule() {};
+
     /// <summary>
     /// Given an IP packet, makes an authorization
     /// decision based on the module's configuration
@@ -47,6 +50,11 @@ public:
     /// resolve layer3 addresses to layer 2 addresses
     /// </summary>
     virtual void SetARPTable(IARPTable *arp_table) = 0;
+
+    /// <summary>
+    /// Sets a pointer to the IPsec utils objects
+    /// </summary>
+    virtual void SetIPSecUtils(IIPSecUtils *ipsec) = 0;
 };
 
 #endif
