@@ -2,7 +2,7 @@ TARGET_EXEC := route_test
 
 BUILD_DIR := ./build
 SRC_DIRS := ./src
-LDLIBS := -lpcap
+LDLIBS := -lpcap -lcrypto
 
 SRCS := $(shell find $(SRC_DIRS) -name '*.cpp' -or -name '*.c')
 
