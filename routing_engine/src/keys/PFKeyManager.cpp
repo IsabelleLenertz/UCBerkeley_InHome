@@ -69,6 +69,11 @@ int PFKeyManager::GetKey(uint32_t spi, const struct sockaddr &src, const struct 
 	return PF_KEY_ERROR_KEY_NOT_FOUND;
 }
 
+int PFKeyManager::GetSPI(const sockaddr &src, const sockaddr &dst, uint32_t &spi)
+{
+	return ERROR_UNSET;
+}
+
 void PFKeyManager::RemoveClosedSAs()
 {
 	std::scoped_lock lock {_db_mutex};
@@ -560,4 +565,17 @@ void PFKeyManager::_derive_gateway(const struct sockaddr &host_ip, struct sockad
 	}
 
 	IPUtils::GetFirstHostIP(host_ip, reinterpret_cast<struct sockaddr&>(netmask), gateway);
+}
+
+int PFKeyManager::GetReplayContext(uint32_t spi, const sockaddr &src, const sockaddr &dst, uint32_t &right, uint32_t *map)
+{
+	// Not implemented
+	return ERROR_UNSET;
+}
+
+
+int PFKeyManager::MarkSequenceNumber(uint32_t spi, const sockaddr &src, const sockaddr &dst, uint32_t seq_num)
+{
+	// Not implemented
+	return ERROR_UNSET;
 }

@@ -59,7 +59,7 @@ ILayer2Interface* LocalRoutingTable::GetInterface(const struct sockaddr &ip_addr
                         char ip_str[64];
                         inet_ntop(AF_INET, &_local_ip.sin_addr, ip_str, 64);
                         std::stringstream sstream;
-                        sstream << "Local IP: " << ip_str;
+                        sstream << "(LocalRoutingTable) Local IP: " << ip_str;
                         Logger::Log(LOG_DEBUG, sstream.str());
 
                     	break;

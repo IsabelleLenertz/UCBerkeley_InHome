@@ -105,6 +105,6 @@ TEST(test_LocalIPSecUtils, test_ValidateAuthHeader)
 	std::cout << Logger::BytesToString(buffer, ip_len);
 	std::cout << "---------------------------" << std::endl;
 
-	bool result = ipsec_utils.ValidateAuthHeader(reinterpret_cast<IIPPacket*>(&pkt));
-	ASSERT_EQ(true, result);
+	int result = ipsec_utils.ValidateAuthHeader(reinterpret_cast<IIPPacket*>(&pkt));
+	ASSERT_EQ(0, result);
 }

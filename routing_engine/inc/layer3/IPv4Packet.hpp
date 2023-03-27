@@ -291,6 +291,14 @@ public:
     
     void SetData(const uint8_t *data_in, size_t len);
 
+    bool GetIsFromDefaultInterface();
+
+    bool GetIsToDefaultInterface();
+
+    void SetIsFromDefaultInterface(bool flag);
+
+    void SetIsToDefaultInterface(bool flag);
+
 private:
     uint8_t _tos;
     
@@ -310,6 +318,9 @@ private:
     
     const int MIN_HEADER_SIZE_BYTES = 20; // 5 words
     const int MAX_HEADER_SIZE_BYTES = 60; // 15 words
+
+    bool _from_default_if;
+    bool _to_default_if;
 };
 
 #endif

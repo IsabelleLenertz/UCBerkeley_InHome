@@ -14,7 +14,15 @@ MessageAuthentication::~MessageAuthentication()
 
 bool MessageAuthentication::IsAllowed(IIPPacket *packet)
 {
-	return _ipsec_utils->ValidateAuthHeader(packet);
+	// Internet-bound or -originating traffic does not require authentication headers
+	if (packet->GetIsFromDefaultInterface() || packet->GetIsToDefaultInterface())
+	{
+		Logger::Log(LOG_DEBUG, "Authentication not required");
+		return true;
+	}
+
+	Logger::Log(LOG_DEBUG, "Authenticating Message...");
+	return (_ipsec_utils->ValidateAuthHeader(packet) == NO_ERROR);
 }
 
 void MessageAuthentication::SetConfiguration(IConfiguration* config)

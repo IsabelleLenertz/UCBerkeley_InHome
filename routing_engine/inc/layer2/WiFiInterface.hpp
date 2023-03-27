@@ -30,6 +30,7 @@ public:
     void SetIPAddressQueryMethod(IPOwnershipQuery method);
 
     void SetAsDefault();
+    bool GetIsDefault();
 
 private:
     std::string _if_name;

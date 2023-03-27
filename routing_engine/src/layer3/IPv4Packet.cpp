@@ -4,6 +4,8 @@
 #include <arpa/inet.h>
 #include <cstring>
 
+#include "logging/Logger.hpp"
+
 IPv4Packet::IPv4Packet()
     : _tos(0),
       _stream_id(0),
@@ -64,12 +66,14 @@ int IPv4Packet::GetIPVersion()
 
 int IPv4Packet::Deserialize(const uint8_t *buff, uint16_t len)
 {
+	std::stringstream sstream;
     const uint8_t *ptr = buff;
     uint32_t tmp;
     
     // If the first word can't be formed, return overflow error
     if (len < sizeof(uint32_t))
     {
+    	Logger::Log(LOG_ERROR, "Could not form first word");
         return IPV4_ERROR_OVERFLOW;
     }
     
@@ -99,6 +103,9 @@ int IPv4Packet::Deserialize(const uint8_t *buff, uint16_t len)
     // for specified total length
     if (len < total_len)
     {
+    	sstream.str("");
+    	sstream << "Length " << len << " is less than stated length: " << total_len;
+    	Logger::Log(LOG_ERROR, sstream.str());
         return IPV4_ERROR_OVERFLOW;
     }
     
@@ -500,4 +507,24 @@ size_t IPv4Packet::GetData(const uint8_t* &data_out)
 {
     data_out = _data.data();
     return _data.size();
+}
+
+bool IPv4Packet::GetIsFromDefaultInterface()
+{
+	return _from_default_if;
+}
+
+bool IPv4Packet::GetIsToDefaultInterface()
+{
+	return _to_default_if;
+}
+
+void IPv4Packet::SetIsFromDefaultInterface(bool flag)
+{
+	_from_default_if = flag;
+}
+
+void IPv4Packet::SetIsToDefaultInterface(bool flag)
+{
+	_to_default_if = flag;
 }

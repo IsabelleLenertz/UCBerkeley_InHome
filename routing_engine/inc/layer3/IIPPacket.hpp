@@ -99,6 +99,42 @@ public:
     /// </summary>
     /// <param name="addr">Destination address</param>
     virtual void SetDestinationAddress(const struct sockaddr& addr) = 0;
+
+    /// <summary>
+    /// Gets a flag indicating whether this packet was
+    /// received on the default interface (that is, the
+    /// default interface is the ingress interface)
+    /// </summary>
+    /// <returns>True if from default interface</returns>
+    /// <remarks>
+    /// Some access control decisions are based on whether
+    /// a packet is destined for or arrived from the internet
+    /// </remarks>
+    virtual bool GetIsFromDefaultInterface() = 0;
+
+    /// <summary>
+    /// Gets a flag indicating whether this packet is
+    /// destined for the default interface (that is, the
+    /// default interface is the egress interface)
+    /// </summary>
+    /// <returns>True if going to default interface</returns>
+    virtual bool GetIsToDefaultInterface() = 0;
+
+    /// <summary>
+    /// Sets a flag indicating whether this packet was
+    /// received on the default interface (that is, the
+    /// default interface is the ingress interface)
+    /// </summary>
+    /// <param name="flag">True if from default interface</param>
+    virtual void SetIsFromDefaultInterface(bool flag) = 0;
+
+    /// <summary>
+    /// Sets a flag indicating whether this packet is
+    /// destined for the default interface (that is, the
+    /// default interface is the egress interface)
+    /// </summary>
+    /// <param name="flag">True if from default interface</param>
+    virtual void SetIsToDefaultInterface(bool flag) = 0;
 };
 
 #endif

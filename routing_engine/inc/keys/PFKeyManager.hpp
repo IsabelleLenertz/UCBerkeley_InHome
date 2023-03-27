@@ -19,6 +19,15 @@ public:
 	PFKeyManager();
 	~PFKeyManager() override;
 
+	int GetKey(uint32_t spi, const struct sockaddr &src, const struct sockaddr &dst, uint8_t *key, size_t &keylen);
+	int GetSPI(const sockaddr &src, const sockaddr &dst, uint32_t &spi);
+	int GetReplayContext(uint32_t spi, const sockaddr &src, const sockaddr &dst, uint32_t &right, uint32_t *map);
+	int MarkSequenceNumber(uint32_t spi, const sockaddr &src, const sockaddr &dst, uint32_t seq_num);
+
+	int SendMessage(PFKeyMessageBase *msg);
+	int ReceiveMessage(PFKeyMessageBase *msg);
+	uint32_t GetUniqueSeqNum();
+
 	/// <summary>
 	/// Adds a new host
 	/// </summary>
@@ -37,11 +46,6 @@ public:
 	/// Removes any SAs which are in the "Closed" state
 	/// </summary>
 	void RemoveClosedSAs();
-
-	int GetKey(uint32_t spi, const struct sockaddr &src, const struct sockaddr &dst, uint8_t *key, size_t &keylen);
-	int SendMessage(PFKeyMessageBase *msg);
-	int ReceiveMessage(PFKeyMessageBase *msg);
-	uint32_t GetUniqueSeqNum();
 
 	/// <summary>
 	/// Opens the PF Key socket and

@@ -145,6 +145,10 @@ int NAPTTable::TranslateToExternal(IIPPacket *packet, const struct sockaddr &ext
 				}
 			}
 
+			// Print the created mapping
+			std::stringstream sstream;
+			sstream << "Created mapping: " << Logger::IPToString(packet->GetSourceAddress()) << " to " << Logger::IPToString(reinterpret_cast<struct sockaddr&>(mapped_addr->addr)) << ":" << mapped_addr->identifier;
+
 			// At this point, mapped_addr is guaranteed to point to
 			// a valid mapping. Apply the mapping.
 			icmp.SetID(mapped_addr->identifier);

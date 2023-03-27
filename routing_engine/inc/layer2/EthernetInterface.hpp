@@ -36,6 +36,7 @@ public:
     void SetIPAddressQueryMethod(IPOwnershipQuery method);
     
     void SetAsDefault();
+    bool GetIsDefault();
 
     static constexpr struct ether_addr BROADCAST_MAC {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
     static constexpr struct ether_addr BLANK_MAC {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};

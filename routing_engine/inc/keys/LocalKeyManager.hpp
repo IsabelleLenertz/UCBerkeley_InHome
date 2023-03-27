@@ -9,6 +9,8 @@ typedef struct
 	uint32_t spi;
 	sockaddr_storage src;
 	sockaddr_storage dst;
+	uint32_t replay_right; // Sequence number at right side of replay window
+	uint32_t replay_map; // Bitmap of last 32 sequence numbers (LSB is lowest seq num)
 	std::vector<uint8_t> key;
 } key_entry_t;
 
@@ -19,6 +21,12 @@ public:
 	~LocalKeyManager() override;
 
 	int GetKey(uint32_t spi, const sockaddr &src, const sockaddr &dst, uint8_t *key, size_t &keylen);
+
+	int GetSPI(const sockaddr &src, const sockaddr &dst, uint32_t &spi);
+
+	int GetReplayContext(uint32_t spi, const sockaddr &src, const sockaddr &dst, uint32_t &right, uint32_t &map);
+
+	int MarkSequenceNumber(uint32_t spi, const sockaddr &src, const sockaddr &dst, uint32_t seq_num);
 
 	/// <summary>
 	/// Adds a key to the key management database

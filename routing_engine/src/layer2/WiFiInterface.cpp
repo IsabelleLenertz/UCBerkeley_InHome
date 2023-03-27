@@ -53,3 +53,8 @@ void WiFiInterface::SetAsDefault()
 {
 	_is_default = true;
 }
+
+bool WiFiInterface::GetIsDefault()
+{
+	return _is_default;
+}

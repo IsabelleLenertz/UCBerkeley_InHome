@@ -136,6 +136,12 @@ public:
     /// Sets this interface as the default (internet-facing) interface
     /// </summary>
     virtual void SetAsDefault() = 0;
+
+    /// <summary>
+    /// Returns true if this is the default interface
+    /// </summary>
+    /// <returns>True if default</returns>
+    virtual bool GetIsDefault() = 0;
 };
 
 #endif

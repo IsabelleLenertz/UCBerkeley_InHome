@@ -12,8 +12,27 @@ public:
 	/// header
 	/// </summary>
 	/// <param name="pkt">IP packet</param>
-	/// <returns>True if valid, false otherwise</returns>
-	virtual bool ValidateAuthHeader(IIPPacket *pkt) = 0;
+	/// <returns>Error code</returns>
+	virtual int ValidateAuthHeader(IIPPacket *pkt) = 0;
+
+	/// <summary>
+	/// Validates whether the sequence number in
+	/// an IP packet is valid based on the current
+	/// replay context. If the sequence number is
+	/// valid, updates the replay context accordingly
+	/// </summary>
+	/// <param name="pkt">IP packet</param>
+	/// <returns>Error code</returns>
+	virtual int ValidateAuthHeaderSeqNum(IIPPacket *pkt) = 0;
+
+	/// <summary>
+	/// Transforms the authentication header contained
+	/// in a packet to use the security association
+	/// between the gateway and the destination
+	/// </summary>
+	/// <param name="pkt">IP packet</param>
+	/// <returns>Error Code</returns>
+	virtual int TransformAuthHeader(IIPPacket *pkt) = 0;
 
 	/// <summary>
 	/// Calculates the value of the ICV

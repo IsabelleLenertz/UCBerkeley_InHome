@@ -5,6 +5,7 @@
 #include "access_control/CentralAccessControl.hpp"
 #include "access_control/NullAccessControl.hpp"
 #include "access_control/MessageAuthentication.hpp"
+#include "access_control/ReplayDetection.hpp"
 #include "arp/LocalARPTable.hpp"
 #include "concurrency/ConcurrentQueue.hpp"
 #include "config/LocalConfiguration.hpp"
@@ -91,6 +92,7 @@ private:
     AccessControlList _access_list;
     NullAccessControl _null_access;
     MessageAuthentication _message_auth;
+    ReplayDetection _replay_detect;
     
     // IPSec Utils
     LocalIPSecUtils _ipsec_utils;

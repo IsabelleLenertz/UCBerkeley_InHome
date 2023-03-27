@@ -595,3 +595,8 @@ void EthernetInterface::SetAsDefault()
 {
 	_is_default = true;
 }
+
+bool EthernetInterface::GetIsDefault()
+{
+	return _is_default;
+}

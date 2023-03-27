@@ -6,6 +6,7 @@
 #include "layer3/IRoutingTable.hpp"
 #include "layer3/IIPPacket.hpp"
 #include "nat/NAPTTable.hpp"
+#include "ipsec/IIPSecUtils.hpp"
 
 #include <functional>
 
@@ -30,7 +31,7 @@ class InterfaceManager
 public:
     static const int SEND_BUFFER_SIZE = 4096;
 
-    InterfaceManager(IARPTable *arp_table, IRoutingTable *ip_rte_table, NAPTTable *napt_table);
+    InterfaceManager(IARPTable *arp_table, IRoutingTable *ip_rte_table, NAPTTable *napt_table, IIPSecUtils* ipsec_utils);
     ~InterfaceManager();
     
     /// <summary>
@@ -140,6 +141,7 @@ private:
     IARPTable *_arp_table;
     IRoutingTable *_ip_rte_table;
     NAPTTable *_napt_table;
+    IIPSecUtils *_ipsec_utils;
     Layer3ReceiveCallback _callback;
     uint8_t _send_buff[SEND_BUFFER_SIZE];
     struct sockaddr_in _v4_gateway;

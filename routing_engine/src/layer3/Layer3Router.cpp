@@ -15,7 +15,8 @@
 #include "keys/KeyUtils.hpp"
 
 Layer3Router::Layer3Router()
-    : _if_manager(&_arp_table, &_ip_rte_table, &_napt_table),
+    : _ipsec_utils(&_key_manager),
+	  _if_manager(&_arp_table, &_ip_rte_table, &_napt_table, &_ipsec_utils),
 #ifndef USE_LOCAL_CONFIG
       _config((uint16_t)3306),
 #else
@@ -24,8 +25,7 @@ Layer3Router::Layer3Router()
       _access_control(),
       _rcv_queue(),
       _exiting(false),
-	  _key_manager(),
-	  _ipsec_utils(&_key_manager)
+	  _key_manager()
 {
 }
 
@@ -106,61 +106,63 @@ int Layer3Router::Initialize()
     struct sockaddr_in src;
     src.sin_family = AF_INET;
     src.sin_port = 0;
-    inet_pton(AF_INET, "192.168.1.2", &src.sin_addr);
     struct sockaddr_in dst;
     dst.sin_family = AF_INET;
     dst.sin_port = 0;
-    inet_pton(AF_INET, "192.168.1.1", &dst.sin_addr);
 
     const std::string device1key = "0ea5f191085596967637d4de154178728a0c8ad237592738f479b56d265ff716";
+    const std::string device2key = "d6a0d1a78a97289b32e607f49f5d2c45a389b7b387808897e8ee568326bb8955";
 
     const size_t KEY_LEN = 32;
     uint8_t key[KEY_LEN];
 
+    // Device 1
     KeyUtils::FromHexString(device1key, key, KEY_LEN);
-
-    sstream.str("");
-    sstream << std::endl << "---------------- Key Data ----------------" << std::endl;
-    sstream << Logger::BytesToString(key, KEY_LEN);
-    sstream << std::endl << "------------------------------------------";
-    Logger::Log(LOG_DEBUG, sstream.str());
-
+    inet_pton(AF_INET, "192.168.1.2", &src.sin_addr);
+    inet_pton(AF_INET, "192.168.1.1", &dst.sin_addr);
     _key_manager.AddKey(1000, reinterpret_cast<struct sockaddr&>(src), reinterpret_cast<struct sockaddr&>(dst), key, KEY_LEN);
     _key_manager.AddKey(1001, reinterpret_cast<struct sockaddr&>(dst), reinterpret_cast<struct sockaddr&>(src), key, KEY_LEN);
+
+    // Device 2
+    KeyUtils::FromHexString(device2key, key, KEY_LEN);
+    inet_pton(AF_INET, "192.168.1.6", &src.sin_addr);
+    inet_pton(AF_INET, "192.168.1.5", &dst.sin_addr);
+    _key_manager.AddKey(2000, reinterpret_cast<struct sockaddr&>(src), reinterpret_cast<struct sockaddr&>(dst), key, KEY_LEN);
+    _key_manager.AddKey(2001, reinterpret_cast<struct sockaddr&>(dst), reinterpret_cast<struct sockaddr&>(src), key, KEY_LEN);
 
 #endif
 
     ////////////////////////////////
     //////// Access Control ////////
     ////////////////////////////////
-    sstream.str("");
-    sstream << "IPSecUtils at: " << (uintptr_t)&_ipsec_utils;
-    Logger::Log(LOG_DEBUG, sstream.str());
-
     // Associate configuration module
     // with each access control module
     _access_control.SetConfiguration((IConfiguration*)&_config);
     _null_access.SetConfiguration((IConfiguration*)&_config);
     _access_list.SetConfiguration((IConfiguration*)&_config);
     _message_auth.SetConfiguration((IConfiguration*)&_config);
+    _replay_detect.SetConfiguration((IConfiguration*)&_config);
 
     // Associate ARP table
     // with each access control module
     _access_control.SetARPTable((IARPTable*)&_arp_table);
     _null_access.SetARPTable((IARPTable*)&_arp_table);
     _access_list.SetARPTable((IARPTable*)&_arp_table);
-    _message_auth.SetConfiguration((IConfiguration*)&_config);
+    _message_auth.SetARPTable((IARPTable*)&_arp_table);
+    _replay_detect.SetARPTable((IARPTable*)&_arp_table);
 
     // Associate IPsec Utils
     _access_control.SetIPSecUtils((IIPSecUtils*)&_ipsec_utils);
     _null_access.SetIPSecUtils((IIPSecUtils*)&_ipsec_utils);
     _access_list.SetIPSecUtils((IIPSecUtils*)&_ipsec_utils);
     _message_auth.SetIPSecUtils((IIPSecUtils*)&_ipsec_utils);
+    _replay_detect.SetIPSecUtils((IIPSecUtils*)&_ipsec_utils);
 
     // Add submodules to central module
     _access_control.AddModule((IAccessControlModule*)&_null_access);
-    _access_control.AddModule((IAccessControlModule*)&_message_auth);
     //_access_control.AddModule((IAccessControlModule*)&_access_list);
+    _access_control.AddModule((IAccessControlModule*)&_replay_detect);
+    _access_control.AddModule((IAccessControlModule*)&_message_auth);
 
     ////////////////////////////////
     /////// Static ACL Setup ///////
@@ -196,6 +198,7 @@ int Layer3Router::Initialize()
 
 void Layer3Router::MainLoop()
 {
+	std::stringstream sstream;
     while (!_exiting)
     {
         // Check for changes in configuration
@@ -210,6 +213,10 @@ void Layer3Router::MainLoop()
         // Check for data in receive queue
         if (!_rcv_queue.IsEmpty())
         {
+        	sstream.str("");
+        	sstream << "Dequeuing message. " << _rcv_queue.Size() << " messages in queue.";
+        	Logger::Log(LOG_DEBUG, sstream.str());
+
             // Get data from queue
         	IIPPacket *pkt;
             _rcv_queue.Dequeue(pkt);
@@ -231,15 +238,24 @@ void Layer3Router::_receive_packet(IIPPacket *packet)
 
 void Layer3Router::_process_packet(IIPPacket *packet)
 {
+    std::stringstream sstream;
     if (packet == nullptr)
     {
     	Logger::Log(LOG_WARNING, "Unexpected nullptr found in layer3 receive queue");
         return;
     }
-    std::stringstream sstream;
     
+    struct sockaddr_storage local_ip;
+    ILayer2Interface *_if = _ip_rte_table.GetInterface(packet->GetDestinationAddress(), local_ip);
+    if (_if == nullptr) // Null return value means use default interface
+    {
+    	packet->SetIsToDefaultInterface(true);
+    }
+
     // Consult Access Control Modules
     bool allowed = _access_control.IsAllowed(packet);
+    sstream << "Allowed: " << ((allowed) ? "yes" : "no");
+    Logger::Log(LOG_DEBUG, sstream.str());
     
     if (allowed)
     {
