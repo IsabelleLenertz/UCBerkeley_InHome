@@ -1,5 +1,8 @@
 #include "config/MySQLConfiguration.hpp"
 
+#include <cstring>
+#include <chrono>
+
 const std::string MySQLConfiguration::HOST = "localhost";
 const std::string MySQLConfiguration::USER = "root";
 const std::string MySQLConfiguration::PASSWORD = "password";
@@ -9,9 +12,14 @@ const std::string MySQLConfiguration::REVISION_DATE = "revisionDate DESC";
 const std::string MySQLConfiguration::REVISION_TABLE = "revision";
 const std::string MySQLConfiguration::POLICY_TABLE = "policies";
 const std::string MySQLConfiguration::DEVICE_TABLE = "devices";
+const std::string MySQLConfiguration::ALL = "*";
 
 MySQLConfiguration::MySQLConfiguration(uint16_t port)
-    : _port(port)
+    : _port(port), mySession(mysqlx::SessionOption::HOST, HOST,
+                             mysqlx::SessionOption::PORT, 33060,
+                             mysqlx::SessionOption::USER, USER,
+                             mysqlx::SessionOption::PWD, PASSWORD),
+     updateThread(&MySQLConfiguration::UpdateThread, this)
 {
     UpdateLocal();
 }
@@ -38,13 +46,30 @@ int MySQLConfiguration::LatestRevision()
     return row.get(REVISION_ID_COL);
 }
 
+void MySQLConfiguration::UpdateThread(void)
+{
+    while (true)
+    {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        if (LocalIsOutdated()) {
+            UpdateLocal();
+
+                    /// PRINT TO DEBUG?
+
+        }
+    }
+}
+
 void MySQLConfiguration::UpdateLocal()
 {
     // update cached set of policies
-    mysql::RowResult result = mySession.getSchema(DATABASE).getTable(DEVICE_TABLE)
+    revisionId = LatestRevision();
+    mysqlx::RowResult result = mySession.getSchema(DATABASE).getTable(DEVICE_TABLE)
             .select(ALL)
             .execute();
-      for(auto& row : rows) {
+    
+    std::unique_ptr<std::unordered_map<ether_addr, sockaddr_in>> readDevices;
+    for(const auto& row : result) {
         sockaddr_in sock;  
         sock.sin_family = AF_INET;
         sock.sin_port = htons(0);
@@ -57,27 +82,15 @@ void MySQLConfiguration::UpdateLocal()
         if (row.getBytes(MAC).size() < sizeof(eth.ether_addr_octet)) continue;
         memcpy(eth.ether_addr_octet, row.getBytes(MAC).begin(), sizeof(eth.ether_addr_octet));
         
-        devices->insert({eth, sock});
+        readDevices->insert({eth, sock});
     }
 
-    // update revision ID
-    revisionId = LatestRevision();
-    // TODO Implement
-}
-
-bool MySQLConfiguration::GetDeviceSecurityParams(const struct sockaddr &ip_addr, DeviceSecParams_t &params)
-{
-    // TODO Implement
-    return false;
-}
-
-bool MySQLConfiguration::GetDeviceSecurityParams(const struct ether_addr &mac_addr, DeviceSecParams_t &params)
-{
-    // TODO Implement
-    return false;
+    std::lock_guard<std::mutex> lock(this->configMutex);            
+    this->devices.swap(readDevices);
 }
 
 bool MySQLConfiguration::IsPermitted(const struct sockaddr &src, const struct sockaddr &dest)
 {
-    return policies->find(Policy(*reinterpret_cast<const sockaddr_in*>(&src), *reinterpret_cast<const sockaddr_in*>(&dest))) != policies.end();
+    std::lock_guard<std::mutex> lock(this->configMutex);            
+    return policies->find(Policy(*reinterpret_cast<const sockaddr_in*>(&src), *reinterpret_cast<const sockaddr_in*>(&dest))) != policies->end();
 }
