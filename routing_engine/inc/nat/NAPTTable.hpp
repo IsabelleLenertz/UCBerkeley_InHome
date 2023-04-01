@@ -126,6 +126,8 @@ private:
 	std::vector<napt_entry_t> _icmp_table;
 
 	std::mutex _mutex;
+
+	static const size_t TCP_PSEUDO_HEADER_LEN = 12;
 };
 
 #endif

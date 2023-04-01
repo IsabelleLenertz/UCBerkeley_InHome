@@ -43,6 +43,8 @@ public:
     
     static const size_t MAX_FRAME_LEN = BUFSIZ;
 
+    interface_stats_t& Stats();
+
 private:
     char error_buffer[PCAP_ERRBUF_SIZE];
     std::string _if_name;
@@ -55,6 +57,7 @@ private:
     struct ether_addr _mac_addr;
     uint8_t _frame_buffer[MAX_FRAME_LEN];
     bool _is_default;
+    interface_stats_t _stats;
     
     std::mutex _mutex;
     

@@ -175,7 +175,6 @@ int PFKeyMessageUpdate::Deserialize(const uint8_t *data, size_t len)
 	// Verify enough data for base header
 	if (len < sizeof(struct sadb_msg))
 	{
-		Logger::Log(LOG_DEBUG, "Not enough data for base header");
 		return PF_KEY_ERROR_OVERFLOW;
 	}
 
@@ -187,7 +186,6 @@ int PFKeyMessageUpdate::Deserialize(const uint8_t *data, size_t len)
 	size_t msg_len_bytes = _header.sadb_msg_len * sizeof(uint64_t);
 	if (len < msg_len_bytes)
 	{
-		Logger::Log(LOG_DEBUG, "Not enough data for stated length");
 		return PF_KEY_ERROR_OVERFLOW;
 	}
 
@@ -202,9 +200,6 @@ int PFKeyMessageUpdate::Deserialize(const uint8_t *data, size_t len)
 		// Verify enough data for extension base
 		if (len < offset + sizeof(struct sadb_ext))
 		{
-			sstream.str("");
-			sstream << "Error at offset: " << offset;
-			Logger::Log(LOG_DEBUG, sstream.str());
 			return PF_KEY_ERROR_OVERFLOW;
 		}
 
@@ -219,9 +214,6 @@ int PFKeyMessageUpdate::Deserialize(const uint8_t *data, size_t len)
 				status = _assoc.Deserialize(data + offset, ext_len);
 				if (status != NO_ERROR)
 				{
-					sstream.str("");
-					sstream << "Error at offset: " << offset;
-					Logger::Log(LOG_DEBUG, sstream.str());
 					return status;
 				}
 				_assoc_present = true;
@@ -232,9 +224,6 @@ int PFKeyMessageUpdate::Deserialize(const uint8_t *data, size_t len)
 				status = _src.Deserialize(data + offset, ext_len);
 				if (status != NO_ERROR)
 				{
-					sstream.str("");
-					sstream << "Error at offset: " << offset;
-					Logger::Log(LOG_DEBUG, sstream.str());
 					return status;
 				}
 				_src_present = true;
@@ -245,9 +234,6 @@ int PFKeyMessageUpdate::Deserialize(const uint8_t *data, size_t len)
 				status = _dst.Deserialize(data + offset, ext_len);
 				if (status != NO_ERROR)
 				{
-					sstream.str("");
-					sstream << "Error at offset: " << offset;
-					Logger::Log(LOG_DEBUG, sstream.str());
 					return status;
 				}
 				_dst_present = true;
@@ -258,9 +244,6 @@ int PFKeyMessageUpdate::Deserialize(const uint8_t *data, size_t len)
 				status = _proxy.Deserialize(data + offset, ext_len);
 				if (status != NO_ERROR)
 				{
-					sstream.str("");
-					sstream << "Error at offset: " << offset;
-					Logger::Log(LOG_DEBUG, sstream.str());
 					return status;
 				}
 				_proxy_present = true;
@@ -271,9 +254,6 @@ int PFKeyMessageUpdate::Deserialize(const uint8_t *data, size_t len)
 				status = _auth_key.Deserialize(data + offset, ext_len);
 				if (status != NO_ERROR)
 				{
-					sstream.str("");
-					sstream << "Error at offset: " << offset;
-					Logger::Log(LOG_DEBUG, sstream.str());
 					return status;
 				}
 				_auth_key_present = true;
@@ -284,9 +264,6 @@ int PFKeyMessageUpdate::Deserialize(const uint8_t *data, size_t len)
 				status = _encrypt_key.Deserialize(data + offset, ext_len);
 				if (status != NO_ERROR)
 				{
-					sstream.str("");
-					sstream << "Error at offset: " << offset;
-					Logger::Log(LOG_DEBUG, sstream.str());
 					return status;
 				}
 				_encrypt_key_present = true;
@@ -297,9 +274,6 @@ int PFKeyMessageUpdate::Deserialize(const uint8_t *data, size_t len)
 				status = _src_id.Deserialize(data + offset, ext_len);
 				if (status != NO_ERROR)
 				{
-					sstream.str("");
-					sstream << "Error at offset: " << offset;
-					Logger::Log(LOG_DEBUG, sstream.str());
 					return status;
 				}
 				_src_id_present = true;
@@ -310,9 +284,6 @@ int PFKeyMessageUpdate::Deserialize(const uint8_t *data, size_t len)
 				status = _dst_id.Deserialize(data + offset, ext_len);
 				if (status != NO_ERROR)
 				{
-					sstream.str("");
-					sstream << "Error at offset: " << offset;
-					Logger::Log(LOG_DEBUG, sstream.str());
 					return status;
 				}
 				_dst_id_present = true;

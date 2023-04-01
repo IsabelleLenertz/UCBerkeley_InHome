@@ -57,6 +57,7 @@ void Logger::Log(int level, const char *message)
             std::cout << std::put_time(_local, "%c");
             std::cout << " [" << level_strings[level] << "] ";
             std::cout << message << std::endl;
+            std::cout.flush();
         }
         
         if (_file.is_open())
@@ -64,6 +65,7 @@ void Logger::Log(int level, const char *message)
             _file << std::put_time(_local, "%c");
             _file << " [" << level_strings[level] << "] ";
             _file << message << std::endl;
+            _file.flush();
         }
     }
 }
@@ -82,6 +84,7 @@ void Logger::Log(int level, const std::string &message)
             std::cout << std::put_time(_local, "%c");
             std::cout << " [" << level_strings[level] << "] ";
             std::cout << message << std::endl;
+            std::cout.flush();
         }
         
         if (_file.is_open())
@@ -89,6 +92,7 @@ void Logger::Log(int level, const std::string &message)
             _file << std::put_time(_local, "%c");
             _file << " [" << level_strings[level] << "] ";
             _file << message << std::endl;
+            _file.flush();
         }
     }
 }

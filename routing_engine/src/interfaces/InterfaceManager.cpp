@@ -119,6 +119,14 @@ int InterfaceManager::InitializeInterfaces(int flags)
     
     pcap_freealldevs(alldevsp);
     
+    // Initialize monitor
+    status = _monitor.Initialize(12001);
+
+    if (status != NO_ERROR)
+    {
+    	return status;
+    }
+
     return 0;
 }
 
@@ -207,17 +215,11 @@ int InterfaceManager::SendPacket(IIPPacket *packet)
 	if (!packet->GetIsFromDefaultInterface() && !packet->GetIsToDefaultInterface())
 	{
 		// Update authentication header data
-		Logger::Log(LOG_DEBUG, "Transform Auth Header");
 		status = _ipsec_utils->TransformAuthHeader(packet);
 
 		if (status != NO_ERROR)
 		{
-			Logger::Log(LOG_DEBUG, "Failed to transform authentication header!");
 			return status;
-		}
-		else
-		{
-			Logger::Log(LOG_DEBUG, "Transform Auth Header complete!");
 		}
 	}
 
@@ -237,13 +239,8 @@ int InterfaceManager::SendPacket(IIPPacket *packet)
 	// If nullptr is returned for interface, use default
 	if (_if == nullptr)
 	{
-		Logger::Log(LOG_DEBUG, "Setting default interface");
 		_if = _default_if;
 	}
-
-	sstream.str("");
-	sstream << "Sending via interface: " << _if->GetName();
-	Logger::Log(LOG_DEBUG, sstream.str());
 
 	// Set local IP based on whether the egress interface is the default interface
 	const struct sockaddr &_local_ip = _if->GetIsDefault() ?
@@ -256,16 +253,11 @@ int InterfaceManager::SendPacket(IIPPacket *packet)
 	// Otherwise: Use destination address
 	const struct sockaddr &dst_addr = _if->GetIsDefault() ? gateway : packet->GetDestinationAddress();
 
-	sstream.str("");
-	sstream << Logger::IPToString(packet->GetSourceAddress()) << " to " << Logger::IPToString(packet->GetDestinationAddress());
-	Logger::Log(LOG_DEBUG, sstream.str());
-
 	// If egress interface is default interface,
 	// need to perform network address translation
 	if (_if->GetIsDefault())
 	{
-		Logger::Log(LOG_DEBUG, "Performing Network Address Translation");
-
+		Logger::Log(LOG_DEBUG, "NAT required");
 		status = _napt_table->TranslateToExternal(packet, _local_ip);
 
 		if (status != NO_ERROR)
@@ -282,9 +274,35 @@ int InterfaceManager::SendPacket(IIPPacket *packet)
 		return status;
 	}
 
-	sstream.str("");
-	sstream << "Address Family: " << _local_ip.sa_family;
-	Logger::Log(LOG_DEBUG, sstream.str());
+	// Increment counters
+	_if->Stats().tx_count++;
+	switch (packet->GetProtocol())
+	{
+		case IPPROTO_ICMP:
+		{
+			_if->Stats().icmp_tx_count++;
+			break;
+		}
+		case IPPROTO_TCP:
+		{
+			_if->Stats().tcp_tx_count++;
+			break;
+		}
+		case IPPROTO_UDP:
+		{
+			_if->Stats().udp_tx_count++;
+			break;
+		}
+		case IPPROTO_AH:
+		{
+			_if->Stats().ipsec_tx_count++;
+			break;
+		}
+		default:
+		{
+			break;
+		}
+	}
 
 	status = _if->SendPacket(_local_ip, dst_addr, _send_buff, len);
 
@@ -344,19 +362,10 @@ void InterfaceManager::_registerAddresses(ILayer2Interface* _if, pcap_if_t *pcap
 						*(addr_ptr + 3) = 1;
 
 						inet_ntop(AF_INET, &gateway.sin_addr, ip_str, 64);
-
-						std::stringstream sstream;
-						sstream << "Setting IPv4 Default Gateway: " << _if->GetName() << " at " << ip_str << ":" << gateway.sin_port;
-						Logger::Log(LOG_INFO, sstream.str());
-
-						sstream.str("");
 						inet_ntop(AF_INET, &_ip_addr.sin_addr, ip_str, 64);
-						sstream << "(Interface Manager) Local IP: " << ip_str << ":" << _ip_addr.sin_port;
-						Logger::Log(LOG_INFO, sstream.str());
 
-						// Overwrite
-						sstream.str("");
-						Logger::Log(LOG_WARNING, "Overwriting V4 Gateway");
+						// TODO Fix
+						// Overwrite gateway address
 						inet_pton(AF_INET, "10.0.2.2", &gateway.sin_addr);
 
 						const struct sockaddr &_gateway = reinterpret_cast<const struct sockaddr&>(gateway);
@@ -368,21 +377,6 @@ void InterfaceManager::_registerAddresses(ILayer2Interface* _if, pcap_if_t *pcap
 				}
 				case AF_INET6:
 				{
-					/*
-					if (!_v6_gateway_set)
-					{
-						// SetDefaultGateway(ip_addr);
-						_if->SetAsDefault();
-
-						const struct sockaddr_in6 &_ip_addr = reinterpret_cast<const struct sockaddr_in6&>(ip_addr);
-						inet_ntop(AF_INET6, &_ip_addr.sin6_addr, ip_str, 64);
-
-						std::stringstream sstream;
-						sstream << "Setting IPv6 Default Gateway: " << _if->GetName() << " at " << ip_str;
-
-						Logger::Log(LOG_INFO, sstream.str());
-					}
-					*/
 					break;
 				}
             }
@@ -417,9 +411,35 @@ void InterfaceManager::ReceiveLayer2Data(ILayer2Interface *_if, const uint8_t *d
     
     if (status == 0)
     {
-    	sstream.str("");
-    	sstream << "Received: " << Logger::IPToString(packet->GetSourceAddress()) << " to " << Logger::IPToString(packet->GetDestinationAddress());
-    	Logger::Log(LOG_DEBUG, sstream.str());
+    	// Increment counters
+    	_if->Stats().rx_count++;
+    	switch (packet->GetProtocol())
+    	{
+    		case IPPROTO_ICMP:
+    		{
+    			_if->Stats().icmp_rx_count++;
+    			break;
+    		}
+    		case IPPROTO_TCP:
+    		{
+    			_if->Stats().tcp_rx_count++;
+    			break;
+    		}
+    		case IPPROTO_UDP:
+    		{
+    			_if->Stats().udp_rx_count++;
+    			break;
+    		}
+    		case IPPROTO_AH:
+    		{
+    			_if->Stats().ipsec_rx_count++;
+    			break;
+    		}
+    		default:
+    		{
+    			break;
+    		}
+    	}
 
 		// If the ingress interface is the default interface,
 		// then network address translation must be performed
@@ -444,17 +464,6 @@ void InterfaceManager::ReceiveLayer2Data(ILayer2Interface *_if, const uint8_t *d
 			packet->SetIsFromDefaultInterface(false);
 		}
 
-		/*
-		// With the exception of network address translation (which has already
-		// been performed), packets destined for IP addresses local to an
-		// interface should not be routed.
-		if (_ip_rte_table->IsOwnedByInterface(_if, packet->GetDestinationAddress()))
-		{
-			// IP owned by this interface. Do not pass to routing engine.
-			Logger::Log(LOG_DEBUG, "Packet owned by interface. Dropping");
-		}
-		*/
-
 		// If network address translation was attempted, it
 		// must have been successfuly in order to pass the
 		// packet to the routing engine
@@ -464,12 +473,6 @@ void InterfaceManager::ReceiveLayer2Data(ILayer2Interface *_if, const uint8_t *d
 			_callback(packet);
 			transferred = true;
 		}
-    }
-    else
-    {
-    	sstream.str("");
-    	sstream << "IP Packet Deserialize Failed: (" << status << ")";
-    	Logger::Log(LOG_DEBUG, sstream.str());
     }
     
     if (!transferred)
@@ -546,4 +549,18 @@ const struct sockaddr *InterfaceManager::GetDefaultGateway(int version)
 			break;
 		}
 	}
+}
+
+void InterfaceManager::SendMonitorReport()
+{
+	InterfaceStatsPacket pkt;
+
+	for (auto _if = _interfaces.begin(); _if < _interfaces.end(); _if++)
+	{
+		ILayer2Interface *_interface = *_if;
+
+		pkt.SetInterfaceData(_interface->GetName(), _interface->Stats());
+	}
+
+	int status = _monitor.SendPacket(reinterpret_cast<MonitorPacketBase*>(&pkt));
 }

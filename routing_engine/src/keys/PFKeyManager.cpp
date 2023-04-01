@@ -209,9 +209,6 @@ int PFKeyManager::AddHost(const sockaddr &host)
 	std::stringstream sstream;
 	std::scoped_lock lock {_db_mutex};
 
-	sstream << "Adding SAs for host: " << Logger::IPToString(host);
-	Logger::Log(LOG_DEBUG, sstream.str());
-
 	PFKeyMessageAcquire acquire;
 	int from_status = ERROR_UNSET;
 	int to_status = ERROR_UNSET;
@@ -231,20 +228,6 @@ int PFKeyManager::AddHost(const sockaddr &host)
 	_associations.emplace_back();
 	to_status = _associations.back().Initialize(static_cast<IPFKeyInterface*>(this), &acquire);
 
-	// Error printouts if needed
-	if (from_status != NO_ERROR)
-	{
-		sstream.str("");
-		sstream << "Failed to initialize SA from host " << Logger::IPToString(host) << " (" << from_status << ")";
-		Logger::Log(LOG_ERROR, sstream.str());
-	}
-	if (to_status != NO_ERROR)
-	{
-		sstream.str("");
-		sstream << "Failed to initialize SA to host " << Logger::IPToString(host) << " (" << from_status << ")";
-		Logger::Log(LOG_ERROR, sstream.str());
-	}
-
 	// Return error code
 	if (from_status != NO_ERROR)
 	{
@@ -261,7 +244,6 @@ int PFKeyManager::RemoveHost(const sockaddr &host)
 {
 	std::scoped_lock lock {_db_mutex};
 
-	std::stringstream sstream;
 	int from_status = NO_ERROR;
 	int to_status = NO_ERROR;
 
@@ -274,39 +256,11 @@ int PFKeyManager::RemoveHost(const sockaddr &host)
 	{
 		from_status = from_host->Close();
 	}
-	else
-	{
-		// If no SA found, issue a warning
-		sstream.str("");
-		sstream << "Security association from host " << Logger::IPToString(host) << " not found";
-		Logger::Log(LOG_WARNING, sstream.str());
-	}
 
 	// Close SA to host
 	if (to_host != nullptr)
 	{
 		to_status = to_host->Close();
-	}
-	else
-	{
-		// If no SA found, issue a warning
-		sstream.str("");
-		sstream << "Security association to host " << Logger::IPToString(host) << " not found";
-		Logger::Log(LOG_WARNING, sstream.str());
-	}
-
-	// Error printouts if needed
-	if (from_status != NO_ERROR)
-	{
-		sstream.str("");
-		sstream << "Failed to close SA from host " << Logger::IPToString(host) << " (" << from_status << ")";
-		Logger::Log(LOG_ERROR, sstream.str());
-	}
-	if (to_status != NO_ERROR)
-	{
-		sstream.str("");
-		sstream << "Failed to close SA to host " << Logger::IPToString(host) << " (" << to_status << ")";
-		Logger::Log(LOG_ERROR, sstream.str());
 	}
 
 	return NO_ERROR;
@@ -316,36 +270,19 @@ int PFKeyManager::SendMessage(PFKeyMessageBase *msg)
 {
 	std::scoped_lock lock {_send_mutex};
 
-	std::stringstream sstream;
 	size_t len = PF_KEY_BUFF_SIZE;
 	int status = msg->Serialize(_send_buff, len);
 
 	if (status != NO_ERROR)
 	{
-		sstream.str("");
-		sstream << "Serialization failed (" << status << ")";
-		Logger::Log(LOG_ERROR, sstream.str());
 		return status;
 	}
-
-	sstream.str("");
-	sstream << "Sending PF Key Message" << std::endl << Logger::BytesToString(_send_buff, len);
-	Logger::Log(LOG_DEBUG, sstream.str());
 
 	ssize_t bytes_sent = send(_socket_d, _send_buff, len, 0);
 
 	if (bytes_sent < 0)
 	{
-		sstream.str("");
-		sstream << "Failed to send PF Key message (" << errno << ")";
-		Logger::Log(LOG_ERROR, sstream.str());
 		return PF_KEY_ERROR_MESSAGE_SEND_FAILED;
-	}
-	else
-	{
-		sstream.str("");
-		sstream << "Sent " << bytes_sent << " bytes";
-		Logger::Log(LOG_DEBUG, sstream.str());
 	}
 
 	return NO_ERROR;
@@ -381,8 +318,6 @@ int PFKeyManager::Initialize()
 
 	if (_socket_d < 0)
 	{
-		sstream << "Failed to open PF_KEY socket (" << errno << ")";
-		Logger::Log(LOG_FATAL, sstream.str());
 		return PF_KEY_ERROR_SOCKET_OPEN_FAILED;
 	}
 
@@ -393,19 +328,12 @@ int PFKeyManager::Initialize()
 
 void PFKeyManager::_receive_loop()
 {
-	std::stringstream sstream;
-	Logger::Log(LOG_INFO, "Listening on PF_KEY Socket");
-
 	while (!_exiting)
 	{
 		ssize_t bytes_received = recv(_socket_d, _rcv_buff, PF_KEY_BUFF_SIZE, 0);
 
 		if (bytes_received > 0)
 		{
-			sstream.str("");
-			sstream << "Received " << bytes_received << " bytes";
-			Logger::Log(LOG_DEBUG, sstream.str());
-
 			sadb_msg *hdr = (sadb_msg*)(_rcv_buff);
 			std::string type_str;
 			switch (hdr->sadb_msg_type)
@@ -461,10 +389,6 @@ void PFKeyManager::_receive_loop()
 				}
 			}
 
-			sstream.str("");
-			sstream << "Received PF_KEY message (" << type_str << ")";
-			Logger::Log(LOG_DEBUG, sstream.str());
-
 			// Get an instance of the correct message object
 			PFKeyMessageBase *msg = PFKeyMessageFactory::Build(_rcv_buff, (size_t)bytes_received);
 
@@ -478,18 +402,8 @@ void PFKeyManager::_receive_loop()
 					// Dispatch the message
 					ReceiveMessage(msg);
 				}
-				else
-				{
-					sstream.str("");
-					sstream << "Failed to deserialize message: (" << status << ")";
-					Logger::Log(LOG_ERROR, sstream.str());
-				}
 
 				delete msg;
-			}
-			else
-			{
-				Logger::Log(LOG_ERROR, "PFKeyMessageFactory: Failed to build PF Key message object");
 			}
 		}
 	}

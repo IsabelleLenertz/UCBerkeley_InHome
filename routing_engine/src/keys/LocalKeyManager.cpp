@@ -82,7 +82,7 @@ int LocalKeyManager::MarkSequenceNumber(uint32_t spi, const sockaddr &src, const
 			if (seq_num > entry.replay_right)
 			{
 				int shift_count = seq_num - entry.replay_right;
-				shift_count = (shift_count < 32) ? shift_count : 32;
+				shift_count = (shift_count < 31) ? shift_count : 31;
 
 				// Shift and mark map
 				entry.replay_map >>= shift_count;
@@ -92,7 +92,7 @@ int LocalKeyManager::MarkSequenceNumber(uint32_t spi, const sockaddr &src, const
 				entry.replay_right = seq_num;
 			}
 			// Check if the sequence number is within the current window
-			else if (seq_num < entry.replay_right - 31)
+			else if (seq_num >= entry.replay_right - 31)
 			{
 				int shift_count = entry.replay_right - seq_num;
 

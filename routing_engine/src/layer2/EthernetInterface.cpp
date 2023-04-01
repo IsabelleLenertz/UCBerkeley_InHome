@@ -20,6 +20,7 @@ EthernetInterface::EthernetInterface(const char *if_name, IARPTable *arp_table)
     memset(error_buffer, 0, sizeof(error_buffer));
     memset(&_mac_addr, 0, sizeof(_mac_addr));
     memset(_frame_buffer, 0, sizeof(_frame_buffer));
+    memset(&_stats, 0, sizeof(interface_stats_t));
     
     _if_name = std::string(if_name);
 }
@@ -45,9 +46,6 @@ int EthernetInterface::Open()
     	Logger::Log(LOG_FATAL, (char*)error_buffer);
         return INTERFACE_OPEN_FAILED; // Could not open interface
     }
-    
-    sstream << "Opened interface: " << this->GetName();
-    Logger::Log(LOG_DEBUG, sstream.str());
 
     return NO_ERROR;
 }
@@ -109,8 +107,6 @@ int EthernetInterface::Listen(Layer2ReceiveCallback callback, NewARPEntryListene
     	return SET_FILTER_FAILED;
     }
 
-    Logger::Log(LOG_DEBUG, "Filter Set Successfully");
-
     if (async)
     {
         // If async, start up a thread on which
@@ -152,9 +148,6 @@ int EthernetInterface::SendPacket(const struct sockaddr &l3_local_addr, const st
 
     	const struct sockaddr_in _l3_dest_addr = reinterpret_cast<const struct sockaddr_in&>(l3_dest_addr);
     	inet_ntop(AF_INET, &_l3_dest_addr.sin_addr, addr_str, 64);
-
-    	sstream << "Sending to Default Gateway: " << addr_str;
-    	Logger::Log(LOG_DEBUG, sstream.str());
     }
 
     int status = NO_ERROR;
@@ -171,8 +164,6 @@ int EthernetInterface::SendPacket(const struct sockaddr &l3_local_addr, const st
     
     if (!hit)
     {
-    	Logger::Log(LOG_DEBUG, "ARP Cache Miss");
-
         // Set destination address to broadcast address
         memcpy(&l2_dest_addr, &BROADCAST_MAC, ETH_ALEN);
         
@@ -216,7 +207,6 @@ int EthernetInterface::SendPacket(const struct sockaddr &l3_local_addr, const st
             }
             default:
             {
-            	Logger::Log(LOG_DEBUG, "ARP: Unrecognized Address Family");
                 break;
             }
         }
@@ -241,8 +231,6 @@ int EthernetInterface::SendPacket(const struct sockaddr &l3_local_addr, const st
     }
     else
     {
-    	Logger::Log(LOG_DEBUG, "ARP Cache Hit");
-
         // Copy payload
         memcpy(_frame_buffer + ETHER_HDR_LEN, data, len);
     }
@@ -276,9 +264,6 @@ int EthernetInterface::SendPacket(const struct sockaddr &l3_local_addr, const st
         if (bytes_written <= 0)
         {
             status = INTERFACE_SEND_FAILED;
-			Logger::Log(LOG_WARNING, "PCAP Inject Failed");
-			Logger::Log(LOG_WARNING, pcap_geterr(_handle));
-			Logger::Log(LOG_WARNING, std::to_string(ETHER_HDR_LEN + len));
         }
         else
         {
@@ -306,22 +291,16 @@ void EthernetInterface::_receive(u_char *user, const struct pcap_pkthdr *h, cons
 {
 	if (user == nullptr)
 	{
-		Logger::Log(LOG_DEBUG, "EthernetInterface::_receive got NULL user pointer.");
 		return;
 	}
 
 	if (h->len > BUFSIZ)
 	{
-		Logger::Log(LOG_DEBUG, "Packet too large. Discarding");
 		return;
 	}
 
     // Cast user variable to pointer to ethernet interface object
     EthernetInterface *_this = (EthernetInterface*)user;
-    
-	std::stringstream sstream;
-	sstream << "Received " << h->len << " bytes on " << _this->GetName();
-	Logger::Log(LOG_DEBUG, sstream.str());
 
     // Pass to appropriate handler based on EtherType field
     struct ether_header *eth_header = (struct ether_header*)bytes;
@@ -366,10 +345,6 @@ void EthernetInterface::_handle_ip(const struct pcap_pkthdr *h, const u_char *by
     {
 		// Execute callback
 		_callback((ILayer2Interface*)this, l3_pkt, l3_pkt_len);
-    }
-    else
-    {
-    	Logger::Log(LOG_DEBUG, "Not routing broadcast frame");
     }
 }
 
@@ -599,4 +574,9 @@ void EthernetInterface::SetAsDefault()
 bool EthernetInterface::GetIsDefault()
 {
 	return _is_default;
+}
+
+interface_stats_t& EthernetInterface::Stats()
+{
+	return _stats;
 }

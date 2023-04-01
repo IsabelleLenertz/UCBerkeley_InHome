@@ -25,7 +25,8 @@ Layer3Router::Layer3Router()
       _access_control(),
       _rcv_queue(),
       _exiting(false),
-	  _key_manager()
+	  _key_manager(),
+	  _next_monitor_time(0)
 {
 }
 
@@ -45,7 +46,7 @@ int Layer3Router::Initialize()
     // Initialize Ethernet Interfaces Only
     status = _if_manager.InitializeInterfaces(IM_IF_ETHERNET);
 
-    Logger::Log(LOG_DEBUG, "Interface Initialization Complete");
+    Logger::Log(LOG_INFO, "Interface Initialization Complete");
 
     if (status != 0)
     {
@@ -112,6 +113,7 @@ int Layer3Router::Initialize()
 
     const std::string device1key = "0ea5f191085596967637d4de154178728a0c8ad237592738f479b56d265ff716";
     const std::string device2key = "d6a0d1a78a97289b32e607f49f5d2c45a389b7b387808897e8ee568326bb8955";
+    const std::string device3key = "b8110a936705fd535fdc8c1698e8e2e7ede71db852b78ebd677a7d0c14b4e729";
 
     const size_t KEY_LEN = 32;
     uint8_t key[KEY_LEN];
@@ -129,6 +131,13 @@ int Layer3Router::Initialize()
     inet_pton(AF_INET, "192.168.1.5", &dst.sin_addr);
     _key_manager.AddKey(2000, reinterpret_cast<struct sockaddr&>(src), reinterpret_cast<struct sockaddr&>(dst), key, KEY_LEN);
     _key_manager.AddKey(2001, reinterpret_cast<struct sockaddr&>(dst), reinterpret_cast<struct sockaddr&>(src), key, KEY_LEN);
+
+    // Device 3
+    KeyUtils::FromHexString(device3key, key, KEY_LEN);
+    inet_pton(AF_INET, "192.168.1.10", &src.sin_addr);
+    inet_pton(AF_INET, "192.168.1.9", &dst.sin_addr);
+    _key_manager.AddKey(3000, reinterpret_cast<struct sockaddr&>(src), reinterpret_cast<struct sockaddr&>(dst), key, KEY_LEN);
+    _key_manager.AddKey(3001, reinterpret_cast<struct sockaddr&>(dst), reinterpret_cast<struct sockaddr&>(src), key, KEY_LEN);
 
 #endif
 
@@ -160,28 +169,33 @@ int Layer3Router::Initialize()
 
     // Add submodules to central module
     _access_control.AddModule((IAccessControlModule*)&_null_access);
-    //_access_control.AddModule((IAccessControlModule*)&_access_list);
+    _access_control.AddModule((IAccessControlModule*)&_access_list);
+
+#ifndef DISABLE_AUTH
     _access_control.AddModule((IAccessControlModule*)&_replay_detect);
     _access_control.AddModule((IAccessControlModule*)&_message_auth);
+#endif
 
     ////////////////////////////////
     /////// Static ACL Setup ///////
     ////////////////////////////////
 #ifdef USE_LOCAL_CONFIG
+    // Alice
     struct sockaddr_in device1;
     device1.sin_family = AF_INET;
     device1.sin_port = 0;
-    inet_pton(AF_INET, "192.168.1.100", &device1.sin_addr);
+    inet_pton(AF_INET, "192.168.1.2", &device1.sin_addr);
 
+    // Bob
     struct sockaddr_in device2;
     device2.sin_family = AF_INET;
     device2.sin_port = 0;
-    inet_pton(AF_INET, "192.168.2.100", &device2.sin_addr);
+    inet_pton(AF_INET, "192.168.1.10", &device2.sin_addr);
 
     struct sockaddr_in netmask;
     netmask.sin_family = AF_INET;
     netmask.sin_port = 0;
-    inet_pton(AF_INET, "255.255.255.0", &netmask.sin_addr);
+    inet_pton(AF_INET, "255.255.255.252", &netmask.sin_addr);
 
     const struct sockaddr &_device1 = reinterpret_cast<const sockaddr&>(device1);
     const struct sockaddr &_device2 = reinterpret_cast<const sockaddr&>(device2);
@@ -210,13 +224,16 @@ void Layer3Router::MainLoop()
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
         
+        time_t current_time = time(NULL);
+        if (_next_monitor_time < current_time)
+        {
+        	_next_monitor_time = current_time + 1;
+        	_if_manager.SendMonitorReport();
+        }
+
         // Check for data in receive queue
         if (!_rcv_queue.IsEmpty())
         {
-        	sstream.str("");
-        	sstream << "Dequeuing message. " << _rcv_queue.Size() << " messages in queue.";
-        	Logger::Log(LOG_DEBUG, sstream.str());
-
             // Get data from queue
         	IIPPacket *pkt;
             _rcv_queue.Dequeue(pkt);
@@ -241,10 +258,9 @@ void Layer3Router::_process_packet(IIPPacket *packet)
     std::stringstream sstream;
     if (packet == nullptr)
     {
-    	Logger::Log(LOG_WARNING, "Unexpected nullptr found in layer3 receive queue");
         return;
     }
-    
+
     struct sockaddr_storage local_ip;
     ILayer2Interface *_if = _ip_rte_table.GetInterface(packet->GetDestinationAddress(), local_ip);
     if (_if == nullptr) // Null return value means use default interface
@@ -254,8 +270,6 @@ void Layer3Router::_process_packet(IIPPacket *packet)
 
     // Consult Access Control Modules
     bool allowed = _access_control.IsAllowed(packet);
-    sstream << "Allowed: " << ((allowed) ? "yes" : "no");
-    Logger::Log(LOG_DEBUG, sstream.str());
     
     if (allowed)
     {
@@ -266,15 +280,12 @@ void Layer3Router::_process_packet(IIPPacket *packet)
 			case NO_ERROR:
 			{
 				// Success
-				Logger::Log(LOG_DEBUG, "Message sent successfully");
 				break;
 			}
 			case ARP_CACHE_MISS_LOCAL:
 			case ARP_CACHE_MISS_DEFAULT:
 			{
 				// ARP cache miss
-				Logger::Log(LOG_DEBUG, "ARP Cache Miss");
-
 				outstanding_msg_t msg;
 				msg.pkt = packet;
 				msg.expires_at = time(NULL) + 5; // 5 seconds
@@ -298,24 +309,13 @@ void Layer3Router::_process_packet(IIPPacket *packet)
 			}
 			case ROUTE_INTERFACE_NOT_FOUND:
 			{
-				sstream.str("");
-				sstream << "Could not find outgoing interface (" << Logger::IPToString(packet->GetDestinationAddress()) << ")";
-				Logger::Log(LOG_DEBUG, sstream.str());
 				break;
 			}
 			default:
 			{
-				sstream.str("");
-				sstream << "Miscellaneous error (" << status << ")";
-				Logger::Log(LOG_WARNING, sstream.str());
 				break;
 			}
 		}
-    }
-    else
-    {
-        // TODO Log more information about denied packet
-        Logger::Log(LOG_SECURE, "Packet denied");
     }
     
     // End of packet lifetime, free memory
@@ -365,11 +365,6 @@ void Layer3Router::_process_arp_replies()
     {
         struct sockaddr *target_addr;
         _arp_replies.Dequeue(target_addr);
-        
-        if (target_addr == nullptr)
-        {
-        	Logger::Log(LOG_DEBUG, "Unexpected nullptr found in ARP reply queue.");
-        }
 
         // Send all outstanding messages to this target address
         for (auto m = _outstanding_msgs.begin(); m < _outstanding_msgs.end(); m++)
@@ -385,10 +380,6 @@ void Layer3Router::_process_arp_replies()
                 
                     // Free packet memory and remove from outgoing messages
                     delete msg.pkt;
-            	}
-            	else
-            	{
-            		Logger::Log(LOG_DEBUG, "Unexpected nullptr found in outgoing messages.");
             	}
 
                 _outstanding_msgs.erase(m);
@@ -434,10 +425,6 @@ void Layer3Router::_drop_stale_messages()
         	{
                 delete msg.pkt;
                 _outstanding_msgs.erase(m);
-        	}
-        	else
-        	{
-        		Logger::Log(LOG_DEBUG, "Unexpected nullptr found when dropping stale queued messages.");
         	}
         }
     }

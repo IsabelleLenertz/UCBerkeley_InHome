@@ -1,6 +1,8 @@
 #ifndef INC_LAYER3ROUTER_HPP_
 #define INC_LAYER3ROUTER_HPP_
 
+// #define DISABLE_AUTH
+
 #include "access_control/AccessControlList.hpp"
 #include "access_control/CentralAccessControl.hpp"
 #include "access_control/NullAccessControl.hpp"
@@ -12,6 +14,7 @@
 #include "config/MySQLConfiguration.hpp"
 #include "interfaces/InterfaceManager.hpp"
 #include "ipsec/LocalIPSecUtils.hpp"
+#include "ipsec/NullIPSecUtils.hpp"
 #include "layer2/ILayer2Interface.hpp"
 #include "layer3/IIPPacket.hpp"
 #include "layer3/LocalRoutingTable.hpp"
@@ -79,6 +82,7 @@ private:
 
     // Interface Manager
     InterfaceManager _if_manager;
+    time_t _next_monitor_time;
 
     // Configuration Module
 #ifndef USE_LOCAL_CONFIG
@@ -95,7 +99,11 @@ private:
     ReplayDetection _replay_detect;
     
     // IPSec Utils
+#ifndef DISABLE_AUTH
     LocalIPSecUtils _ipsec_utils;
+#else
+    NullIPSecUtils _ipsec_utils;
+#endif
 
     // ARP Table
     LocalARPTable _arp_table;

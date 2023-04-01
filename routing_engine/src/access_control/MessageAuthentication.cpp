@@ -14,15 +14,44 @@ MessageAuthentication::~MessageAuthentication()
 
 bool MessageAuthentication::IsAllowed(IIPPacket *packet)
 {
+	std::stringstream sstream;
 	// Internet-bound or -originating traffic does not require authentication headers
 	if (packet->GetIsFromDefaultInterface() || packet->GetIsToDefaultInterface())
 	{
-		Logger::Log(LOG_DEBUG, "Authentication not required");
 		return true;
 	}
 
-	Logger::Log(LOG_DEBUG, "Authenticating Message...");
-	return (_ipsec_utils->ValidateAuthHeader(packet) == NO_ERROR);
+	int status = _ipsec_utils->ValidateAuthHeader(packet);
+
+	switch (status)
+	{
+		case IPSEC_AH_ERROR_NO_AUTH_HEADER:
+		{
+			sstream.str("");
+			sstream << "Packet Denied (No Authentication Header): " << Logger::IPToString(packet->GetSourceAddress()) <<
+					" to " << Logger::IPToString(packet->GetDestinationAddress());
+			Logger::Log(LOG_SECURE, sstream.str());
+			break;
+		}
+		case IPSEC_AH_ERROR_INCORRECT_ICV:
+		{
+			sstream.str("");
+			sstream << "Packet Denied (ICV Authentication Failure): " << Logger::IPToString(packet->GetSourceAddress()) <<
+					" to " << Logger::IPToString(packet->GetDestinationAddress());
+			Logger::Log(LOG_SECURE, sstream.str());
+			break;
+		}
+		case NO_ERROR:
+		{
+			break;
+		}
+		default:
+		{
+			break;
+		}
+	}
+
+	return (status == NO_ERROR);
 }
 
 void MessageAuthentication::SetConfiguration(IConfiguration* config)

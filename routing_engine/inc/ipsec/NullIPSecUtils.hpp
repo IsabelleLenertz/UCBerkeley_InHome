@@ -1,5 +1,5 @@
-#ifndef INC_IPSECUTILS_HPP_
-#define INC_IPSECUTILS_HPP_
+#ifndef INC_NULLIPSECUTILS_HPP_
+#define INC_NULLIPSECUTILS_HPP_
 
 #include "ipsec/IIPSecUtils.hpp"
 
@@ -10,12 +10,12 @@
 
 #include "keys/IKeyManager.hpp"
 
-class LocalIPSecUtils : public IIPSecUtils
+class NullIPSecUtils : public IIPSecUtils
 {
 public:
-	LocalIPSecUtils();
-	LocalIPSecUtils(IKeyManager *key_manager);
-	~LocalIPSecUtils() override;
+	NullIPSecUtils();
+	NullIPSecUtils(IKeyManager *key_manager);
+	~NullIPSecUtils() override;
 
 	int ValidateAuthHeader(IIPPacket *pkt);
 	int TransformAuthHeader(IIPPacket *pkt);

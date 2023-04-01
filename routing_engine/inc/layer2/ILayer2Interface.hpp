@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 #include <cstdint>
 #include "arp/IARPTable.hpp"
+#include "monitor/InterfaceStatsPacket.hpp"
 
 class ILayer2Interface;
 
@@ -142,6 +143,13 @@ public:
     /// </summary>
     /// <returns>True if default</returns>
     virtual bool GetIsDefault() = 0;
+
+    /// <summary>
+    /// Returns a mutable reference to the
+    /// interface stats object
+    /// </summary>
+    /// <returns>Interface stats object</returns>
+    virtual interface_stats_t& Stats() = 0;
 };
 
 #endif

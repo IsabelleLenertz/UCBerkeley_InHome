@@ -17,7 +17,9 @@ IPv4Packet::IPv4Packet()
       _src_addr({0}),
       _dest_addr({0}),
       _options(),
-      _data()
+      _data(),
+	  _from_default_if(false),
+	  _to_default_if(false)
 {
     _src_addr.sin_family = AF_INET;
     _dest_addr.sin_family = AF_INET;
@@ -73,7 +75,6 @@ int IPv4Packet::Deserialize(const uint8_t *buff, uint16_t len)
     // If the first word can't be formed, return overflow error
     if (len < sizeof(uint32_t))
     {
-    	Logger::Log(LOG_ERROR, "Could not form first word");
         return IPV4_ERROR_OVERFLOW;
     }
     
@@ -103,9 +104,6 @@ int IPv4Packet::Deserialize(const uint8_t *buff, uint16_t len)
     // for specified total length
     if (len < total_len)
     {
-    	sstream.str("");
-    	sstream << "Length " << len << " is less than stated length: " << total_len;
-    	Logger::Log(LOG_ERROR, sstream.str());
         return IPV4_ERROR_OVERFLOW;
     }
     

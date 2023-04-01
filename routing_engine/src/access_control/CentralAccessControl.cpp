@@ -21,17 +21,20 @@ bool CentralAccessControl::IsAllowed(IIPPacket *packet)
     // Iterate through submodules
     for (auto m = _modules.begin(); m < _modules.end(); m++)
     {
-    	Logger::Log(LOG_DEBUG, std::to_string(i++));
         // Check if this module allows the packet
         bool allowed = (*m)->IsAllowed(packet);
-        
-        std::stringstream sstream;
-        sstream << "allowed: " << ((allowed) ? "yes" : "no");
-        Logger::Log(LOG_DEBUG, sstream.str());
+
+        // Early exit for the sake of not over-reporting
+        // rejection conditions
+        if (!allowed)
+        {
+        	result = false;
+        	break;
+        }
 
         // If this or any previous modules disallow
         // the packet, mark as not allowed
-        result = result && allowed;
+        // result = result && allowed;
     }
     
     return result;

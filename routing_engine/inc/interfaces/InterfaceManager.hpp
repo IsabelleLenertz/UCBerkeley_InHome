@@ -7,6 +7,7 @@
 #include "layer3/IIPPacket.hpp"
 #include "nat/NAPTTable.hpp"
 #include "ipsec/IIPSecUtils.hpp"
+#include "monitor/MonitorSender.hpp"
 
 #include <functional>
 
@@ -136,6 +137,8 @@ public:
     /// <returns>Pointer to IP address</returns>
     const struct sockaddr *GetDefaultGateway(int version);
 
+    void SendMonitorReport();
+
 private:
     std::vector<ILayer2Interface*> _interfaces;
     IARPTable *_arp_table;
@@ -151,6 +154,7 @@ private:
     struct sockaddr_in6 _v6_gateway_local;
     bool _v6_gateway_set;
     ILayer2Interface *_default_if;
+    MonitorSender _monitor;
 
     /// <summary>
     /// Associates an interface's addresses in the ARP

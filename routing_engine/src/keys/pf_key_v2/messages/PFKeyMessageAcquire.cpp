@@ -70,7 +70,6 @@ int PFKeyMessageAcquire::Serialize(uint8_t *buff, size_t &len)
 	status = _src.Serialize(buff + offset, ext_len);
 	if (status != NO_ERROR)
 	{
-		Logger::Log(LOG_ERROR, "Malformed source");
 		return status;
 	}
 	offset += ext_len;
@@ -80,7 +79,6 @@ int PFKeyMessageAcquire::Serialize(uint8_t *buff, size_t &len)
 	status = _dst.Serialize(buff + offset, ext_len);
 	if (status != NO_ERROR)
 	{
-		Logger::Log(LOG_ERROR, "Malformed destination");
 		return status;
 	}
 	offset += ext_len;
@@ -92,7 +90,6 @@ int PFKeyMessageAcquire::Serialize(uint8_t *buff, size_t &len)
 		status = _proxy.Serialize(buff + offset, ext_len);
 		if (status != NO_ERROR)
 		{
-			Logger::Log(LOG_ERROR, "Malformed proxy");
 			return status;
 		}
 		offset += ext_len;
@@ -105,7 +102,6 @@ int PFKeyMessageAcquire::Serialize(uint8_t *buff, size_t &len)
 		status = _src_id.Serialize(buff + offset, ext_len);
 		if (status != NO_ERROR)
 		{
-			Logger::Log(LOG_ERROR, "Malformed source ID");
 			return status;
 		}
 		offset += ext_len;
@@ -118,7 +114,6 @@ int PFKeyMessageAcquire::Serialize(uint8_t *buff, size_t &len)
 		status = _dst_id.Serialize(buff + offset, ext_len);
 		if (status != NO_ERROR)
 		{
-			Logger::Log(LOG_ERROR, "Malformed destination ID");
 			return status;
 		}
 		offset += ext_len;
@@ -129,7 +124,6 @@ int PFKeyMessageAcquire::Serialize(uint8_t *buff, size_t &len)
 	status = _proposal.Serialize(buff + offset, ext_len);
 	if (status != NO_ERROR)
 	{
-		Logger::Log(LOG_ERROR, "Malformed proposal");
 		return status;
 	}
 	offset += ext_len;

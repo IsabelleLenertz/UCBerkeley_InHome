@@ -9,6 +9,8 @@
 
 #include "logging/Logger.hpp"
 
+#define ONE_WAY_AUTH
+
 LocalIPSecUtils::LocalIPSecUtils(IKeyManager *key_manager)
 {
 	_key_manager = key_manager;
@@ -43,12 +45,9 @@ int LocalIPSecUtils::ValidateAuthHeaderV4(IPv4Packet *pkt)
 	int status = ERROR_UNSET;
 	uint8_t icv_calculated[SHA_256_HMAC_LEN];
 
-	Logger::Log(LOG_DEBUG, "Attempting to authenticate IPv4 packet");
-
 	// Verify that this packet has an authentication header
 	if (pkt->GetProtocol() != IPPROTO_AH)
 	{
-		Logger::Log(LOG_DEBUG, "Packet contains no authentication header");
 		return IPSEC_AH_ERROR_NO_AUTH_HEADER;
 	}
 
@@ -59,7 +58,6 @@ int LocalIPSecUtils::ValidateAuthHeaderV4(IPv4Packet *pkt)
 	status = auth_hdr.Deserialize(ip_payload, ip_payload_len_bytes);
 	if (status != NO_ERROR)
 	{
-		Logger::Log(LOG_DEBUG, "Failed to deserialize authentication header");
 		return status;
 	}
 
@@ -72,9 +70,6 @@ int LocalIPSecUtils::ValidateAuthHeaderV4(IPv4Packet *pkt)
 	// the buffer when comparing the ICV
 	if (icv_rcv_len_bytes < SHA_256_HMAC_LEN)
 	{
-		sstream.str("");
-		sstream << "Not enough data in ICV for HMAC (" << icv_rcv_len_bytes << ")";
-		Logger::Log(LOG_DEBUG, sstream.str());
 		return IPSEC_AH_ERROR_ICV_LEN_INCORRECT;
 	}
 
@@ -82,7 +77,6 @@ int LocalIPSecUtils::ValidateAuthHeaderV4(IPv4Packet *pkt)
 	status = CalculateICV(pkt, icv_calculated, SHA_256_HMAC_LEN);
 	if (status != NO_ERROR)
 	{
-		Logger::Log(LOG_DEBUG, "Failed to calculate ICV");
 		return status;
 	}
 
@@ -90,7 +84,7 @@ int LocalIPSecUtils::ValidateAuthHeaderV4(IPv4Packet *pkt)
 	bool match = (memcmp(icv_received, icv_calculated, SHA_256_HMAC_LEN) == 0);
 	if (!match)
 	{
-		Logger::Log(LOG_SECURE, "ICV does not match");
+		return IPSEC_AH_ERROR_INCORRECT_ICV;
 	}
 
 	return NO_ERROR;
@@ -186,24 +180,14 @@ int LocalIPSecUtils::CalculateICVV4(IPv4Packet *pkt, uint8_t *icv_out, size_t le
 	// these cases.
 	size_t msg_len_bytes = ip_pkt_len_bytes;
 
-	sstream.str("");
-	sstream << "Getting key for " << Logger::IPToString(pkt->GetSourceAddress()) << " to " << Logger::IPToString(pkt->GetDestinationAddress()) << "(" << auth_hdr.GetSPI() << ")";
-	Logger::Log(LOG_DEBUG, sstream.str());
-
 	// Retrieve key information
 	uint8_t key[SHA_256_KEY_LEN];
 	size_t keylen;
 	status = _key_manager->GetKey(auth_hdr.GetSPI(), pkt->GetSourceAddress(), pkt->GetDestinationAddress(), key, keylen);
 	if (status != 0)
 	{
-		Logger::Log(LOG_DEBUG, "Failed to retrieve key data");
 		return status;
 	}
-
-	sstream << std::endl << "---------------- Scratch Data ----------------";
-	sstream << std::endl << Logger::BytesToString(scratch, msg_len_bytes);
-	sstream << std::endl << "----------------------------------------------";
-	Logger::Log(LOG_DEBUG, sstream.str());
 
 	// Calculate the SHA256 message digest
 	uint32_t icv_len = 0;
@@ -211,28 +195,20 @@ int LocalIPSecUtils::CalculateICVV4(IPv4Packet *pkt, uint8_t *icv_out, size_t le
 
 	if (digest == nullptr)
 	{
-		Logger::Log(LOG_DEBUG, "HMAC Failed");
 		return IPSEC_AH_ERROR_HMAC_FAILED;
 	}
-
-	sstream.str("");
-	sstream << std::endl << "---------------- Calculated ICV ----------------";
-	sstream << std::endl << Logger::BytesToString(icv_out, icv_len);
-	sstream << std::endl << "------------------------------------------------";
-	Logger::Log(LOG_DEBUG, sstream.str());
 
 	return NO_ERROR;
 }
 
 int LocalIPSecUtils::TransformAuthHeader(IIPPacket *pkt)
 {
-	std::stringstream sstream;
 	int status = ERROR_UNSET;
 
+#ifndef ONE_WAY_AUTH
 	// Verify that this packet has an authentication header
 	if (pkt->GetProtocol() != IPPROTO_AH)
 	{
-		Logger::Log(LOG_DEBUG, "Packet contains no authentication header");
 		return IPSEC_AH_ERROR_NO_AUTH_HEADER;
 	}
 
@@ -244,7 +220,6 @@ int LocalIPSecUtils::TransformAuthHeader(IIPPacket *pkt)
 	status = auth_hdr.Deserialize(ip_payload, auth_hdr_len_bytes);
 	if (status != NO_ERROR)
 	{
-		Logger::Log(LOG_DEBUG, "Failed to deserialize authentication header");
 		return status;
 	}
 
@@ -263,9 +238,6 @@ int LocalIPSecUtils::TransformAuthHeader(IIPPacket *pkt)
 
 	if (status != NO_ERROR)
 	{
-		sstream.str("");
-		sstream << "Failed to deserialize inner packet (" << status << ")";
-		Logger::Log(LOG_DEBUG, sstream.str());
 		return status;
 	}
 
@@ -283,9 +255,6 @@ int LocalIPSecUtils::TransformAuthHeader(IIPPacket *pkt)
 
 	if (status != NO_ERROR)
 	{
-		sstream.str("");
-		sstream << "Failed to get SPI: " << Logger::IPToString(pkt->GetSourceAddress()) << " to " << Logger::IPToString(pkt->GetDestinationAddress());
-		Logger::Log(LOG_DEBUG, sstream.str());
 		return status;
 	}
 
@@ -296,13 +265,30 @@ int LocalIPSecUtils::TransformAuthHeader(IIPPacket *pkt)
 
 	if (status != NO_ERROR)
 	{
-		Logger::Log(LOG_DEBUG, "Failed to get replay context");
 		return status;
 	}
 
 	// Set sequence number and update replay context
-	auth_hdr.SetSequenceNumber(++replay_right);
-	status = _key_manager->MarkSequenceNumber(spi, pkt->GetSourceAddress(), pkt->GetDestinationAddress(), replay_right);
+	uint32_t seq_num = replay_right;
+	// If right side of window is less than or equal to 32,
+	// then the MSB of the window may not be 1
+	if (replay_right <= 32)
+	{
+		// Shift until a 1 bit is found, or sequence number is zero
+		while ((replay_map & 0x80000000u) == 0)
+		{
+			replay_map <<= 1;
+			seq_num--;
+			if (seq_num == 0)
+			{
+				break;
+			}
+		}
+	}
+	seq_num++;
+
+	auth_hdr.SetSequenceNumber(seq_num);
+	status = _key_manager->MarkSequenceNumber(spi, pkt->GetSourceAddress(), pkt->GetDestinationAddress(), seq_num);
 
 	// Reserialize the IP payload
 	uint8_t buff[ip_payload_len_bytes];
@@ -313,7 +299,6 @@ int LocalIPSecUtils::TransformAuthHeader(IIPPacket *pkt)
 
 	if (status != NO_ERROR)
 	{
-		Logger::Log(LOG_DEBUG, "Failed to reserialize authentication header");
 		return status;
 	}
 
@@ -328,12 +313,53 @@ int LocalIPSecUtils::TransformAuthHeader(IIPPacket *pkt)
 	status = CalculateICV(pkt, icv_calculated, SHA_256_HMAC_LEN);
 	if (status != NO_ERROR)
 	{
-		Logger::Log(LOG_DEBUG, "Failed to calculate ICV");
 		return status;
 	}
 
 	// Set ICV
 	auth_hdr.SetICV(icv_calculated, SHA_256_HMAC_LEN);
+
+#else // ONE_WAY_AUTH
+
+	// Get the authentication header
+	IPSecAuthHeader auth_hdr;
+	const uint8_t *ip_payload;
+	size_t ip_payload_len_bytes = pkt->GetData(ip_payload);
+	size_t auth_hdr_len_bytes = ip_payload_len_bytes;
+	status = auth_hdr.Deserialize(ip_payload, auth_hdr_len_bytes);
+	if (status != NO_ERROR)
+	{
+		return status;
+	}
+
+	// Update the source/destination address in the outer packet
+	// Deserialize inner IP packet
+	const uint8_t *auth_hdr_payload = (uint8_t*)(ip_payload + auth_hdr_len_bytes);
+	size_t auth_hdr_payload_len_bytes = ip_payload_len_bytes - auth_hdr_len_bytes;
+	IIPPacket *inner_pkt = IPPacketFactory::BuildPacket(auth_hdr_payload, auth_hdr_payload_len_bytes);
+
+	if (inner_pkt == nullptr)
+	{
+		return IPV4_ERROR_INVALID_VERSION;
+	}
+
+	status = inner_pkt->Deserialize(auth_hdr_payload, auth_hdr_payload_len_bytes);
+
+	if (status != NO_ERROR)
+	{
+		return status;
+	}
+
+	pkt->SetSourceAddress(inner_pkt->GetSourceAddress());
+	pkt->SetDestinationAddress(inner_pkt->GetDestinationAddress());
+	pkt->SetProtocol(inner_pkt->GetProtocol());
+
+	const uint8_t *inner_ip_payload;
+	size_t inner_ip_payload_len_bytes = inner_pkt->GetData(inner_ip_payload);
+
+	pkt->SetData(inner_ip_payload, inner_ip_payload_len_bytes);
+
+#endif
 
 	return NO_ERROR;
 }
@@ -366,28 +392,17 @@ int LocalIPSecUtils::ValidateAuthHeaderSeqNum(IIPPacket *pkt)
 
 	if (status != NO_ERROR)
 	{
-		Logger::Log(LOG_DEBUG, "Failed to get replay context");
+		Logger::Log(LOG_ERROR, "Failed to get reaplay context");
 		return status;
 	}
 
-	sstream.str("");
-	sstream << "Replay Context: " << replay_right << "(" << std::hex << replay_map << std::dec << ")";
-	Logger::Log(LOG_DEBUG, sstream.str());
-
 	// Verify that the sequence number is within the window
 	uint32_t seq_num = auth_hdr.GetSequenceNumber();
-	sstream.str("");
-	sstream << "Sequence Number: " << seq_num;
-	Logger::Log(LOG_DEBUG, sstream.str());
 	if (seq_num < replay_right - 31)
 	{
-		// Out of date
 		return IPSEC_AH_ERROR_INVALID_SEQ_NUM;
 	}
 
-	sstream.str("");
-	sstream << "Checking for replay...";
-	Logger::Log(LOG_DEBUG, sstream.str());
 	// Verify that the sequence number has not already been used
 	if (seq_num <= replay_right)
 	{
@@ -401,9 +416,6 @@ int LocalIPSecUtils::ValidateAuthHeaderSeqNum(IIPPacket *pkt)
 		}
 	}
 
-	sstream.str("");
-	sstream << "Marking sequence number";
-	Logger::Log(LOG_DEBUG, sstream.str());
 	_key_manager->MarkSequenceNumber(auth_hdr.GetSPI(), pkt->GetSourceAddress(), pkt->GetDestinationAddress(), auth_hdr.GetSequenceNumber());
 
 	return NO_ERROR;

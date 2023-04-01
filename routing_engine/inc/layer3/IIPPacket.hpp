@@ -61,6 +61,12 @@ public:
     virtual uint8_t GetProtocol() = 0;
 
     /// <summary>
+    /// Sets the layer 4 protocol number.
+    /// </summary>
+    /// <param name="protocol">Layer 4 protocol number</param>
+    virtual void SetProtocol(uint8_t proto) = 0;
+
+    /// <summary>
     /// Gets the data payload
     /// </summary>
     /// <param name="data_out">Pointer to data</param>

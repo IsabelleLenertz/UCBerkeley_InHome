@@ -37,8 +37,6 @@ int PFKeySecurityAssociation::Initialize(IPFKeyInterface *key_if, PFKeyMessageAc
 	// Set the sequence number in the acquire message
 	_acquire.SetSeqNum(_key_if->GetUniqueSeqNum());
 
-	Logger::Log(LOG_DEBUG, "Initializing SA");
-
 	PFKeyMessageGet get;
 	get.SourceAddress() = acquire->SourceAddress();
 	get.DestinationAddress() = acquire->DestinationAddress();
@@ -47,8 +45,6 @@ int PFKeySecurityAssociation::Initialize(IPFKeyInterface *key_if, PFKeyMessageAc
 
 	// Send Acquire message
 	//int status = _key_if->SendMessage(reinterpret_cast<PFKeyMessageBase*>(&_acquire));
-
-	Logger::Log(LOG_DEBUG, "...");
 
 	return status;
 }
@@ -201,7 +197,6 @@ void PFKeySecurityAssociation::_build_get(PFKeyMessageGet *msg)
 
 int PFKeySecurityAssociation::_init_state_receive(PFKeyMessageBase *msg)
 {
-	std::stringstream sstream;
 	int status = NO_ERROR;
 
 	if (msg->GetErrorNum() == 0)
@@ -219,18 +214,12 @@ int PFKeySecurityAssociation::_init_state_receive(PFKeyMessageBase *msg)
 			status = _key_if->SendMessage(reinterpret_cast<PFKeyMessageBase*>(&get));
 		}
 	}
-	else
-	{
-		sstream << "Received PF Key Message with Error Code (" << +msg->GetErrorNum() << ")";
-		Logger::Log(LOG_WARNING, sstream.str());
-	}
 
 	return status;
 }
 
 int PFKeySecurityAssociation::_get_state_receive(PFKeyMessageBase *msg)
 {
-	std::stringstream sstream;
 	int status = NO_ERROR;
 
 	if (msg->GetErrorNum() == 0)
@@ -246,8 +235,6 @@ int PFKeySecurityAssociation::_get_state_receive(PFKeyMessageBase *msg)
 			// Verify that key is correct size
 			if (key_len != KEY_LEN_BYTES)
 			{
-				sstream << "Received key of unexpected length: " << key_len;
-				Logger::Log(LOG_ERROR, sstream.str());
 				return PF_KEY_ERROR_INVALID_KEY_LENGTH;
 			}
 
@@ -255,19 +242,12 @@ int PFKeySecurityAssociation::_get_state_receive(PFKeyMessageBase *msg)
 			memcpy(_key, key_data, KEY_LEN_BYTES);
 		}
 	}
-	else
-	{
-		sstream.str("");
-		sstream << "Received PF Key Message with Error Code (" << +msg->GetErrorNum() << ")";
-		Logger::Log(LOG_WARNING, sstream.str());
-	}
 
 	return status;
 }
 
 int PFKeySecurityAssociation::_idle_state_receive(PFKeyMessageBase *msg)
 {
-	std::stringstream sstream;
 	int status = NO_ERROR;
 
 	if (msg->GetErrorNum() == 0)
@@ -281,18 +261,12 @@ int PFKeySecurityAssociation::_idle_state_receive(PFKeyMessageBase *msg)
 			status = _key_if->SendMessage(reinterpret_cast<PFKeyMessageBase*>(&get));
 		}
 	}
-	else
-	{
-		sstream << "Received PF Key Message with Error Code (" << +msg->GetErrorNum() << ")";
-		Logger::Log(LOG_WARNING, sstream.str());
-	}
 
 	return status;
 }
 
 int PFKeySecurityAssociation::_closing_state_receive(PFKeyMessageBase *msg)
 {
-	std::stringstream sstream;
 	int status = NO_ERROR;
 
 	if (msg->GetErrorNum() == 0)
@@ -303,11 +277,6 @@ int PFKeySecurityAssociation::_closing_state_receive(PFKeyMessageBase *msg)
 			// Enter "closed" state
 			_state = PF_KEY_SECURITY_ASSOCIATION_STATE_CLOSED;
 		}
-	}
-	else
-	{
-		sstream << "Received PF Key Message with Error Code (" << +msg->GetErrorNum() << ")";
-		Logger::Log(LOG_WARNING, sstream.str());
 	}
 
 	return status;

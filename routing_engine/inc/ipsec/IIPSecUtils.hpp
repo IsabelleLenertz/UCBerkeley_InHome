@@ -6,6 +6,8 @@
 class IIPSecUtils
 {
 public:
+	virtual ~IIPSecUtils(){};
+
 	/// <summary>
 	/// Validates the Integrity Check Value (ICV)
 	/// contained in an IP packet with an authentication
