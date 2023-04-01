@@ -27,6 +27,10 @@ bool AccessControlList::IsAllowed(IIPPacket *packet)
 	// Verify that this packet has an authentication header
 	if (packet->GetProtocol() != IPPROTO_AH)
 	{
+		sstream.str("");
+		sstream << "Packet Denied (Unauthorized Access): " << Logger::IPToString(packet->GetSourceAddress()) <<
+				" to " << Logger::IPToString(packet->GetDestinationAddress());
+		Logger::Log(LOG_SECURE, sstream.str());
 		return false;
 	}
 
