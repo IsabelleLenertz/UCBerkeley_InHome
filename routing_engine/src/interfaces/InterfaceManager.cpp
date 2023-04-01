@@ -257,7 +257,6 @@ int InterfaceManager::SendPacket(IIPPacket *packet)
 	// need to perform network address translation
 	if (_if->GetIsDefault())
 	{
-		Logger::Log(LOG_DEBUG, "NAT required");
 		status = _napt_table->TranslateToExternal(packet, _local_ip);
 
 		if (status != NO_ERROR)

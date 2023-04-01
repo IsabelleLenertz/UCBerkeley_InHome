@@ -118,7 +118,6 @@ int NAPTTable::TranslateToInternal(IIPPacket *packet)
 
 			if (mapped_addr == nullptr)
 			{
-				Logger::Log(LOG_DEBUG, "Mapping not found. Dropping");
 				return NAT_ERROR_MAPPING_NOT_FOUND;
 			}
 
@@ -229,9 +228,6 @@ int NAPTTable::TranslateToExternal(IIPPacket *packet, const struct sockaddr &ext
 
 			if (status != NO_ERROR)
 			{
-				sstream.str("");
-				sstream << "Failed to deserialize TCP segment: (" << status << ")";
-				Logger::Log(LOG_DEBUG, sstream.str());
 				return status;
 			}
 
@@ -240,14 +236,11 @@ int NAPTTable::TranslateToExternal(IIPPacket *packet, const struct sockaddr &ext
 
 			if (mapped_addr == nullptr)
 			{
-				Logger::Log(LOG_DEBUG, "Mapping not found. Creating mapping.");
-
 				// Create a mapping
 				mapped_addr = CreateMappingToExternal(IPPROTO_TCP, packet->GetSourceAddress(), tcp.GetSourcePort(), external_ip);
 
 				if (mapped_addr == nullptr)
 				{
-					Logger::Log(LOG_DEBUG, "Failed to create mapping.");
 					return NAT_ERROR_CREATE_MAPPING_FAILED;
 				}
 			}
@@ -280,7 +273,6 @@ int NAPTTable::TranslateToExternal(IIPPacket *packet, const struct sockaddr &ext
 		}
 		default:
 		{
-			Logger::Log(LOG_DEBUG, "Unsupported protocol");
 			return NAT_ERROR_UNSUPPORTED_PROTOCOL;
 		}
 	}
