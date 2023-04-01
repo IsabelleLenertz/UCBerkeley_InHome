@@ -6,7 +6,7 @@ SRC_DIRS := ../src
 
 BUILD_DIR := ../build
 
-LDLIBS := -lpcap -lpthread
+LDLIBS := -lpcap -lpthread -lcrypto
 
 GTEST_DIR = ../deps/googletest/googletest
 

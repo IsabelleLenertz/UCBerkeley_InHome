@@ -1,9 +1,12 @@
 #include "layer2/WiFiInterface.hpp"
+#include <cstring>
 
 WiFiInterface::WiFiInterface(const char *if_name, IARPTable* arp_table)
     : _arp_table(arp_table),
 	  _is_default(false)
 {
+	memset(&_stats, 0, sizeof(interface_stats_t));
+
     _if_name = std::string(if_name);
 }
 
@@ -52,4 +55,14 @@ void WiFiInterface::SetIPAddressQueryMethod(IPOwnershipQuery method)
 void WiFiInterface::SetAsDefault()
 {
 	_is_default = true;
+}
+
+bool WiFiInterface::GetIsDefault()
+{
+	return _is_default;
+}
+
+interface_stats_t& WiFiInterface::Stats()
+{
+	return _stats;
 }

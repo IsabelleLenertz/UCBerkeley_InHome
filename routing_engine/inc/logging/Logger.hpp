@@ -2,8 +2,10 @@
 #define INC_LOGGER_HPP_
 
 #include <string>
+#include <sstream>
 #include <mutex>
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <ctime>
 
@@ -69,7 +71,18 @@ public:
     /// Returns a std::string object containing the
     /// presentation format of the specified address
     /// </summary>
+    /// <param name="addr">Address</param>
+    /// <returns>String</returns>
     static std::string IPToString(const struct sockaddr &addr);
+
+    /// <summary>
+    /// Returns a std::string object containing the
+    /// input byte array, represented as hex values
+    /// </summary>
+    /// <param name="data">Byte array</param>
+    /// <param name="len">Length of data, in bytes</param>
+    /// <returns>String</returns>
+    static std::string BytesToString(const uint8_t *data, size_t len);
 
 private:
     static std::mutex _mutex;

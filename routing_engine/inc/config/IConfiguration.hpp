@@ -4,18 +4,6 @@
 #include <sys/socket.h>
 #include <net/ethernet.h>
 
-// Subject to change
-#define DEVICE_KEY_LEN 64
-
-/// <summary>
-/// Synchronous cryptographic
-/// device key
-/// </summary>
-typedef struct
-{
-    uint8_t key[DEVICE_KEY_LEN];
-} DeviceKey_t;
-
 /// <summary>
 /// Manages configuration information pulled
 /// from the configuration database
@@ -46,18 +34,6 @@ public:
     /// update is detected
     /// </remarks>
     virtual void UpdateLocal() = 0;
-    
-    /// <summary>
-    /// Looks up the device key associated with
-    /// the specified MAC address
-    /// </summary>
-    /// <param name="mac_addr">Device MAC address</param>
-    /// <param name="key">Reference to key output</param>
-    /// <returns>True if key was found</returns>
-    /// <remarks>
-    /// If return value is false, contents of key are undefined
-    /// </remarks>
-    virtual bool GetDeviceKey(const struct ether_addr &mac_addr, DeviceKey_t &key) = 0;
     
     /// <summary>
     /// Returns true if access control rules permit sending a

@@ -4,6 +4,7 @@
 #include <cstring>
 
 #include "status/error_codes.hpp"
+#include "logging/Logger.hpp"
 
 TCPSegment::TCPSegment()
 	: _src_port(0),
@@ -29,6 +30,7 @@ TCPSegment::~TCPSegment()
 
 int TCPSegment::Serialize(uint8_t *buff, size_t &len)
 {
+	std::stringstream sstream;
 	uint8_t *ptr = buff;
 	uint32_t tmp;
 	uint16_t tmp16;
@@ -65,13 +67,18 @@ int TCPSegment::Serialize(uint8_t *buff, size_t &len)
 	{
 		return TCP_ERROR_OVERFLOW;
 	}
-	tmp16 = hdr_len_bytes / sizeof(uint32_t);
-	tmp16 |= (_urg) ? 0x0400 : 0;
-	tmp16 |= (_ack) ? 0x0800 : 0;
-	tmp16 |= (_psh) ? 0x1000 : 0;
-	tmp16 |= (_rst) ? 0x2000 : 0;
-	tmp16 |= (_syn) ? 0x4000 : 0;
-	tmp16 |= (_fin) ? 0x8000 : 0;
+	tmp16 = (hdr_len_bytes / sizeof(uint32_t)) << 4;
+	tmp16 |= (_urg) ? 0x2000 : 0;
+	tmp16 |= (_ack) ? 0x1000 : 0;
+	tmp16 |= (_psh) ? 0x0800 : 0;
+	tmp16 |= (_rst) ? 0x0400 : 0;
+	tmp16 |= (_syn) ? 0x0200 : 0;
+	tmp16 |= (_fin) ? 0x0100 : 0;
+
+	sstream.str("");
+	sstream << std::setw(4) << std::setfill('0') << std::hex << tmp16;
+	Logger::Log(LOG_DEBUG, sstream.str());
+
 	*(uint16_t*)ptr = tmp16;
 	ptr += sizeof(uint16_t);
 
@@ -148,14 +155,23 @@ int TCPSegment::Deserialize(const uint8_t *data, size_t len)
 
 	// Read header length and flags
 	tmp16 = *(uint16_t*)ptr;
-	size_t hdr_len_bytes = (tmp16 & 0xF) * sizeof(uint32_t);
-	_urg = (tmp16 & 0x0400) != 0;
-	_ack = (tmp16 & 0x0800) != 0;
-	_psh = (tmp16 & 0x1000) != 0;
-	_rst = (tmp16 & 0x2000) != 0;
-	_syn = (tmp16 & 0x4000) != 0;
-	_fin = (tmp16 & 0x8000) != 0;
+	size_t hdr_len_bytes = ((tmp16 & 0xF0) >> 4) * sizeof(uint32_t);
+	_urg = (tmp16 & 0x2000) != 0;
+	_ack = (tmp16 & 0x1000) != 0;
+	_psh = (tmp16 & 0x0800) != 0;
+	_rst = (tmp16 & 0x0400) != 0;
+	_syn = (tmp16 & 0x0200) != 0;
+	_fin = (tmp16 & 0x0100) != 0;
 	ptr += sizeof(uint16_t);
+
+	std::stringstream sstream;
+	sstream << "0x" << std::setw(2) << std::setfill('0') << std::hex << tmp16;
+	Logger::Log(LOG_DEBUG, sstream.str());
+
+	sstream.str("");
+	sstream << (_urg ? "URG" : "") << (_ack ? "ACK" : "") << (_psh ? "PSH" : "")
+			<< (_rst ? "RST" : "") << (_syn ? "SYN" : "") << (_fin ? "FIN" : "");
+	Logger::Log(LOG_DEBUG, sstream.str());
 
 	// Read window size
 	tmp16 = *(uint16_t*)ptr;
@@ -342,4 +358,9 @@ size_t TCPSegment::GetDataLength()
 void TCPSegment::SetData(const uint8_t *data, size_t len)
 {
 	_data = std::vector<uint8_t>(data, data + len);
+}
+
+size_t TCPSegment::GetLengthBytes()
+{
+	return MIN_HEADER_LEN_BYTES + _opts.size() + _data.size();
 }

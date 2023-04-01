@@ -15,11 +15,12 @@ class CentralAccessControl: public IAccessControlModule
 {
 public:
     CentralAccessControl();
-    ~CentralAccessControl();
+    ~CentralAccessControl() override;
     
     bool IsAllowed(IIPPacket *packet);
     void SetConfiguration(IConfiguration* config);
     void SetARPTable(IARPTable *arp_table);
+    void SetIPSecUtils(IIPSecUtils *ipsec);
     
     /// <summary>
     /// Adds an access control module to the list
@@ -33,6 +34,7 @@ private:
     std::vector<IAccessControlModule*> _modules;
     IConfiguration *_config;
     IARPTable *_arp_table;
+    IIPSecUtils *_ipsec_utils;
 };
 
 #endif

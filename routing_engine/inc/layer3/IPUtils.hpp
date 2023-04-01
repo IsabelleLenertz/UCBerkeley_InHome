@@ -20,6 +20,15 @@ public:
     static void GetSubnetID(const struct sockaddr &addr, const struct sockaddr &netmask, struct sockaddr &subnet_id);
     
     /// <summary>
+    /// Given an IP address (v4 or v6) and a netmask,
+    /// generates the first host IP on the same subnet
+    /// </summary>
+    /// <param name="addr">IP address</param>
+    /// <param name="netmask">Subnet mask</param>
+    /// <param name="first_ip">First host IP on subnet</param>
+    static void GetFirstHostIP(const struct sockaddr &addr, const struct sockaddr &netmask, struct sockaddr &first_ip);
+
+    /// <summary>
     /// Checks if the addresses represented by two sockaddr objects
     /// are equal. Only checks the IP address, not the port or
     /// other metadata.
@@ -35,6 +44,25 @@ public:
     /// <param name="src">Address to store</param>
     /// <param name="dst">Socket storage structure</param>
     static void StoreSockaddr(const struct sockaddr &src, struct sockaddr_storage &dst);
+
+    /// <summary>
+    /// Copies an IP address from one struct to another
+    /// </summary>
+    /// <param name="src">Address to store</param>
+    /// <param name="dst">Destination address</param>
+    /// <remarks>
+    /// Destination MUST have sufficient room to store
+    /// the source address type
+    /// </remarks>
+    static void CopySockaddr(const struct sockaddr &src, struct sockaddr &dst);
+
+    /// <summary>
+    /// Returns the actual size of the address stored,
+    /// based on the address family
+    /// </summary>
+    /// <param name="addr">Socket address</param>
+    /// <returns>Size of address, in bytes</returns>
+    static size_t GetAddressSize(const struct sockaddr &addr);
 
     /// <summary>
     /// Calculates the 16-bit checksum of the specified data

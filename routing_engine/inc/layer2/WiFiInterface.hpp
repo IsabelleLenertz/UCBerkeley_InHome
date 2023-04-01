@@ -30,11 +30,15 @@ public:
     void SetIPAddressQueryMethod(IPOwnershipQuery method);
 
     void SetAsDefault();
+    bool GetIsDefault();
+
+    interface_stats_t& Stats();
 
 private:
     std::string _if_name;
     IARPTable* _arp_table;
     bool _is_default;
+    interface_stats_t _stats;
 };
 
 #endif

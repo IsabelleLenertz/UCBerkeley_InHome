@@ -12,11 +12,12 @@
 
 #include "logging/Logger.hpp"
 
-InterfaceManager::InterfaceManager(IARPTable *arp_table, IRoutingTable *ip_rte_table, NAPTTable *napt_table)
+InterfaceManager::InterfaceManager(IARPTable *arp_table, IRoutingTable *ip_rte_table, NAPTTable *napt_table, IIPSecUtils *ipsec_utils)
     : _interfaces(),
       _arp_table(arp_table),
       _ip_rte_table(ip_rte_table),
 	  _napt_table(napt_table),
+	  _ipsec_utils(ipsec_utils),
 	  _v4_gateway_set(false),
 	  _v6_gateway_set(false),
 	  _default_if(nullptr)
@@ -118,6 +119,14 @@ int InterfaceManager::InitializeInterfaces(int flags)
     
     pcap_freealldevs(alldevsp);
     
+    // Initialize monitor
+    status = _monitor.Initialize(12001);
+
+    if (status != NO_ERROR)
+    {
+    	return status;
+    }
+
     return 0;
 }
 
@@ -203,6 +212,17 @@ int InterfaceManager::SendPacket(IIPPacket *packet)
 	std::stringstream sstream;
 	int status = NO_ERROR;
 
+	if (!packet->GetIsFromDefaultInterface() && !packet->GetIsToDefaultInterface())
+	{
+		// Update authentication header data
+		status = _ipsec_utils->TransformAuthHeader(packet);
+
+		if (status != NO_ERROR)
+		{
+			return status;
+		}
+	}
+
 	// Locate the outgoing interface based on destination address
     struct sockaddr_storage local_ip;
 	ILayer2Interface *_if = _ip_rte_table->GetInterface(packet->GetDestinationAddress(), local_ip);
@@ -223,7 +243,7 @@ int InterfaceManager::SendPacket(IIPPacket *packet)
 	}
 
 	// Set local IP based on whether the egress interface is the default interface
-	const struct sockaddr &_local_ip = (_if == _default_if) ?
+	const struct sockaddr &_local_ip = _if->GetIsDefault() ?
 			reinterpret_cast<const struct sockaddr&>(gateway_local) :
 			reinterpret_cast<const struct sockaddr&>(local_ip);
 
@@ -231,14 +251,13 @@ int InterfaceManager::SendPacket(IIPPacket *packet)
 	// interface is the default interface (used to resolve MAC address)
 	// Default: Use default gateway
 	// Otherwise: Use destination address
-	const struct sockaddr &dst_addr = (_if == _default_if) ? gateway : packet->GetDestinationAddress();
+	const struct sockaddr &dst_addr = _if->GetIsDefault() ? gateway : packet->GetDestinationAddress();
 
 	// If egress interface is default interface,
 	// need to perform network address translation
-	if (_if == _default_if)
+	if (_if->GetIsDefault())
 	{
-		Logger::Log(LOG_DEBUG, "Performing Network Address Translation");
-
+		Logger::Log(LOG_DEBUG, "NAT required");
 		status = _napt_table->TranslateToExternal(packet, _local_ip);
 
 		if (status != NO_ERROR)
@@ -255,9 +274,35 @@ int InterfaceManager::SendPacket(IIPPacket *packet)
 		return status;
 	}
 
-	sstream.str("");
-	sstream << "Address Family: " << _local_ip.sa_family;
-	Logger::Log(LOG_DEBUG, sstream.str());
+	// Increment counters
+	_if->Stats().tx_count++;
+	switch (packet->GetProtocol())
+	{
+		case IPPROTO_ICMP:
+		{
+			_if->Stats().icmp_tx_count++;
+			break;
+		}
+		case IPPROTO_TCP:
+		{
+			_if->Stats().tcp_tx_count++;
+			break;
+		}
+		case IPPROTO_UDP:
+		{
+			_if->Stats().udp_tx_count++;
+			break;
+		}
+		case IPPROTO_AH:
+		{
+			_if->Stats().ipsec_tx_count++;
+			break;
+		}
+		default:
+		{
+			break;
+		}
+	}
 
 	status = _if->SendPacket(_local_ip, dst_addr, _send_buff, len);
 
@@ -317,15 +362,11 @@ void InterfaceManager::_registerAddresses(ILayer2Interface* _if, pcap_if_t *pcap
 						*(addr_ptr + 3) = 1;
 
 						inet_ntop(AF_INET, &gateway.sin_addr, ip_str, 64);
-
-						std::stringstream sstream;
-						sstream << "Setting IPv4 Default Gateway: " << _if->GetName() << " at " << ip_str << ":" << gateway.sin_port;
-						Logger::Log(LOG_INFO, sstream.str());
-
-						sstream.str("");
 						inet_ntop(AF_INET, &_ip_addr.sin_addr, ip_str, 64);
-						sstream << "Local IP: " << ip_str << ":" << _ip_addr.sin_port;
-						Logger::Log(LOG_INFO, sstream.str());
+
+						// TODO Fix
+						// Overwrite gateway address
+						inet_pton(AF_INET, "10.0.2.2", &gateway.sin_addr);
 
 						const struct sockaddr &_gateway = reinterpret_cast<const struct sockaddr&>(gateway);
 						SetDefaultGateway(_gateway, ip_addr);
@@ -336,19 +377,6 @@ void InterfaceManager::_registerAddresses(ILayer2Interface* _if, pcap_if_t *pcap
 				}
 				case AF_INET6:
 				{
-					if (!_v6_gateway_set)
-					{
-						// SetDefaultGateway(ip_addr);
-						_if->SetAsDefault();
-
-						const struct sockaddr_in6 &_ip_addr = reinterpret_cast<const struct sockaddr_in6&>(ip_addr);
-						inet_ntop(AF_INET6, &_ip_addr.sin6_addr, ip_str, 64);
-
-						std::stringstream sstream;
-						sstream << "Setting IPv6 Default Gateway: " << _if->GetName() << " at " << ip_str;
-
-						Logger::Log(LOG_INFO, sstream.str());
-					}
 					break;
 				}
             }
@@ -373,6 +401,7 @@ ILayer2Interface* InterfaceManager::GetInterfaceFromName(const char *name)
 
 void InterfaceManager::ReceiveLayer2Data(ILayer2Interface *_if, const uint8_t *data, size_t len)
 {
+	std::stringstream sstream;
     // Indicates whether the packet was transferred to layer 3
     bool transferred = false;
     
@@ -382,42 +411,68 @@ void InterfaceManager::ReceiveLayer2Data(ILayer2Interface *_if, const uint8_t *d
     
     if (status == 0)
     {
-        // Check if this packet is destined for an IP address owned by
-        // this interface. If so, do not pass it to the router
-    	/*
-        if (_ip_rte_table->IsOwnedByInterface(_if, packet->GetDestinationAddress()))
-        {
-            // IP owned by this interface. Do not pass to routing engine.
-        	Logger::Log(LOG_DEBUG, "Packet owned by interface. Dropping");
-        }
-        else
-        */
-        {
-        	// If the ingress interface is the default interface,
-        	// then network address translation must be performed
-        	if (_if == _default_if)
-        	{
-        		status = _napt_table->TranslateToInternal(packet);
+    	// Increment counters
+    	_if->Stats().rx_count++;
+    	switch (packet->GetProtocol())
+    	{
+    		case IPPROTO_ICMP:
+    		{
+    			_if->Stats().icmp_rx_count++;
+    			break;
+    		}
+    		case IPPROTO_TCP:
+    		{
+    			_if->Stats().tcp_rx_count++;
+    			break;
+    		}
+    		case IPPROTO_UDP:
+    		{
+    			_if->Stats().udp_rx_count++;
+    			break;
+    		}
+    		case IPPROTO_AH:
+    		{
+    			_if->Stats().ipsec_rx_count++;
+    			break;
+    		}
+    		default:
+    		{
+    			break;
+    		}
+    	}
 
-        		if (status != NO_ERROR)
-        		{
-        			std::stringstream sstream;
-        			sstream << "Network address translation failed: (" << status << ")";
+		// If the ingress interface is the default interface,
+		// then network address translation must be performed
+		if (_if->GetIsDefault())
+		{
+			// Mark the packet as received on the default interface
+			packet->SetIsFromDefaultInterface(true);
 
-        			Logger::Log(LOG_ERROR, sstream.str());
-        		}
-        	}
+			status = _napt_table->TranslateToInternal(packet);
 
-        	// If network address translation was attempted, it
-        	// must have been successfuly in order to pass the
-        	// packet to the routing engine
-        	if (status == NO_ERROR)
-        	{
-        		// Pass to routing engine. Routing engine is now responsible for memory management.
-        		_callback(packet);
-            	transferred = true;
-        	}
-        }
+			if (status != NO_ERROR)
+			{
+				sstream.str("");
+				sstream << "Network address translation failed: (" << status << ")";
+
+				Logger::Log(LOG_ERROR, sstream.str());
+			}
+		}
+		else
+		{
+			// Mark the packet as not received on the default interface
+			packet->SetIsFromDefaultInterface(false);
+		}
+
+		// If network address translation was attempted, it
+		// must have been successfuly in order to pass the
+		// packet to the routing engine
+		if (status == NO_ERROR)
+		{
+			// Pass to routing engine. Routing engine is now responsible for memory management.
+			_callback(packet);
+			transferred = true;
+		}
     }
     
     if (!transferred)
@@ -494,4 +549,18 @@ const struct sockaddr *InterfaceManager::GetDefaultGateway(int version)
 			break;
 		}
 	}
+}
+
+void InterfaceManager::SendMonitorReport()
+{
+	InterfaceStatsPacket pkt;
+
+	for (auto _if = _interfaces.begin(); _if < _interfaces.end(); _if++)
+	{
+		ILayer2Interface *_interface = *_if;
+
+		pkt.SetInterfaceData(_interface->GetName(), _interface->Stats());
+	}
+
+	int status = _monitor.SendPacket(reinterpret_cast<MonitorPacketBase*>(&pkt));
 }

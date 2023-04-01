@@ -99,6 +99,53 @@ int NAPTTable::TranslateToInternal(IIPPacket *packet)
 		}
 		case IPPROTO_TCP:
 		{
+			// TCP NAPT disabled
+			break;
+
+			// Deserialize TCP data from packet data
+			TCPSegment tcp;
+			const uint8_t *data;
+			size_t data_len = packet->GetData(data);
+
+			status = tcp.Deserialize(data, data_len);
+
+			if (status != NO_ERROR)
+			{
+				return status;
+			}
+
+			napt_tuple_t *mapped_addr = GetInternal(IPPROTO_TCP, packet->GetDestinationAddress(), tcp.GetDestinationPort());
+
+			if (mapped_addr == nullptr)
+			{
+				Logger::Log(LOG_DEBUG, "Mapping not found. Dropping");
+				return NAT_ERROR_MAPPING_NOT_FOUND;
+			}
+
+			// At this point, mapped_addr, is guaranteed to point to
+			// a valid mapping. Apply the mapping.
+			tcp.SetDestinationPort(mapped_addr->identifier);
+			packet->SetDestinationAddress(reinterpret_cast<const struct sockaddr&>(mapped_addr->addr));
+
+			// Reserialize TCP Message
+			uint8_t buff[TCP_PSEUDO_HEADER_LEN + data_len];
+			status = tcp.Serialize(buff + TCP_PSEUDO_HEADER_LEN, data_len);
+
+			// Populate pseudo header
+			const struct sockaddr_in &src_addr = reinterpret_cast<const struct sockaddr_in&>(packet->GetSourceAddress());
+			const struct sockaddr_in &dst_addr = reinterpret_cast<const struct sockaddr_in&>(packet->GetDestinationAddress());
+			memcpy(buff, &src_addr.sin_addr, 4);
+			memcpy(buff + 4, &dst_addr.sin_addr, 4);
+			*(uint8_t*)(buff + 9) = packet->GetProtocol();
+			*(uint16_t*)(buff + 10) = htons(tcp.GetLengthBytes());
+
+			// Calculate checksum
+			uint16_t checksum = IPUtils::Calc16BitChecksum(buff, TCP_PSEUDO_HEADER_LEN + data_len);
+			*(uint16_t*)(buff + 12 + 16) = htons(checksum);
+
+			// Copy data into packet
+			packet->SetData(buff + TCP_PSEUDO_HEADER_LEN, data_len);
+
 			break;
 		}
 		default:
@@ -112,6 +159,7 @@ int NAPTTable::TranslateToInternal(IIPPacket *packet)
 
 int NAPTTable::TranslateToExternal(IIPPacket *packet, const struct sockaddr &external_ip)
 {
+	std::stringstream sstream;
 	int status = ERROR_UNSET;
 	std::scoped_lock lock {_mutex};
 
@@ -144,7 +192,6 @@ int NAPTTable::TranslateToExternal(IIPPacket *packet, const struct sockaddr &ext
 					return NAT_ERROR_CREATE_MAPPING_FAILED;
 				}
 			}
-
 			// At this point, mapped_addr is guaranteed to point to
 			// a valid mapping. Apply the mapping.
 			icmp.SetID(mapped_addr->identifier);
@@ -170,10 +217,70 @@ int NAPTTable::TranslateToExternal(IIPPacket *packet, const struct sockaddr &ext
 		}
 		case IPPROTO_TCP:
 		{
+			// TCP NAPT disabled
+			break;
+
+			// Deserialize TCP message from packet data
+			TCPSegment tcp;
+			const uint8_t *data;
+			size_t data_len = packet->GetData(data);
+
+			status = tcp.Deserialize(data, data_len);
+
+			if (status != NO_ERROR)
+			{
+				sstream.str("");
+				sstream << "Failed to deserialize TCP segment: (" << status << ")";
+				Logger::Log(LOG_DEBUG, sstream.str());
+				return status;
+			}
+
+			// Attempt to locate an existing mapping
+			napt_tuple_t *mapped_addr = GetExternal(IPPROTO_TCP, packet->GetSourceAddress(), tcp.GetSourcePort());
+
+			if (mapped_addr == nullptr)
+			{
+				Logger::Log(LOG_DEBUG, "Mapping not found. Creating mapping.");
+
+				// Create a mapping
+				mapped_addr = CreateMappingToExternal(IPPROTO_TCP, packet->GetSourceAddress(), tcp.GetSourcePort(), external_ip);
+
+				if (mapped_addr == nullptr)
+				{
+					Logger::Log(LOG_DEBUG, "Failed to create mapping.");
+					return NAT_ERROR_CREATE_MAPPING_FAILED;
+				}
+			}
+
+			// At this point, mapped_addr is guaranteed to point to
+			// a valid mapping. Apply the mapping.
+			tcp.SetSourcePort(mapped_addr->identifier);
+			packet->SetSourceAddress(reinterpret_cast<struct sockaddr&>(mapped_addr->addr));
+
+			// Reserialize TCP Message
+			uint8_t buff[TCP_PSEUDO_HEADER_LEN + data_len];
+			status = tcp.Serialize(buff + TCP_PSEUDO_HEADER_LEN, data_len);
+
+			// Populate pseudo header
+			const struct sockaddr_in &src_addr = reinterpret_cast<const struct sockaddr_in&>(packet->GetSourceAddress());
+			const struct sockaddr_in &dst_addr = reinterpret_cast<const struct sockaddr_in&>(packet->GetDestinationAddress());
+			memcpy(buff, &src_addr.sin_addr, 4);
+			memcpy(buff + 4, &dst_addr.sin_addr, 4);
+			*(uint8_t*)(buff + 9) = packet->GetProtocol();
+			*(uint16_t*)(buff + 10) = htons(tcp.GetLengthBytes());
+
+			// Calculate checksum
+			uint16_t checksum = IPUtils::Calc16BitChecksum(buff, TCP_PSEUDO_HEADER_LEN + data_len);
+			*(uint16_t*)(buff + 12 + 16) = htons(checksum);
+
+			// Copy data into packet
+			packet->SetData(buff + TCP_PSEUDO_HEADER_LEN, data_len);
+
 			break;
 		}
 		default:
 		{
+			Logger::Log(LOG_DEBUG, "Unsupported protocol");
 			return NAT_ERROR_UNSUPPORTED_PROTOCOL;
 		}
 	}
@@ -351,8 +458,6 @@ napt_tuple_t *NAPTTable::CreateMappingToExternal(uint8_t protocol, const sockadd
 	new_entry.external.identifier = external_id;
 	new_entry.socket_d = socket_d;
 
-	Logger::Log(LOG_DEBUG, "Created mapping");
-
 	// Set initial expiration time
 	new_entry.expires_at = time(NULL) + NAPT_EXP_TIME_SEC;
 
@@ -370,9 +475,6 @@ int NAPTTable::BindMapping(uint8_t protocol, const sockaddr &external_ip, int &s
 	char ipstr[64];
 	const struct sockaddr_in &_external_ip = reinterpret_cast<const sockaddr_in&>(external_ip);
 	inet_ntop(AF_INET, &_external_ip.sin_addr, ipstr, 64);
-	std::stringstream sstream;
-	sstream << "Binding socket (" << _external_ip.sin_family << "): " << ipstr << ":" << _external_ip.sin_port;
-	Logger::Log(LOG_DEBUG, sstream.str());
 
 	// Based on the protocol, open a socket
 	switch (protocol)
@@ -394,18 +496,12 @@ int NAPTTable::BindMapping(uint8_t protocol, const sockaddr &external_ip, int &s
 		}
 		default:
 		{
-			Logger::Log(LOG_ERROR, "NAT Error: Unsupported Protocol");
 			return NAT_ERROR_UNSUPPORTED_PROTOCOL;
 		}
 	}
 
-	sstream.str("");
-	sstream << "Socket FD: " << socket_d;
-	Logger::Log(LOG_DEBUG, sstream.str());
-
 	if (socket_d < 0)
 	{
-		Logger::Log(LOG_ERROR, "NAT Error: Socket Create Failed");
 		return NAT_ERROR_SOCKET_CREATE_FAILED;
 	}
 
@@ -419,9 +515,6 @@ int NAPTTable::BindMapping(uint8_t protocol, const sockaddr &external_ip, int &s
 			status = bind(socket_d, &external_ip, sizeof(struct sockaddr_in));
 			if (status != NO_ERROR)
 			{
-				sstream.str("");
-				sstream << "NAT Error: Socket Bind Failed (" << errno << ")";
-				Logger::Log(LOG_ERROR, sstream.str());
 				return NAT_ERROR_SOCKET_BIND_FAILED;
 			}
 
@@ -442,9 +535,6 @@ int NAPTTable::BindMapping(uint8_t protocol, const sockaddr &external_ip, int &s
 			status = bind(socket_d, &external_ip, sizeof(struct sockaddr_in6));
 			if (status != NO_ERROR)
 			{
-				sstream.str("");
-				sstream << "NAT Error: Socket Bind Failed (" << status << ")";
-				Logger::Log(LOG_ERROR, sstream.str());
 				return NAT_ERROR_SOCKET_BIND_FAILED;
 			}
 
@@ -461,16 +551,12 @@ int NAPTTable::BindMapping(uint8_t protocol, const sockaddr &external_ip, int &s
 		}
 		default:
 		{
-			Logger::Log(LOG_ERROR, "NAT Error: Unsupported Protocol");
 			return NAT_ERROR_UNSUPPORTED_PROTOCOL;
 		}
 	}
 
 	if (status != NO_ERROR)
 	{
-		sstream.str("");
-		sstream << "NAT Error: Get Address Failed (" << errno << ")";
-		Logger::Log(LOG_ERROR, sstream.str());
 		return NAT_ERROR_GET_ADDRESS_FAILED;
 	}
 
