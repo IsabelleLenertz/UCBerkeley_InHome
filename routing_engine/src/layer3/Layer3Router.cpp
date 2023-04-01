@@ -171,9 +171,9 @@ int Layer3Router::Initialize()
     _access_control.AddModule((IAccessControlModule*)&_null_access);
 
 #ifndef DISABLE_AUTH
+    _access_control.AddModule((IAccessControlModule*)&_access_list);
     _access_control.AddModule((IAccessControlModule*)&_replay_detect);
     _access_control.AddModule((IAccessControlModule*)&_message_auth);
-    _access_control.AddModule((IAccessControlModule*)&_access_list);
 #endif
 
     ////////////////////////////////

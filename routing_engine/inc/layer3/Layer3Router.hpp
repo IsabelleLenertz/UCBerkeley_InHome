@@ -1,7 +1,7 @@
 #ifndef INC_LAYER3ROUTER_HPP_
 #define INC_LAYER3ROUTER_HPP_
 
-// #define DISABLE_AUTH
+#define DISABLE_AUTH
 
 #include "access_control/AccessControlList.hpp"
 #include "access_control/CentralAccessControl.hpp"
