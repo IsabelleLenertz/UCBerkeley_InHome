@@ -169,11 +169,11 @@ int Layer3Router::Initialize()
 
     // Add submodules to central module
     _access_control.AddModule((IAccessControlModule*)&_null_access);
-    _access_control.AddModule((IAccessControlModule*)&_access_list);
 
 #ifndef DISABLE_AUTH
     _access_control.AddModule((IAccessControlModule*)&_replay_detect);
     _access_control.AddModule((IAccessControlModule*)&_message_auth);
+    _access_control.AddModule((IAccessControlModule*)&_access_list);
 #endif
 
     ////////////////////////////////

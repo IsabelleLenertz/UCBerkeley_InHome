@@ -75,10 +75,6 @@ int TCPSegment::Serialize(uint8_t *buff, size_t &len)
 	tmp16 |= (_syn) ? 0x0200 : 0;
 	tmp16 |= (_fin) ? 0x0100 : 0;
 
-	sstream.str("");
-	sstream << std::setw(4) << std::setfill('0') << std::hex << tmp16;
-	Logger::Log(LOG_DEBUG, sstream.str());
-
 	*(uint16_t*)ptr = tmp16;
 	ptr += sizeof(uint16_t);
 
@@ -163,15 +159,6 @@ int TCPSegment::Deserialize(const uint8_t *data, size_t len)
 	_syn = (tmp16 & 0x0200) != 0;
 	_fin = (tmp16 & 0x0100) != 0;
 	ptr += sizeof(uint16_t);
-
-	std::stringstream sstream;
-	sstream << "0x" << std::setw(2) << std::setfill('0') << std::hex << tmp16;
-	Logger::Log(LOG_DEBUG, sstream.str());
-
-	sstream.str("");
-	sstream << (_urg ? "URG" : "") << (_ack ? "ACK" : "") << (_psh ? "PSH" : "")
-			<< (_rst ? "RST" : "") << (_syn ? "SYN" : "") << (_fin ? "FIN" : "");
-	Logger::Log(LOG_DEBUG, sstream.str());
 
 	// Read window size
 	tmp16 = *(uint16_t*)ptr;
