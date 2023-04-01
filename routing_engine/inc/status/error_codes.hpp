@@ -100,4 +100,39 @@
 #define NAT_ERROR_SOCKET_BIND_FAILED    907
 #define NAT_ERROR_GET_ADDRESS_FAILED    908
 
+/////////////////////////////
+/////// PF_KEY Errors ///////
+/////////////////////////////
+#define PF_KEY_ERROR_OVERFLOW             1001
+#define PF_KEY_ERROR_MALFORMED_EXTENSION  1002
+#define PF_KEY_ERROR_UNSUPPORTED_PROTOCOL 1003
+#define PF_KEY_ERROR_KEY_NOT_FOUND        1004
+#define PF_KEY_ERROR_MISSING_EXTENSION    1005
+#define PF_KEY_ERROR_SOCKET_OPEN_FAILED   1006
+#define PF_KEY_ERROR_MESSAGE_SEND_FAILED  1006
+#define PF_KEY_ERROR_INVALID_KEY_LENGTH   1007
+#define PF_KEY_ERROR_KEY_DATA_PENDING     1008
+
+/////////////////////////////
+/////// IPSEC Errors ////////
+/////////////////////////////
+#define IPSEC_AH_ERROR_OVERFLOW          1101
+#define IPSEC_AH_ERROR_NO_AUTH_HEADER    1102
+#define IPSEC_AH_ERROR_ICV_LEN_INCORRECT 1103
+#define IPSEC_AH_ERROR_HMAC_FAILED       1104
+#define IPSEC_ERROR_UNSUPPORTED_PROTOCOL 1105
+#define IPSEC_AH_ERROR_INVALID_SEQ_NUM   1106
+#define IPSEC_AH_ERROR_INCORRECT_ICV     1107
+
+/////////////////////////////
+////// Monitor Errors ///////
+/////////////////////////////
+#define MONITOR_ERROR_OVERFLOW        1201
+#define MONITOR_ERROR_ENTRY_NOT_FOUND 1202
+#define MONITOR_ERROR_SOCKET_FAILED   1203
+#define MONITOR_ERROR_BIND_FAILED     1204
+#define MONITOR_ERROR_SEND_FAILED     1205
+#define MONITOR_ERROR_NULL_POINTER    1206
+#define MONITOR_ERROR_BAD_PACKET_TYPE 1207
+
 #endif

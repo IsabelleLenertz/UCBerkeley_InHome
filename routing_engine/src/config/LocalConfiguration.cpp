@@ -68,26 +68,6 @@ bool LocalConfiguration::IsPermitted(const struct sockaddr &src, const struct so
     return false;
 }
 
-bool LocalConfiguration::GetDeviceSecurityParams(const struct sockaddr &ip_addr, DeviceSecParams_t &params)
-{
-    // TODO Implement
-    return false;
-}
-
-bool LocalConfiguration::GetDeviceSecurityParams(const struct ether_addr &mac_addr, DeviceSecParams_t &params)
-{
-    // TODO Implement
-    return false;
-}
-
-void LocalConfiguration::SetDeviceSecurityParams(const struct sockaddr &ip_addr, const DeviceSecParams_t &params)
-{
-}
-
-void LocalConfiguration::SetDeviceSecurityParams(const struct ether_addr &mac_addr, const DeviceSecParams_t &params)
-{
-}
-
 void LocalConfiguration::SetAccessRule(const struct sockaddr &src, const struct sockaddr &src_mask, const struct sockaddr &dest, const struct sockaddr &dest_mask, bool allow)
 {
     // Add a new entry and get a reference to that entry

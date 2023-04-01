@@ -4,6 +4,8 @@
 #include <arpa/inet.h>
 #include <cstring>
 
+#include "logging/Logger.hpp"
+
 IPv4Packet::IPv4Packet()
     : _tos(0),
       _stream_id(0),
@@ -15,10 +17,44 @@ IPv4Packet::IPv4Packet()
       _src_addr({0}),
       _dest_addr({0}),
       _options(),
-      _data()
+      _data(),
+	  _from_default_if(false),
+	  _to_default_if(false)
 {
     _src_addr.sin_family = AF_INET;
     _dest_addr.sin_family = AF_INET;
+}
+
+IPv4Packet::IPv4Packet(const IPv4Packet &rhs)
+{
+	_tos = rhs._tos;
+	_stream_id = rhs._stream_id;
+	_dont_fragment = rhs._dont_fragment;
+	_more_fragments = rhs._more_fragments;
+	_fragment_offset = rhs._fragment_offset;
+	_ttl = rhs._ttl;
+	_protocol = rhs._protocol;
+	_src_addr = rhs._src_addr;
+	_dest_addr = rhs._dest_addr;
+	_options = rhs._options;
+	_data = rhs._data;
+}
+
+IPv4Packet& IPv4Packet::operator=(const IPv4Packet &rhs)
+{
+	_tos = rhs._tos;
+	_stream_id = rhs._stream_id;
+	_dont_fragment = rhs._dont_fragment;
+	_more_fragments = rhs._more_fragments;
+	_fragment_offset = rhs._fragment_offset;
+	_ttl = rhs._ttl;
+	_protocol = rhs._protocol;
+	_src_addr = rhs._src_addr;
+	_dest_addr = rhs._dest_addr;
+	_options = rhs._options;
+	_data = rhs._data;
+
+	return *this;
 }
 
 IPv4Packet::~IPv4Packet()
@@ -32,6 +68,7 @@ int IPv4Packet::GetIPVersion()
 
 int IPv4Packet::Deserialize(const uint8_t *buff, uint16_t len)
 {
+	std::stringstream sstream;
     const uint8_t *ptr = buff;
     uint32_t tmp;
     
@@ -468,4 +505,24 @@ size_t IPv4Packet::GetData(const uint8_t* &data_out)
 {
     data_out = _data.data();
     return _data.size();
+}
+
+bool IPv4Packet::GetIsFromDefaultInterface()
+{
+	return _from_default_if;
+}
+
+bool IPv4Packet::GetIsToDefaultInterface()
+{
+	return _to_default_if;
+}
+
+void IPv4Packet::SetIsFromDefaultInterface(bool flag)
+{
+	_from_default_if = flag;
+}
+
+void IPv4Packet::SetIsToDefaultInterface(bool flag)
+{
+	_to_default_if = flag;
 }

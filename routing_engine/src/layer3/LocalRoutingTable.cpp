@@ -25,7 +25,7 @@ ILayer2Interface* LocalRoutingTable::GetInterface(const struct sockaddr &ip_addr
     for (auto e = _table.begin(); e < _table.end(); e++)
     {
         RoutingTableEntry_t& entry = *e;
-        
+
         // Only evaluate if address family is the samelocal_ip
         if (entry.local_ip.ss_family == ip_addr.sa_family)
         {
@@ -58,9 +58,6 @@ ILayer2Interface* LocalRoutingTable::GetInterface(const struct sockaddr &ip_addr
 
                         char ip_str[64];
                         inet_ntop(AF_INET, &_local_ip.sin_addr, ip_str, 64);
-                        std::stringstream sstream;
-                        sstream << "Local IP: " << ip_str;
-                        Logger::Log(LOG_DEBUG, sstream.str());
 
                     	break;
                     }
@@ -137,9 +134,6 @@ void LocalRoutingTable::AddSubnetAssociation(ILayer2Interface *interface, const 
     {
     	const struct sockaddr_in &_ip_addr = reinterpret_cast<const struct sockaddr_in&>(ip_addr);
     	inet_ntop(AF_INET, &_ip_addr.sin_addr, ip_str, 64);
-    	std::stringstream sstream;
-    	sstream << "Adding local address: " << ip_str;
-    	Logger::Log(LOG_DEBUG, sstream.str());
     }
 
     // Populate entry

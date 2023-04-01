@@ -107,8 +107,6 @@ private:
     int LatestRevision();
     void UpdateThread(void);
 
-    void UpdateLocal();
-
 public:
     /// <summary>
     /// Constructor
@@ -132,7 +130,7 @@ public:
     ~MySQLConfiguration();
     
     bool LocalIsOutdated();
-        
+    void UpdateLocal();
     bool IsPermitted(const struct sockaddr &src, const struct sockaddr &dest);
 };
 

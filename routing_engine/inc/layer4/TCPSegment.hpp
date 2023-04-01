@@ -56,6 +56,8 @@ public:
 	size_t GetDataLength();
 	void SetData(const uint8_t *data, size_t len);
 
+	size_t GetLengthBytes();
+
 private:
 	uint16_t _src_port;
 	uint16_t _dst_port;

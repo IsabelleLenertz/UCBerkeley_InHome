@@ -51,4 +51,4 @@ INHOME/venv*
 *_init_*
 
 #VS code files
-*.vscode*
+*.vscode

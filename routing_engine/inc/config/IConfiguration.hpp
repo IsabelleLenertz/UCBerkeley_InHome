@@ -4,44 +4,6 @@
 #include <sys/socket.h>
 #include <net/ethernet.h>
 
-// Sized to hold the maximum size of
-// derived key for SHA-512
-#define MAX_KEY_LEN 128
-
-/// <summary>
-/// Integrity algorithm IDs as specified
-/// by IANA IKEv2 Parameters.
-/// Includes only supported values.
-/// </summary>
-typedef enum
-{
-    INTEG_ALG_ID_AUTH_HMAC_SHA2_256_128 = 12,
-    INTEG_ALG_ID_AUTH_HMAC_SHA2_384_192 = 13,
-    INTEG_ALG_ID_AUTH_HMAC_SHA2_512_256 = 14
-} IntegAlgID_t;
-
-/// <summary>
-/// Stores security parameters
-/// required to authenticate a
-/// device.
-/// </summary>
-typedef struct
-{
-    IntegAlgID_t integ_alg;
-    uint8_t key[MAX_KEY_LEN];
-} DeviceSecParams_t;
-
-/// <summary>
-/// Stores a Device Security
-/// Parameters Entry
-/// </summary>
-typedef struct
-{
-    struct ether_addr mac_addr;
-    struct sockaddr_storage ip_addr;
-    DeviceSecParams_t params;
-} DeviceSecParamsEntry_y;
-
 /// <summary>
 /// Stores an Access Rule entry
 /// </summary>
@@ -86,6 +48,7 @@ public:
     virtual void UpdateLocal() = 0;
     
     /// <summary>
+<<<<<<< routing_engine_sql_client
     /// Looks up the device security parameters
     /// associated with the specified IP address
     /// </summary>
@@ -116,6 +79,8 @@ public:
     virtual bool GetDeviceSecurityParams(const struct ether_addr &mac_addr, DeviceSecParams_t &params) = 0;
     
     /// <summary>
+=======
+>>>>>>> main
     /// Returns true if access control rules permit sending a
     /// packet between source and destination IP addresses.
     /// </summary>

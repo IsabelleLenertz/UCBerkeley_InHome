@@ -12,11 +12,12 @@ class NullAccessControl : public IAccessControlModule
 {
 public:
     NullAccessControl();
-    ~NullAccessControl();
+    ~NullAccessControl() override;
     
     bool IsAllowed(IIPPacket *packet);
     void SetConfiguration(IConfiguration* config);
     void SetARPTable(IARPTable *arp_table);
+    void SetIPSecUtils(IIPSecUtils *ipsec);
 };
 
 #endif
