@@ -14,7 +14,7 @@ services:
     depends_on:
       - db
   db:
-    image: mysql:5.7
+    image: mysql:8.0.32
     restart: always
     environment:
       MYSQL_DATABASE: 'InHome'
@@ -27,9 +27,11 @@ services:
     ports:
       # <Port exposed> : < MySQL Port running inside container>
       - '3306:3306'
+      - '33060:33060'
     expose:
-      # Opens port 3306 on the container
+      # Opens port 3306 & 33060 on the container
       - '3306'
+      - '33060'
       # Where our data will be persisted
     volumes:
       - my-db:/var/lib/mysql

@@ -2,7 +2,7 @@ TARGET_EXEC := route_test
 
 BUILD_DIR := ./build
 SRC_DIRS := ./src
-LDLIBS := -lpcap -lcrypto
+LDLIBS := -lpcap -lmysqlcppconn8 -lmysqlcppconn
 
 SRCS := $(shell find $(SRC_DIRS) -name '*.cpp' -or -name '*.c')
 
@@ -11,7 +11,10 @@ OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 DEPS := $(OBJS:.o=.d)
 
 INC_DIRS := ./inc \
-	    ./deps/libpcap
+			/usr/include/mysql-cppconn-8/jdbc/ \
+			/usr/include/mysql-cppconn-8/ \
+	    	./deps/libpcap
+
 INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
 CPPFLAGS := $(INC_FLAGS) -MMD -MP
